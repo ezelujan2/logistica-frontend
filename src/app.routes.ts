@@ -13,6 +13,7 @@ export const appRoutes: Routes = [
         canActivate: [AuthGuard],
         children: [
             { path: '', component: Dashboard },
+            { path: 'services', loadComponent: () => import('./app/pages/service-list/service-list').then((m) => m.ServiceList) },
             { path: 'uikit', loadChildren: () => import('./app/pages/uikit/uikit.routes') },
             { path: 'documentation', component: Documentation },
             { path: 'pages', loadChildren: () => import('./app/pages/pages.routes') }
