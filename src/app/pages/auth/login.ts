@@ -1,17 +1,19 @@
 import { Component } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import { RouterModule } from '@angular/router';
+import { RouterModule, Router } from '@angular/router';
 import { ButtonModule } from 'primeng/button';
 import { CheckboxModule } from 'primeng/checkbox';
 import { InputTextModule } from 'primeng/inputtext';
 import { PasswordModule } from 'primeng/password';
 import { RippleModule } from 'primeng/ripple';
+import { MessageModule } from 'primeng/message';
 import { AppFloatingConfigurator } from '../../layout/component/app.floatingconfigurator';
+import { AuthService } from '../../service/auth.service';
 
 @Component({
     selector: 'app-login',
     standalone: true,
-    imports: [ButtonModule, CheckboxModule, InputTextModule, PasswordModule, FormsModule, RouterModule, RippleModule, AppFloatingConfigurator],
+    imports: [ButtonModule, CheckboxModule, InputTextModule, PasswordModule, FormsModule, RouterModule, RippleModule, MessageModule, AppFloatingConfigurator],
     template: `
         <app-floating-configurator />
         <div class="bg-surface-50 dark:bg-surface-950 flex items-center justify-center min-h-screen min-w-screen overflow-hidden">
@@ -36,25 +38,31 @@ import { AppFloatingConfigurator } from '../../layout/component/app.floatingconf
                                     />
                                 </g>
                             </svg>
-                            <div class="text-surface-900 dark:text-surface-0 text-3xl font-medium mb-4">Welcome to PrimeLand!</div>
-                            <span class="text-muted-color font-medium">Sign in to continue</span>
+                            <div class="text-surface-900 dark:text-surface-0 text-3xl font-medium mb-4">Bienvenido a Autentica
+                            </div>
+                            <span class="text-muted-color font-medium">Ingresa tus credenciales para continuar</span>
                         </div>
 
                         <div>
-                            <label for="email1" class="block text-surface-900 dark:text-surface-0 text-xl font-medium mb-2">Email</label>
-                            <input pInputText id="email1" type="text" placeholder="Email address" class="w-full md:w-120 mb-8" [(ngModel)]="email" />
+                            <label for="email1" class="block text-surface-900 dark:text-surface-0 text-xl font-medium mb-2">Correo electrónico</label>
+                            <input pInputText id="email1" type="text" placeholder="Dirección de correo electrónico" class="w-full md:w-120 mb-8" [(ngModel)]="email" />
 
-                            <label for="password1" class="block text-surface-900 dark:text-surface-0 font-medium text-xl mb-2">Password</label>
-                            <p-password id="password1" [(ngModel)]="password" placeholder="Password" [toggleMask]="true" styleClass="mb-4" [fluid]="true" [feedback]="false"></p-password>
+                            <label for="password1" class="block text-surface-900 dark:text-surface-0 font-medium text-xl mb-2">Contraseña</label>
+                            <p-password id="password1" [(ngModel)]="password" placeholder="Contraseña" [toggleMask]="true" styleClass="mb-4" [fluid]="true" [feedback]="false"></p-password>
 
                             <div class="flex items-center justify-between mt-2 mb-8 gap-8">
                                 <div class="flex items-center">
                                     <p-checkbox [(ngModel)]="checked" id="rememberme1" binary class="mr-2"></p-checkbox>
-                                    <label for="rememberme1">Remember me</label>
+                                    <label for="rememberme1">Recordarme</label>
                                 </div>
-                                <span class="font-medium no-underline ml-2 text-right cursor-pointer text-primary">Forgot password?</span>
+                                <span class="font-medium no-underline ml-2 text-right cursor-pointer text-primary">¿Olvidaste tu contraseña?</span>
                             </div>
-                            <p-button label="Sign In" styleClass="w-full" routerLink="/"></p-button>
+                            <p-button label="Iniciar sesión" styleClass="w-full" (click)="onLogin()" [loading]="loading"></p-button>
+                            @if(errorMessage && errorMessage.length > 0) {
+                                <div class="mt-4 p-4 bg-red-500 text-white rounded">
+                                    {{ errorMessage }}
+                                </div>
+                            }
                         </div>
                     </div>
                 </div>
@@ -68,4 +76,39 @@ export class Login {
     password: string = '';
 
     checked: boolean = false;
+
+    loading: boolean = false;
+
+    errorMessage: string = '';
+
+    constructor(private authService: AuthService, private router: Router) {}
+
+    onLogin() {
+        if (!this.email || !this.password) {
+            this.errorMessage = 'Por favor ingresa tu correo electrónico y contraseña';
+            return;
+        }
+
+        this.loading = true;
+        this.errorMessage = '';
+
+        this.authService.login(this.email, this.password).subscribe({
+            next: (response) => {
+                localStorage.setItem('token', response.token);
+                this.router.navigate(['/']);
+            },
+            error: (error) => {
+                this.loading = false;
+                if (error.status === 401) {
+                    this.errorMessage = 'Credenciales inválidas. Por favor verifica tu correo electrónico y contraseña.';
+                } else if (error.status === 0) {
+                    this.errorMessage = 'No se puede conectar al servidor. Por favor verifica tu conexión a internet.';
+                } else if (error.error && error.error.message) {
+                    this.errorMessage = error.error.message;
+                } else {
+                    this.errorMessage = 'Ocurrió un error durante el inicio de sesión. Por favor intenta de nuevo más tarde.';
+                }
+            }
+        });
+    }
 }
