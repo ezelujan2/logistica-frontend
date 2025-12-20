@@ -13,7 +13,11 @@ export const appRoutes: Routes = [
         canActivate: [AuthGuard],
         children: [
             { path: '', component: Dashboard },
-            { path: 'services', loadComponent: () => import('./app/pages/service-list/service-list').then((m) => m.ServiceList) },
+            { path: 'services', redirectTo: 'services/all', pathMatch: 'full' },
+            { path: 'services/:status', loadComponent: () => import('./app/pages/service-list/service-list').then((m) => m.ServiceList) },
+            { path: 'clients', loadComponent: () => import('./app/pages/client-list/client-list').then((m) => m.ClientList) },
+            { path: 'drivers', loadComponent: () => import('./app/pages/driver-list/driver-list').then((m) => m.DriverList) },
+            { path: 'vehicles', loadComponent: () => import('./app/pages/vehicle-list/vehicle-list').then((m) => m.VehicleList) },
             { path: 'uikit', loadChildren: () => import('./app/pages/uikit/uikit.routes') },
             { path: 'documentation', component: Documentation },
             { path: 'pages', loadChildren: () => import('./app/pages/pages.routes') }

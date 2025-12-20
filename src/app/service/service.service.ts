@@ -1,28 +1,55 @@
 import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
-import { Observable } from 'rxjs';
+import { firstValueFrom } from 'rxjs';
+
+import { environment } from '../../environments/environment';
 
 export interface Service {
-    id?: string;
-    name: string;
-    description: string;
+    id?: number;
+    date: Date;
+    origin: string;
+    destination: string;
+    details?: string;
+    kmTraveled?: number;
+    waitingHours?: number;
+    kmPriceOverride?: number;
+    hourPriceOverride?: number;
+    driverKmPriceOverride?: number;
+    driverHourPriceOverride?: number;
+    discountPercentage?: number;
+    totalAmount?: number;
     status: string;
-    price: number;
+    billingType: string;
+
+    // Relations
+    clientIds: number[];
+    driverIds: number[];
+    vehicleIds: number[];
+
+    expenses?: any[];
 }
 
 @Injectable({
     providedIn: 'root'
 })
 export class ServiceService {
-    private apiUrl = 'http://localhost:3000/services';
+    private apiUrl = environment.apiUrl + 'services';
 
     constructor(private http: HttpClient) {}
 
-    getServices(): Observable<Service[]> {
-        return this.http.get<Service[]>(this.apiUrl);
+    async getServices(filters: any = {}): Promise<Service[]> {
+        return await firstValueFrom(this.http.get<Service[]>(this.apiUrl, { params: filters }));
     }
 
-    createService(service: Service): Observable<Service> {
-        return this.http.post<Service>(this.apiUrl, service);
+    async createService(service: any): Promise<Service> {
+        return await firstValueFrom(this.http.post<Service>(this.apiUrl, service));
+    }
+
+    async updateService(id: number, service: any): Promise<Service> {
+        return await firstValueFrom(this.http.put<Service>(`${this.apiUrl}/${id}`, service));
+    }
+
+    async deleteService(id: number): Promise<void> {
+        await firstValueFrom(this.http.delete(`${this.apiUrl}/${id}`));
     }
 }
