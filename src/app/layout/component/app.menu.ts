@@ -39,7 +39,15 @@ export class AppMenu {
                         ]
                      },
                      { label: 'Clientes', icon: 'pi pi-fw pi-users', routerLink: ['/clients'] },
-                     { label: 'Choferes', icon: 'pi pi-fw pi-user', routerLink: ['/drivers'] },
+                     {
+                         label: 'Choferes',
+                         icon: 'pi pi-fw pi-user',
+                         items: [
+                             { label: 'Listado/Config', icon: 'pi pi-fw pi-users', routerLink: ['/drivers'] },
+                             { label: 'Adelantos', icon: 'pi pi-fw pi-money-bill', routerLink: ['/advances'] },
+                             { label: 'Liquidaciones', icon: 'pi pi-fw pi-file-excel', routerLink: ['/settlements'] }
+                         ]
+                     },
                      { label: 'Autos', icon: 'pi pi-fw pi-car', routerLink: ['/vehicles'] },
                      { label: 'Dashboard', icon: 'pi pi-fw pi-home', routerLink: ['/'] }
                 ]

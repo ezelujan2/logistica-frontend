@@ -48,28 +48,30 @@ import { ActivatedRoute } from '@angular/router';
                 </ng-template>
                 <ng-template pTemplate="header">
                     <tr>
-                        <th pSortableColumn="date">Fecha <p-sortIcon field="date" /></th>
+                        <th pSortableColumn="startDate">Inicio <p-sortIcon field="startDate" /></th>
+                        <th pSortableColumn="serviceType">Tipo <p-sortIcon field="serviceType" /></th>
                         <th pSortableColumn="origin">Origen <p-sortIcon field="origin" /></th>
                         <th pSortableColumn="destination">Destino <p-sortIcon field="destination" /></th>
+                        <th>Detalles</th>
                         <th>Clientes</th>
                         <th>Choferes</th>
-                        <th pSortableColumn="totalAmount">Total <p-sortIcon field="totalAmount" /></th>
                         <th>Estado</th>
                         <th>Acciones</th>
                     </tr>
                 </ng-template>
                 <ng-template pTemplate="body" let-service>
                     <tr>
-                        <td>{{ service.date | date:'dd/MM/yyyy HH:mm' }}</td>
+                        <td>{{ service.startDate | date:'dd/MM/yyyy HH:mm' }}</td>
+                        <td><p-tag [value]="getServiceTypeLabel(service.serviceType)" severity="info"></p-tag></td>
                         <td>{{ service.origin }}</td>
                         <td>{{ service.destination }}</td>
+                        <td>{{ service.details }}</td>
                         <td>
                             <span *ngFor="let c of service.clients; let last=last">{{c.name}}{{!last ? ', ' : ''}}</span>
                         </td>
                         <td>
                             <span *ngFor="let d of service.drivers; let last=last">{{d.name}}{{!last ? ', ' : ''}}</span>
                         </td>
-                        <td>{{ service.totalAmount | currency:'USD' }}</td>
                         <td><p-tag [value]="getMmStatusLabel(service.status)" [severity]="getSeverity(service.status)" /></td>
                         <td>
                             <p-button icon="pi pi-pencil" [rounded]="true" [text]="true" (click)="editService(service)" />
@@ -87,9 +89,19 @@ import { ActivatedRoute } from '@angular/router';
                         <div class="flex flex-col gap-4">
                             <p-panel header="Información General" styleClass="mb-3">
                                 <div class="flex flex-col gap-4">
+                                    <div class="flex gap-4">
+                                        <div class="flex flex-col gap-2 flex-1">
+                                            <label for="startDate">Fecha Inicio</label>
+                                            <p-datepicker [(ngModel)]="service.startDate" [showTime]="true" dateFormat="dd/mm/yy" appendTo="body" styleClass="w-full"></p-datepicker>
+                                        </div>
+                                        <div class="flex flex-col gap-2 flex-1">
+                                            <label for="endDate">Fecha Fin</label>
+                                            <p-datepicker [(ngModel)]="service.endDate" [showTime]="true" dateFormat="dd/mm/yy" appendTo="body" styleClass="w-full"></p-datepicker>
+                                        </div>
+                                    </div>
                                     <div class="flex flex-col gap-2">
-                                        <label for="date">Fecha</label>
-                                        <p-datepicker [(ngModel)]="service.date" [showTime]="true" dateFormat="dd/mm/yy" appendTo="body" styleClass="w-full"></p-datepicker>
+                                        <label for="serviceType">Tipo de Servicio</label>
+                                        <p-select [options]="serviceTypes" [(ngModel)]="service.serviceType" optionLabel="label" optionValue="value" appendTo="body" styleClass="w-full"></p-select>
                                     </div>
                                     <div class="flex flex-col gap-2">
                                         <label for="status">Estado</label>
@@ -320,6 +332,12 @@ export class ServiceList implements OnInit {
          { label: 'Otro', value: 'OTHER' }
     ];
 
+    serviceTypes = [
+        { label: 'Servicio', value: 'SERVICE' },
+        { label: 'Mensajeria', value: 'MESSAGING' },
+        { label: 'Conducción', value: 'DRIVING' }
+    ];
+
     constructor(
         private serviceService: ServiceService,
         private clientService: ClientService,
@@ -438,7 +456,9 @@ export class ServiceList implements OnInit {
 
     getEmptyService() {
         return {
-            date: new Date(),
+            startDate: new Date(),
+            endDate: null,
+            serviceType: 'SERVICE',
             origin: '',
             destination: '',
             status: 'CREATED',
@@ -458,7 +478,9 @@ export class ServiceList implements OnInit {
 
         this.service = {
             ...service,
-            date: new Date(service.date),
+            startDate: new Date(service.startDate),
+            endDate: service.endDate ? new Date(service.endDate) : null,
+            serviceType: service.serviceType || 'SERVICE',
             // Map snake_case from backend to camelCase for frontend form
             kmTraveled: service.km_traveled,
             waitingHours: service.waiting_hours,
@@ -543,6 +565,11 @@ export class ServiceList implements OnInit {
     getMmStatusLabel(status: string) {
         const found = this.statuses.find(s => s.value === status);
         return found ? found.label : status;
+    }
+
+    getServiceTypeLabel(type: string) {
+        const found = this.serviceTypes.find(t => t.value === type);
+        return found ? found.label : type;
     }
 
     get calculateClientTotal(): number {

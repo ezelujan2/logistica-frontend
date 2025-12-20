@@ -15,6 +15,8 @@ export const appRoutes: Routes = [
             { path: '', component: Dashboard },
             { path: 'services', redirectTo: 'services/all', pathMatch: 'full' },
             { path: 'services/:status', loadComponent: () => import('./app/pages/service-list/service-list').then((m) => m.ServiceList) },
+            { path: 'advances', loadComponent: () => import('./app/pages/advances/advance-list').then(m => m.AdvanceList) },
+            { path: 'settlements', loadComponent: () => import('./app/pages/settlements/settlement-list').then(m => m.SettlementList) },
             { path: 'clients', loadComponent: () => import('./app/pages/client-list/client-list').then((m) => m.ClientList) },
             { path: 'drivers', loadComponent: () => import('./app/pages/driver-list/driver-list').then((m) => m.DriverList) },
             { path: 'vehicles', loadComponent: () => import('./app/pages/vehicle-list/vehicle-list').then((m) => m.VehicleList) },

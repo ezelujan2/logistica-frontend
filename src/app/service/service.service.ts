@@ -6,7 +6,9 @@ import { environment } from '../../environments/environment';
 
 export interface Service {
     id?: number;
-    date: Date;
+    startDate: Date;
+    endDate?: Date;
+    serviceType: string;
     origin: string;
     destination: string;
     details?: string;
