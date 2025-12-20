@@ -1,4 +1,5 @@
 import { Component, OnInit } from '@angular/core';
+import { InvoiceService } from '../../service/invoice.service';
 import { CommonModule } from '@angular/common';
 import { TableModule } from 'primeng/table';
 import { ButtonModule } from 'primeng/button';
@@ -21,6 +22,8 @@ import { Driver, DriverService } from '../../service/driver.service';
 import { Vehicle, VehicleService } from '../../service/vehicle.service';
 import { ToastModule } from 'primeng/toast';
 import { MessageService } from 'primeng/api';
+import { PrimeNG } from 'primeng/config';
+import { TooltipModule } from 'primeng/tooltip';
 import { PanelModule } from 'primeng/panel';
 import { DividerModule } from 'primeng/divider';
 import { ActivatedRoute } from '@angular/router';
@@ -33,17 +36,20 @@ import { ActivatedRoute } from '@angular/router';
             <div class="font-semibold text-xl mb-4">Servicios (Viajes)</div>
 
             <!-- Acciones Masivas -->
-            <div *ngIf="selectedServices.length > 0" class="flex gap-2 mb-4 p-3 bg-blue-50 dark:bg-blue-900/20 rounded-xl border border-blue-100 dark:border-blue-800 items-center animate-fadein">
+            <div *ngIf="selectedServices.length > 0 && activeStatusFilter !== 'CREATED' && activeStatusFilter !== 'PENDING'" class="flex gap-2 mb-4 p-3 bg-blue-50 dark:bg-blue-900/20 rounded-xl border border-blue-100 dark:border-blue-800 items-center animate-fadein">
                 <span class="font-bold text-blue-700 dark:text-blue-300">{{selectedServices.length}} seleccionados</span>
                 <p-divider layout="vertical"></p-divider>
-                <p-button label="Ver Resumen / Facturar" icon="pi pi-receipt" severity="success" [text]="true" (click)="openSummary()"></p-button>
+                <p-button label="Ver Resumen" icon="pi pi-receipt" severity="success" [text]="true" (click)="openSummary()"></p-button>
             </div>
 
             <p-table #dt1 [value]="services" [(selection)]="selectedServices" dataKey="id" [rows]="10" [rowsPerPageOptions]="[10, 25, 50]" [loading]="loading" [paginator]="true"
-                [globalFilterFields]="['origin', 'destination', 'status']" styleClass="p-datatable-sm" responsiveLayout="stack" breakpoint="960px">
+                [globalFilterFields]="['route', 'status', 'clientNames']" styleClass="p-datatable-sm" responsiveLayout="stack" breakpoint="960px">
                 <ng-template pTemplate="caption">
                     <div class="flex flex-col md:flex-row justify-between items-center gap-4 md:gap-0">
-                        <span class="text-xl font-bold">{{ getHeaderTitle() }}</span>
+                        <div class="flex items-center gap-2">
+                            <span class="text-xl font-bold">{{ getHeaderTitle() }}</span>
+                            <p-button label="Limpiar Filtros" icon="pi pi-filter-slash" [outlined]="true" severity="secondary" size="small" (click)="clear(dt1)" />
+                        </div>
                         <div class="flex flex-col md:flex-row gap-2 w-full md:w-auto">
                             <p-button label="Nuevo Servicio" icon="pi pi-plus" (click)="openNew()" styleClass="w-full md:w-auto" />
                             <p-button label="Configuración" icon="pi pi-cog" severity="secondary" (click)="openConfig()" styleClass="w-full md:w-auto" />
@@ -55,16 +61,70 @@ import { ActivatedRoute } from '@angular/router';
                     </div>
                 </ng-template>
                 <ng-template pTemplate="header">
-                    <tr>
-                        <th style="width: 4rem"><p-tableHeaderCheckbox></p-tableHeaderCheckbox></th>
-                        <th pSortableColumn="startDate">Inicio <p-sortIcon field="startDate" /></th>
-                        <th pSortableColumn="serviceType">Tipo <p-sortIcon field="serviceType" /></th>
-                        <th pSortableColumn="origin">Origen <p-sortIcon field="origin" /></th>
-                        <th pSortableColumn="destination">Destino <p-sortIcon field="destination" /></th>
-                        <th>Detalles</th>
-                        <th>Clientes</th>
-                        <th>Choferes</th>
-                        <th>Estado</th>
+                    <tr class="text-sm">
+                        <th style="width: 3rem"><p-tableHeaderCheckbox></p-tableHeaderCheckbox></th>
+                        <th pSortableColumn="startDate" style="min-width: 10rem">
+                            <div class="flex items-center gap-2">
+                                Inicio <p-sortIcon field="startDate" />
+                                <p-columnFilter type="date" field="startDate" display="menu" [showAddButton]="false"></p-columnFilter>
+                            </div>
+                        </th>
+                        <th pSortableColumn="serviceType" style="min-width: 8rem">Tipo <p-sortIcon field="serviceType" /></th>
+                        <th pSortableColumn="route" style="min-width: 15rem">
+                             <div class="flex items-center gap-2">
+                                Trayecto <p-sortIcon field="route" />
+                                <p-columnFilter type="text" field="route" display="menu" [showAddButton]="false"></p-columnFilter>
+                            </div>
+                        </th>
+                        <th style="min-width: 10rem">Detalles</th>
+                        <th pSortableColumn="clientNames" style="min-width: 10rem">
+                             <div class="flex items-center gap-2">
+                                Clientes <p-sortIcon field="clientNames" />
+                                <p-columnFilter field="clientNames" matchMode="in" display="menu" [showMatchModes]="false" [showOperator]="false" [showAddButton]="false">
+                                    <ng-template pTemplate="filter" let-value let-filter="filterCallback">
+                                        <p-multiSelect [ngModel]="value" [options]="clientFilterOptions" placeholder="Tipos" (onChange)="filter($event.value)" optionLabel="name" optionValue="value" appendTo="body" display="chip">
+                                             <ng-template let-option pTemplate="item">
+                                                <div class="inline-block vertical-align-middle">
+                                                    <span>{{option.name}}</span>
+                                                </div>
+                                            </ng-template>
+                                        </p-multiSelect>
+                                    </ng-template>
+                                </p-columnFilter>
+                            </div>
+                        </th>
+                        <th pSortableColumn="driverNames" style="min-width: 10rem">
+                            <div class="flex items-center gap-2">
+                                Choferes <p-sortIcon field="driverNames" />
+                                 <p-columnFilter field="driverNames" matchMode="in" display="menu" [showMatchModes]="false" [showOperator]="false" [showAddButton]="false">
+                                    <ng-template pTemplate="filter" let-value let-filter="filterCallback">
+                                        <p-multiSelect [ngModel]="value" [options]="driverFilterOptions" placeholder="Tipos" (onChange)="filter($event.value)" optionLabel="name" optionValue="value" appendTo="body" display="chip">
+                                             <ng-template let-option pTemplate="item">
+                                                <div class="inline-block vertical-align-middle">
+                                                    <span>{{option.name}}</span>
+                                                </div>
+                                            </ng-template>
+                                        </p-multiSelect>
+                                    </ng-template>
+                                </p-columnFilter>
+                            </div>
+                        </th>
+                        <th style="min-width: 10rem">
+                            <div class="flex items-center gap-2">
+                                Estado
+                                <p-columnFilter field="status" matchMode="in" display="menu" [showMatchModes]="false" [showOperator]="false" [showAddButton]="false">
+                                    <ng-template pTemplate="filter" let-value let-filter="filterCallback">
+                                        <p-multiSelect [ngModel]="value" [options]="statuses" placeholder="Todos" (onChange)="filter($event.value)" optionLabel="label" optionValue="value" appendTo="body">
+                                            <ng-template let-option pTemplate="item">
+                                                <div class="inline-block vertical-align-middle">
+                                                    <p-tag [value]="option.label" [severity]="getSeverity(option.value)"></p-tag>
+                                                </div>
+                                            </ng-template>
+                                        </p-multiSelect>
+                                    </ng-template>
+                                </p-columnFilter>
+                            </div>
+                        </th>
                         <th>Acciones</th>
                     </tr>
                 </ng-template>
@@ -73,17 +133,25 @@ import { ActivatedRoute } from '@angular/router';
                         <td><p-tableCheckbox [value]="service"></p-tableCheckbox></td>
                         <td>{{ service.startDate | date:'dd/MM/yyyy HH:mm' }}</td>
                         <td><p-tag [value]="getServiceTypeLabel(service.serviceType)" severity="info"></p-tag></td>
-                        <td>{{ service.origin }}</td>
-                        <td>{{ service.destination }}</td>
+                        <td>{{ service.route }}</td>
                         <td>{{ service.details }}</td>
                         <td>
-                            <span *ngFor="let c of service.clients; let last=last">{{c.name}}{{!last ? ', ' : ''}}</span>
+                            {{ service.clientNames }}
                         </td>
                         <td>
-                            <span *ngFor="let d of service.drivers; let last=last">{{d.name}}{{!last ? ', ' : ''}}</span>
+                            {{ service.driverNames }}
                         </td>
                         <td><p-tag [value]="getMmStatusLabel(service.status)" [severity]="getSeverity(service.status)" /></td>
                         <td>
+                            <p-button *ngIf="getNextStatus(service)"
+                                      icon="pi pi-arrow-right"
+                                      [rounded]="true"
+                                      [text]="true"
+                                      severity="success"
+                                      (click)="advanceStatus(service)"
+                                      [pTooltip]="'Avanzar a ' + getMmStatusLabel(getNextStatus(service) || '')"
+                                      tooltipPosition="left">
+                            </p-button>
                             <p-button icon="pi pi-pencil" [rounded]="true" [text]="true" (click)="editService(service)" />
                             <p-button icon="pi pi-trash" [rounded]="true" [text]="true" severity="danger" (click)="deleteService(service)" />
                         </td>
@@ -115,7 +183,7 @@ import { ActivatedRoute } from '@angular/router';
                                     </div>
                                     <div class="flex flex-col gap-2">
                                         <label for="status">Estado</label>
-                                        <p-select [options]="statuses" [(ngModel)]="service.status" optionLabel="label" optionValue="value" appendTo="body" styleClass="w-full"></p-select>
+                                        <p-select [options]="statuses" [(ngModel)]="service.status" optionLabel="label" optionValue="value" appendTo="body" styleClass="w-full" [disabled]="true"></p-select>
                                     </div>
                                     <div class="flex flex-col gap-2">
                                         <label for="billingType">Tipo de Facturación</label>
@@ -209,9 +277,21 @@ import { ActivatedRoute } from '@angular/router';
                             <!-- Totales Cards -->
                             <div class="grid grid-cols-2 gap-4">
                                 <!-- Card Cliente -->
+                                <!-- Card Cliente -->
                                 <div class="bg-blue-50 dark:bg-blue-900/20 p-4 rounded-xl border border-blue-100 dark:border-blue-800 shadow-sm flex flex-col items-center justify-center">
                                     <span class="text-blue-600 dark:text-blue-400 text-sm font-semibold uppercase tracking-wider mb-1">Total Cliente</span>
-                                    <span class="text-2xl font-bold text-gray-800 dark:text-white">{{ calculateClientTotal | currency:'USD' }}</span>
+
+                                    <div class="flex flex-col items-center">
+                                        <!-- Net -->
+                                        <span class="text-sm text-gray-600 dark:text-gray-300">Neto: {{ calculateClientNet | currency:'USD' }}</span>
+
+                                        <!-- Tax -->
+                                        <span *ngIf="calculateClientTax > 0" class="text-xs text-blue-600 font-bold">+ IVA (21%): {{ calculateClientTax | currency:'USD' }}</span>
+
+                                        <!-- Total -->
+                                        <span class="text-2xl font-bold text-gray-800 dark:text-white mt-1">{{ calculateClientTotal | currency:'USD' }}</span>
+                                    </div>
+
                                     <span *ngIf="service.discountPercentage" class="text-xs text-green-600 mt-1">Desc. {{service.discountPercentage}}% aplicado</span>
                                 </div>
 
@@ -310,21 +390,22 @@ import { ActivatedRoute } from '@angular/router';
                                         </div>
                                         <div class="flex flex-col items-end">
                                             <!-- Fallback logic for price handling -->
-                                            <div *ngIf="s.discountPercentage; else noDiscount">
-                                                 <span class="text-xs text-gray-400 line-through mr-1">{{ ((s.total_amount || s.totalAmount || 0) + getDiscountValue(s)) | currency:'USD' }}</span>
-                                                 <span class="font-bold text-gray-800 dark:text-white">{{ (s.total_amount || s.totalAmount || 0) | currency:'USD' }}</span>
-                                                 <div class="flex justify-end mt-1">
-                                                     <p-tag severity="success" styleClass="text-[10px] py-0 px-1">
-                                                         <span class="flex items-center gap-1">
-                                                             <i class="pi pi-tag text-[10px]"></i>
-                                                             <span>-{{s.discountPercentage}}% ({{getDiscountValue(s) | currency:'USD'}})</span>
-                                                         </span>
-                                                     </p-tag>
+                                             @if ((s.discountPercentage || 0) > 0) {
+                                                 <div class="flex flex-col items-end">
+                                                      <!-- Original Price -->
+                                                      <span class="text-xs text-gray-400 line-through">{{ (getServiceNet(s) + getDiscountValue(s)) | currency:'USD' }}</span>
+
+                                                      <!-- Discount Row -->
+                                                      <span class="text-xs text-green-600 font-semibold mb-1">
+                                                          Descuento {{s.discountPercentage}}%: -{{ getDiscountValue(s) | currency:'USD' }}
+                                                      </span>
+
+                                                      <!-- Net Price -->
+                                                      <span class="font-bold text-gray-800 dark:text-white">{{ getServiceNet(s) | currency:'USD' }}</span>
                                                  </div>
-                                            </div>
-                                            <ng-template #noDiscount>
-                                                <span class="font-bold text-gray-800 dark:text-white">{{ (s.total_amount || s.totalAmount || 0) | currency:'USD' }}</span>
-                                            </ng-template>
+                                             } @else {
+                                                 <span class="font-bold text-gray-800 dark:text-white">{{ getServiceNet(s) | currency:'USD' }}</span>
+                                             }
                                         </div>
                                     </div>
                                     <span *ngIf="s.details" class="text-xs text-gray-500 italic px-2 border-l-2 border-gray-300">{{ s.details }}</span>
@@ -332,9 +413,9 @@ import { ActivatedRoute } from '@angular/router';
                             </div>
                         </div>
 
-                        <div class="flex items-center gap-2">
-                            <p-checkbox [(ngModel)]="summaryConfig.addVat" [binary]="true" inputId="summaryVat" (onChange)="calculateSummaryTotal()"></p-checkbox>
-                            <label for="summaryVat">Adicionar 21% IVA</label>
+                        <!-- Auto-calculated VAT based on service Billing Type -->
+                        <div class="text-xs text-gray-500 mb-2">
+                             * El IVA se calcula automáticamente según el tipo de facturación de cada servicio.
                         </div>
 
                         <p-divider></p-divider>
@@ -344,10 +425,10 @@ import { ActivatedRoute } from '@angular/router';
                                  <span>Subtotal:</span>
                                  <span>{{ summaryConfig.subtotal | currency:'USD' }}</span>
                              </div>
-                             <div class="flex justify-between text-blue-600" *ngIf="summaryConfig.addVat">
-                                 <span>IVA (21%):</span>
-                                 <span>+ {{ summaryConfig.tax | currency:'USD' }}</span>
-                             </div>
+                              <div class="flex justify-between text-blue-600" *ngIf="summaryConfig.tax > 0">
+                                  <span>IVA (21%):</span>
+                                  <span>+ {{ summaryConfig.tax | currency:'USD' }}</span>
+                              </div>
                              <div class="flex justify-between font-bold text-xl mt-2 p-2 bg-gray-100 dark:bg-surface-700 rounded">
                                  <span>Total:</span>
                                  <span>{{ summaryConfig.total | currency:'USD' }}</span>
@@ -356,15 +437,16 @@ import { ActivatedRoute } from '@angular/router';
                     </div>
                 </ng-template>
                 <ng-template pTemplate="footer">
-                    <p-button label="Cerrar" icon="pi pi-times" [text]="true" (click)="summaryDialog = false" />
-                    <!-- Placeholder for future action -->
-                    <!-- <p-button label="Confirmar" icon="pi pi-check" (click)="confirmSummary()" /> -->
+                    <div class="flex gap-2">
+                        <p-button label="Generar Factura" icon="pi pi-receipt" severity="success" (click)="generateInvoice()" [loading]="loading" />
+                        <p-button label="Cerrar" icon="pi pi-times" [text]="true" (click)="summaryDialog = false" />
+                    </div>
                 </ng-template>
             </p-dialog>
         </div>
     `,
     standalone: true,
-    imports: [CommonModule, TableModule, ButtonModule, InputTextModule, IconFieldModule, InputIconModule, TagModule, DialogModule, FormsModule, SelectModule, MultiSelectModule, InputNumberModule, TextareaModule, DatePickerModule, ToastModule, PanelModule, DividerModule, CheckboxModule],
+    imports: [CommonModule, TableModule, ButtonModule, InputTextModule, IconFieldModule, InputIconModule, TagModule, DialogModule, FormsModule, SelectModule, MultiSelectModule, InputNumberModule, TextareaModule, DatePickerModule, ToastModule, PanelModule, DividerModule, CheckboxModule, TooltipModule],
 
     providers: [MessageService, ServiceService, ClientService, DriverService, VehicleService, ConfigurationService]
 })
@@ -377,6 +459,9 @@ export class ServiceList implements OnInit {
     driversList: Driver[] = [];
     vehiclesList: Vehicle[] = [];
 
+    clientFilterOptions: any[] = [];
+    driverFilterOptions: any[] = [];
+
     loading: boolean = true;
     serviceDialog: boolean = false;
     configDialog: boolean = false;
@@ -387,10 +472,9 @@ export class ServiceList implements OnInit {
     statuses = [
         { label: 'Creado', value: 'CREATED' },
         { label: 'Pendiente', value: 'PENDING' },
-        { label: 'Detalles Enviados', value: 'DETAILS_SENT' },
-        { label: 'Verificado', value: 'VERIFIED' },
-        { label: 'Facturado', value: 'INVOICED' },
-        { label: 'Factura Enviada', value: 'INVOICE_SENT' },
+        { label: 'Pendiente Detalles', value: 'PENDING_DETAILS' },
+        { label: 'A Facturar', value: 'PENDING_INVOICE' },
+        { label: 'Pendiente Pago', value: 'PAYMENT_PENDING' },
         { label: 'Pagado', value: 'PAID' },
         { label: 'Cancelado', value: 'CANCELLED' }
     ];
@@ -415,6 +499,8 @@ export class ServiceList implements OnInit {
         { label: 'Conducción', value: 'DRIVING' }
     ];
 
+
+
     constructor(
         private serviceService: ServiceService,
         private clientService: ClientService,
@@ -422,40 +508,142 @@ export class ServiceList implements OnInit {
         private vehicleService: VehicleService,
         private configService: ConfigurationService,
         private messageService: MessageService,
-        private route: ActivatedRoute
+        private route: ActivatedRoute,
+        private invoiceService: InvoiceService, // Injected
+        private primeng: PrimeNG
     ) {}
 
+
+
+    // Summary Actions
+    async generateInvoice() {
+        if (!this.selectedServices.length) return;
+
+        // Validate same client (Invoice usually per client)
+        const firstClientId = this.selectedServices[0].clientIds?.[0]; // Assuming single client per service for billing?
+        // Or if multiple, we pick the first one of the first service? logic is tricky if mixed.
+        // Let's assume user filters by Client or selects same client.
+
+        if (!firstClientId) {
+            this.messageService.add({ severity: 'error', summary: 'Error', detail: 'Los servicios deben tener cliente asignado' });
+            return;
+        }
+
+        // Check mix
+        const mixed = this.selectedServices.some(s => !s.clientIds?.includes(firstClientId));
+        if (mixed) {
+             this.messageService.add({ severity: 'warn', summary: 'Atención', detail: 'Se generará factura para el cliente del primer servicio seleccionado. Asegúrese de seleccionar servicios del mismo cliente.' });
+             // proceed? or block? Let's proceed with firstClientId.
+        }
+
+        try {
+            this.loading = true;
+            await this.invoiceService.createInvoice(
+                this.selectedServices.map(s => s.id as number),
+                firstClientId
+            );
+            this.messageService.add({ severity: 'success', summary: 'Factura Generada', detail: 'La factura ha sido creada correctamente.' });
+            this.summaryDialog = false;
+            this.selectedServices = [];
+            this.loadAllData();
+        } catch (error: any) {
+            console.error(error);
+            this.messageService.add({ severity: 'error', summary: 'Error', detail: error.message || 'Error generando factura' });
+        } finally {
+            this.loading = false;
+        }
+    }
+
+
     ngOnInit() {
+        // Spanish Localization for PrimeNG
+        this.primeng.setTranslation({
+            startsWith: 'Comienza con',
+            contains: 'Contiene',
+            notContains: 'No contiene',
+            endsWith: 'Termina con',
+            equals: 'Igual a',
+            notEquals: 'No igual a',
+            noFilter: 'Sin filtro',
+            lt: 'Menor que',
+            lte: 'Menor o igual a',
+            gt: 'Mayor que',
+            gte: 'Mayor o igual a',
+            is: 'Es',
+            isNot: 'No es',
+            before: 'Antes',
+            after: 'Después',
+            dateIs: 'Fecha es',
+            dateIsNot: 'Fecha no es',
+            dateBefore: 'Fecha antes',
+            dateAfter: 'Fecha después',
+            clear: 'Limpiar',
+            apply: 'Aplicar',
+            matchAll: 'Coincidir todo',
+            matchAny: 'Coincidir cualquiera',
+            addRule: 'Agregar regla',
+            removeRule: 'Eliminar regla',
+            accept: 'Aceptar',
+            reject: 'Cancelar',
+            choose: 'Elegir',
+            upload: 'Subir',
+            cancel: 'Cancelar',
+            dayNames: ["Domingo", "Lunes", "Martes", "Miércoles", "Jueves", "Viernes", "Sábado"],
+            dayNamesShort: ["Dom", "Lun", "Mar", "Mié", "Jue", "Vie", "Sáb"],
+            dayNamesMin: ["Do","Lu","Ma","Mi","Ju","Vi","Sa"],
+            monthNames: ["Enero","Febrero","Marzo","Abril","Mayo","Junio","Julio","Agosto","Septiembre","Octubre","Noviembre","Diciembre"],
+            monthNamesShort: ["Ene", "Feb", "Mar", "Abr", "May", "Jun", "Jul", "Ago", "Sep", "Oct", "Nov", "Dic"],
+            dateFormat: 'dd/mm/yy',
+            today: 'Hoy',
+            weekHeader: 'Sem'
+        });
+
         this.route.paramMap.subscribe(params => {
             const statusParam = params.get('status');
             this.handleStatusChange(statusParam);
         });
+
+        // Deep Link Handling
+        this.route.queryParams.subscribe(params => {
+            if (params['id']) {
+                const id = Number(params['id']);
+                // Wait for data load if needed, but since we call loadAllData() anyway:
+                // We'll check if services are loaded.
+                if (this.services.length > 0) {
+                     this.findAndOpenService(id);
+                } else {
+                     // If data not loaded yet, we can rely on loadAllData calling a hook or just
+                     // re-checking after load.
+                     // Simple approach: After loadAllData finishes, checking for pending deep link.
+                }
+            }
+        });
     }
 
+    // In handleStatusChange
     handleStatusChange(status: string | null) {
         const statusMap: any = {
             'created': 'CREATED',
             'pending': 'PENDING',
-            'details_sent': 'DETAILS_SENT',
-            'verified': 'VERIFIED',
-            'invoiced': 'INVOICED',
-            'invoice_sent': 'INVOICE_SENT',
+            'pending_details': 'PENDING_DETAILS',
+            'pending_invoice': 'PENDING_INVOICE',
+            'payment_pending': 'PAYMENT_PENDING',
             'paid': 'PAID',
             'cancelled': 'CANCELLED',
             'all': undefined
         };
         this.activeStatusFilter = statusMap[status || 'all'];
+        this.selectedServices = []; // Clear selection
         this.loadAllData();
     }
 
     getHeaderTitle() {
         const titles: any = {
             'CREATED': 'Servicios Creados',
-            'PENDING': 'Servicios Pendientes',
-            'DETAILS_SENT': 'Detalles Enviados',
-            'VERIFIED': 'Servicios Verificados',
-            'INVOICED': 'Servicios Facturados',
-            'INVOICE_SENT': 'Factura Enviada',
+            'PENDING': 'Recién Creados / Pendientes',
+            'PENDING_DETAILS': 'Pendiente de Envio de Detalles',
+            'PENDING_INVOICE': 'Pendiente de Facturar',
+            'PAYMENT_PENDING': 'Pendiente de Pago',
             'PAID': 'Servicios Pagados',
             'CANCELLED': 'Servicios Cancelados'
         };
@@ -477,17 +665,53 @@ export class ServiceList implements OnInit {
                 this.vehicleService.getVehicles()
             ]);
 
-            this.services = services;
+            this.services = services.map((s: any) => ({
+                ...s,
+                discountPercentage: s.discount_percentage,
+                kmTraveled: s.km_traveled,
+                waitingHours: s.waiting_hours,
+                billingType: s.billing_type,
+                startDate: new Date(s.startDate),
+                endDate: s.endDate ? new Date(s.endDate) : null,
+                clientNames: s.clients ? s.clients.map((c: any) => c.name).join(', ') : '',
+                driverNames: s.drivers ? s.drivers.map((d: any) => d.name).join(', ') : '',
+                route: `${s.origin} -> ${s.destination}`
+            }));
             this.clientsList = clients;
             this.driversList = drivers;
             this.vehiclesList = vehicles;
+
+            // Deduplicate for Filters (by Name)
+            const uniqueClientNames = [...new Set(clients.map(c => c.name))].sort();
+            this.clientFilterOptions = uniqueClientNames.map(name => ({ name: name, value: name }));
+
+            const uniqueDriverNames = [...new Set(drivers.map(d => d.name))].sort();
+            this.driverFilterOptions = uniqueDriverNames.map(name => ({ name: name, value: name }));
 
         } catch (error) {
             console.error(error);
             this.messageService.add({ severity: 'error', summary: 'Error', detail: 'Error cargando datos iniciales' });
         } finally {
             this.loading = false;
+
+             // Check for deep link
+             const id = this.route.snapshot.queryParamMap.get('id');
+             if (id) {
+                 this.findAndOpenService(Number(id));
+             }
         }
+    }
+
+    findAndOpenService(id: number) {
+        const found = this.services.find(s => s.id === id);
+        if (found) {
+            this.editService(found);
+        }
+    }
+
+    clear(table: any) {
+        table.clear();
+        this.selectedServices = [];
     }
 
     openNew() {
@@ -548,29 +772,21 @@ export class ServiceList implements OnInit {
     }
 
     editService(service: any) {
-        // Prepare service object for editing (map relations to IDs if needed)
-        // Since backend returns arrays of objects for relations, we might need to exact IDs
-        // However, Prisma usually sends full objects if included.
-        // Let's assume input needs IDs.
-
         this.service = {
             ...service,
             startDate: new Date(service.startDate),
             endDate: service.endDate ? new Date(service.endDate) : null,
             serviceType: service.serviceType || 'SERVICE',
-            // Map snake_case from backend to camelCase for frontend form
             kmTraveled: service.km_traveled,
             waitingHours: service.waiting_hours,
             billingType: service.billing_type,
 
-            // Map Snapshots to Overrides (so they appear as the current values being edited)
             kmPriceOverride: service.km_price_snapshot,
             hourPriceOverride: service.hour_price_snapshot,
             driverKmPriceOverride: service.driver_km_price_snapshot,
             driverHourPriceOverride: service.driver_hour_price_snapshot,
 
             discountPercentage: service.discount_percentage,
-
             clientIds: service.clients ? service.clients.map((c: any) => c.id) : [],
             driverIds: service.drivers ? service.drivers.map((d: any) => d.id) : [],
             vehicleIds: service.vehicles ? service.vehicles.map((v: any) => v.id) : [],
@@ -584,25 +800,79 @@ export class ServiceList implements OnInit {
         this.submitted = false;
     }
 
+    isValidForCreation(service: any): boolean {
+        // Minimum requirements to exist (Status: CREATED)
+        return !!(service.clientIds && service.clientIds.length > 0 &&
+                  service.startDate &&
+                  service.endDate &&
+                  service.origin &&
+                  service.destination);
+    }
+
+    isDataComplete(service: any): boolean {
+        // Requirements for PENDING (Ready for execution)
+
+        // 1. Check Clients (Form or Row)
+        const hasClient = (service.clientIds && service.clientIds.length > 0) || (service.clients && service.clients.length > 0);
+
+        // 2. Check Dates & Locations
+        const hasBasic = service.startDate && service.endDate && service.origin && service.destination;
+
+        if (!hasClient || !hasBasic) return false;
+
+        // 3. Check KM
+        const hasKm = service.kmTraveled !== undefined && service.kmTraveled !== null && Number(service.kmTraveled) > 0;
+
+        // 4. Check Driver & Vehicle (Form uses Ids, Row uses relations)
+        const hasDriver = (service.driverIds && service.driverIds.length > 0) || (service.drivers && service.drivers.length > 0);
+        const hasVehicle = (service.vehicleIds && service.vehicleIds.length > 0) || (service.vehicles && service.vehicles.length > 0);
+
+        // 5. Check Total
+        let total = 0;
+        if (service === this.service) {
+            // Form Context
+            total = this.calculateClientTotal;
+        } else {
+            // Row Context
+            total = Number(service.total_amount || 0);
+        }
+
+        return hasKm && hasDriver && hasVehicle && total > 0;
+    }
+
     async saveService() {
         this.submitted = true;
 
-        if (this.service.origin) { // Basic validation
-            try {
-                // Ensure proper formatting for dates and numbers if needed
-                if (this.service.id) {
-                    await this.serviceService.updateService(this.service.id, this.service);
-                    this.messageService.add({ severity: 'success', summary: 'Éxito', detail: 'Servicio actualizado', life: 3000 });
+        // 1. Validate Minimum Requirements (Creation)
+        if (!this.isValidForCreation(this.service)) {
+            this.messageService.add({ severity: 'error', summary: 'Error', detail: 'Faltan datos obligatorios para crear el servicio (Cliente, Fechas, Origen, Destino)' });
+            return;
+        }
+
+        try {
+            // 2. Determine Status (Auto-promote to PENDING if complete)
+            // Logic: If New OR currently CREATED, we try to promote.
+            if (!this.service.id || this.service.status === 'CREATED') {
+                if (this.isDataComplete(this.service)) {
+                     this.service.status = 'PENDING';
                 } else {
-                    await this.serviceService.createService(this.service);
-                    this.messageService.add({ severity: 'success', summary: 'Éxito', detail: 'Servicio creado', life: 3000 });
+                     this.service.status = 'CREATED';
                 }
-                this.serviceDialog = false;
-                this.loadAllData(); // Reload to get fresh data with relations
-            } catch (error) {
-                console.error(error);
-                this.messageService.add({ severity: 'error', summary: 'Error', detail: 'No se pudo guardar el servicio' });
             }
+
+            if (this.service.id) {
+                await this.serviceService.updateService(this.service.id, this.service);
+                this.messageService.add({ severity: 'success', summary: 'Éxito', detail: 'Servicio actualizado', life: 3000 });
+            } else {
+                await this.serviceService.createService(this.service);
+                this.messageService.add({ severity: 'success', summary: 'Éxito', detail: 'Servicio creado', life: 3000 });
+            }
+            this.serviceDialog = false;
+            this.selectedServices = []; // Clear selection
+            this.loadAllData();
+        } catch (error) {
+            console.error(error);
+            this.messageService.add({ severity: 'error', summary: 'Error', detail: 'No se pudo guardar el servicio' });
         }
     }
 
@@ -629,13 +899,68 @@ export class ServiceList implements OnInit {
         switch (status) {
             case 'CREATED': return 'secondary';
             case 'PENDING': return 'warn';
-            case 'DETAILS_SENT': return 'info';
-            case 'VERIFIED': return 'success';
-            case 'INVOICED': return 'warning';
-            case 'INVOICE_SENT': return 'primary';
+            case 'PENDING_DETAILS': return 'info';
+            case 'PENDING_INVOICE': return 'help';
+            case 'PAYMENT_PENDING': return 'primary';
             case 'PAID': return 'success';
             case 'CANCELLED': return 'danger';
             default: return 'contrast';
+        }
+    }
+
+    getNextStatus(service: any): string | null { return this.refinedNextStatus(service); }
+    _legacyNextStatus(service: any): string | null {
+        if (service.status === 'PAID' || service.status === 'CANCELLED') return null;
+
+        const current = service.status;
+        const client = service.clients && service.clients.length > 0 ? service.clients[0] : {};
+        const sendDetails = client.send_details !== false;
+        const sendInvoices = client.send_invoices !== false;
+
+        // Flow: PENDING -> [PENDING_DETAILS] -> [INVOICED] -> PAYMENT_PENDING -> PAID
+
+        if (current === 'PENDING') {
+            if (sendDetails) return 'PENDING_DETAILS';
+            if (sendInvoices) return 'INVOICED';
+            return 'PAYMENT_PENDING';
+        }
+
+        if (current === 'PENDING_DETAILS') {
+            if (sendInvoices) return 'INVOICED';
+            return 'PAYMENT_PENDING';
+        }
+
+        if (current === 'INVOICED') {
+            return 'PAYMENT_PENDING';
+        }
+
+        if (current === 'PAYMENT_PENDING') {
+            return 'PAID';
+        }
+
+        return null;
+    }
+
+    async advanceStatus(service: any) {
+        const next = this.getNextStatus(service);
+        if (!next) return;
+
+        // Prevent moving from CREATED to PENDING if data incomplete
+        if (service.status === 'CREATED' && next === 'PENDING') {
+            if (!this.isDataComplete(service)) {
+                this.messageService.add({ severity: 'warn', summary: 'Incompleto', detail: 'Faltan datos (Chofer, Vehículo, Total > 0) para pasar a Pendiente.' });
+                return;
+            }
+        }
+
+        // Optimistic UI update or simple reload
+        // Let's call update
+        try {
+            await this.serviceService.updateService(service.id, { status: next });
+            this.messageService.add({ severity: 'success', summary: 'Actualizado', detail: `Estado cambiado a ${this.getMmStatusLabel(next)}` });
+            this.loadAllData();
+        } catch (error) {
+            this.messageService.add({ severity: 'error', summary: 'Error', detail: 'No se pudo actualizar el estado' });
         }
     }
 
@@ -649,7 +974,7 @@ export class ServiceList implements OnInit {
         return found ? found.label : type;
     }
 
-    get calculateClientTotal(): number {
+    get calculateClientNet(): number {
         const km = this.service.kmTraveled || 0;
         const hours = this.service.waitingHours || 0;
         const kmPrice = this.service.kmPriceOverride || 0;
@@ -665,6 +990,19 @@ export class ServiceList implements OnInit {
         return subtotal - discount;
     }
 
+    get calculateClientTax(): number {
+        const net = this.calculateClientNet;
+        const bType = this.service.billingType;
+        if (bType === 'OFFICIAL_A' || bType === 'MONOTRIBUTO') {
+            return net * 0.21;
+        }
+        return 0;
+    }
+
+    get calculateClientTotal(): number {
+        return this.calculateClientNet + this.calculateClientTax;
+    }
+
     get calculateDriverTotal(): number {
         const km = this.service.kmTraveled || 0;
         const hours = this.service.waitingHours || 0;
@@ -677,30 +1015,157 @@ export class ServiceList implements OnInit {
     // Summary View State
     selectedServices: Service[] = [];
     summaryDialog: boolean = false;
-    summaryConfig: any = { addVat: false, subtotal: 0, tax: 0, total: 0 };
+    summaryConfig: any = { subtotal: 0, tax: 0, total: 0 };
 
     openSummary() {
         if (!this.selectedServices.length) return;
-        this.summaryConfig.addVat = false;
         this.calculateSummaryTotal();
         this.summaryDialog = true;
     }
 
     calculateSummaryTotal() {
-        // Handle snake_case vs camelCase if necessary (matching what we did before)
-        this.summaryConfig.subtotal = this.selectedServices.reduce((sum, s: any) => sum + Number(s.total_amount || s.totalAmount || 0), 0);
-        this.summaryConfig.tax = this.summaryConfig.addVat ? this.summaryConfig.subtotal * 0.21 : 0;
-        this.summaryConfig.total = this.summaryConfig.subtotal + this.summaryConfig.tax;
+        let subtotal = 0;
+        let tax = 0;
+
+        this.selectedServices.forEach((s: any) => {
+            // Logic to calculate Net and Tax for each service
+            // Note: If using Row Data, s.total_amount might handle it?
+            // BUT backend update logic puts Total = Net + Tax.
+            // So s.total_amount IS the final.
+            // We need to derive Net and Tax if they are not stored separately or if we want to recalc.
+            // If we migrated and populated, `net_amount` and `tax_amount` are in DB.
+            // BUT `loadAllData` currently fetches existing struct.
+            // I should use `net_amount` and `tax_amount` properties IF they exist.
+            // If not, calculate.
+
+            let sNet = 0;
+            let sTax = 0;
+
+            // Prefer DB props if available
+            if (s.net_amount !== undefined) {
+                 sNet = Number(s.net_amount);
+                 sTax = Number(s.tax_amount || 0);
+            } else {
+                 // Fallback (e.g. optimistic UI before reload or old data)
+                 // Start with s.total_amount (which was previously net)
+                 // This is tricky during migration transition.
+                 // let's assume total_amount is Net unless we know otherwise.
+                 // But wait, users said logic changed -> total includes tax.
+                 // If data is old, total = net, tax = 0.
+                 // If data is new, net + tax = total.
+                 // Safest: Recalculate based on values
+                 const km = Number(s.km_traveled || s.kmTraveled || 0);
+                 // Need prices snapshot... usually in row.
+                 // This is becoming complex to do client side accurately for summary without trusting DB.
+                 // Let's trust `total_amount` is the FINAL price.
+                 // If s.tax_amount exists, we use it.
+
+                 const total = Number(s.total_amount || 0);
+                 if (s.tax_amount && Number(s.tax_amount) > 0) {
+                     sTax = Number(s.tax_amount);
+                     sNet = total - sTax;
+                 } else {
+                     // Maybe it should have tax but doesn't?
+                     const bType = s.billing_type || s.billingType;
+                     if (bType === 'OFFICIAL_A' || bType === 'MONOTRIBUTO') {
+                         // Should have tax. Implies total includes it?
+                         // Or we should add it?
+                         // Prior to migration, total didn't have tax.
+                         // So if I add tax here, I might be double counting if backend already did.
+                         // Given I just added backend logic, only newly saved services have tax.
+                         // Old services have 0 tax.
+                         // I will display what exists.
+                         sNet = total;
+                         sTax = 0;
+                     } else {
+                         sNet = total;
+                         sTax = 0;
+                     }
+                 }
+            }
+            subtotal += sNet;
+            tax += sTax;
+        });
+
+        this.summaryConfig.subtotal = subtotal;
+        this.summaryConfig.tax = tax;
+        this.summaryConfig.total = subtotal + tax;
     }
 
     getDiscountValue(service: any): number {
         if (!service.discountPercentage) return 0;
+        // If total_amount includes tax, discount was applied to NET.
+        // Discount Value = Net * (pct/100).
+        // If we have net_amount, easy.
+
+        let net = 0;
+        if ((service as any).net_amount) {
+            net = Number((service as any).net_amount);
+            // Actually net_amount in DB is AFTER discount.
+            // So Original Net = Net / (1 - rate).
+            // Discount = Original Net - Net.
+             const total = Number(service.total_amount || 0);
+             // Let's use total for simplicity in UI list if exact math is hard.
+             // Or better:
+             const rate = service.discountPercentage / 100;
+             const finalNet = Number((service as any).net_amount || service.total_amount);
+             // Logic: net_amount is post-discount.
+             const originalNet = finalNet / (1 - rate);
+             return originalNet - finalNet;
+        }
+
+        // Fallback for old data
         const total = Number(service.total_amount || service.totalAmount || 0);
-        // Original Price = Total / (1 - pct/100)
-        // Discount = Original - Total
-        // Math: D = T / (1 - rate) - T
         const rate = service.discountPercentage / 100;
         const originalPrice = total / (1 - rate);
         return originalPrice - total;
+    }
+
+    getServiceNet(service: any): number {
+        if (service.net_amount && Number(service.net_amount) > 0) {
+            return Number(service.net_amount);
+        }
+        if (service.tax_amount && Number(service.tax_amount) > 0) {
+             return Number(service.total_amount || 0) - Number(service.tax_amount);
+        }
+        return Number(service.total_amount || service.totalAmount || 0);
+    }
+
+    refinedNextStatus(service: any): string | null {
+        if (service.status === 'PAID' || service.status === 'CANCELLED') return null;
+
+        const current = service.status;
+        const client = (service.clients && service.clients.length > 0) ? service.clients[0] : {};
+        const sendDetails = client.send_details !== false;
+        const sendInvoices = client.send_invoices !== false;
+
+        // Flow: CREATED -> PENDING -> [PENDING_DETAILS] -> [PENDING_INVOICE] -> [INVOICED] -> PAYMENT_PENDING -> PAID
+
+        if (current === 'CREATED') return 'PENDING';
+
+        if (current === 'PENDING') {
+            if (sendDetails) return 'PENDING_DETAILS';
+            if (sendInvoices) return 'PENDING_INVOICE';
+            return 'PAYMENT_PENDING';
+        }
+
+        if (current === 'PENDING_DETAILS') {
+            if (sendInvoices) return 'PENDING_INVOICE';
+            return 'PAYMENT_PENDING';
+        }
+
+        if (current === 'PENDING_INVOICE') {
+            return 'INVOICED';
+        }
+
+        if (current === 'INVOICED') {
+            return 'PAYMENT_PENDING';
+        }
+
+        if (current === 'PAYMENT_PENDING') {
+            return 'PAID';
+        }
+
+        return null;
     }
 }

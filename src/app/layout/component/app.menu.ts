@@ -23,16 +23,16 @@ export class AppMenu {
             {
                 label: 'Home',
                 items: [
+                     { label: 'Inicio', icon: 'pi pi-fw pi-home', routerLink: ['/'] },
                      {
                         label: 'Servicios',
                         icon: 'pi pi-fw pi-briefcase',
                         items: [
                             { label: 'Creados', icon: 'pi pi-fw pi-plus-circle', routerLink: ['/services/created'] },
                             { label: 'Pendientes', icon: 'pi pi-fw pi-clock', routerLink: ['/services/pending'] },
-                            { label: 'Detalles Env.', icon: 'pi pi-fw pi-send', routerLink: ['/services/details_sent'] },
-                            { label: 'Verificados', icon: 'pi pi-fw pi-check-square', routerLink: ['/services/verified'] },
-                            { label: 'Facturados', icon: 'pi pi-fw pi-file-o', routerLink: ['/services/invoiced'] },
-                            { label: 'Fac. Enviada', icon: 'pi pi-fw pi-envelope', routerLink: ['/services/invoice_sent'] },
+                            { label: 'Env. Detalles', icon: 'pi pi-fw pi-send', routerLink: ['/services/pending_details'] },
+                            { label: 'A Facturar', icon: 'pi pi-fw pi-file', routerLink: ['/services/pending_invoice'] },
+                            { label: 'Pendiente Pago', icon: 'pi pi-fw pi-dollar', routerLink: ['/services/payment_pending'] },
                             { label: 'Pagados', icon: 'pi pi-fw pi-wallet', routerLink: ['/services/paid'] },
                             { label: 'Cancelados', icon: 'pi pi-fw pi-times-circle', routerLink: ['/services/cancelled'] },
                             { label: 'General', icon: 'pi pi-fw pi-list', routerLink: ['/services/all'] }
@@ -50,7 +50,7 @@ export class AppMenu {
                      },
                      { label: 'Autos', icon: 'pi pi-fw pi-car', routerLink: ['/vehicles'] },
                      { label: 'Estadísticas', icon: 'pi pi-fw pi-chart-bar', routerLink: ['/statistics'] },
-                     { label: 'Dashboard', icon: 'pi pi-fw pi-home', routerLink: ['/'] }
+                    //  { label: 'Dashboard', icon: 'pi pi-fw pi-home', routerLink: ['/'] }
                 ]
             },
 
@@ -70,7 +70,7 @@ export class AppMenu {
             //         { label: 'Message', icon: 'pi pi-fw pi-comment', routerLink: ['/uikit/message'] },
             //         { label: 'File', icon: 'pi pi-fw pi-file', routerLink: ['/uikit/file'] },
             //         { label: 'Chart', icon: 'pi pi-fw pi-chart-bar', routerLink: ['/uikit/charts'] },
-            //         { label: 'Timeline', icon: 'pi pi-fw pi-calendar', routerLink: ['/uikit/timeline'] },
+                    // { label: 'Timeline', icon: 'pi pi-fw pi-calendar', routerLink: ['/uikit/timeline'] },
             //         { label: 'Misc', icon: 'pi pi-fw pi-circle', routerLink: ['/uikit/misc'] }
             //     ]
             // },

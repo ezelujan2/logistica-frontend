@@ -80,11 +80,11 @@ import { StatisticsService } from '../../service/statistics.service';
 
             <div class="p-4 bg-white dark:bg-surface-900 rounded-xl shadow-sm border border-surface-200 dark:border-surface-700 flex flex-col relative overflow-hidden">
                 <div class="absolute right-0 top-0 p-4 opacity-10">
-                    <i class="pi pi-users text-6xl text-purple-500"></i>
+                    <i class="pi pi-map-marker text-6xl text-purple-500"></i>
                 </div>
-                <span class="text-sm font-semibold text-gray-500 uppercase tracking-wider mb-1">Choferes Activos</span>
-                <span class="text-3xl font-bold text-gray-800 dark:text-white">{{ generalStats?.driversCount }}</span>
-                <span class="text-xs text-purple-500 mt-2 font-medium">Flota registrada</span>
+                <span class="text-sm font-semibold text-gray-500 uppercase tracking-wider mb-1">Total Km</span>
+                <span class="text-3xl font-bold text-gray-800 dark:text-white">{{ generalStats?.totalKm | number:'1.0-0' }} km</span>
+                <span class="text-xs text-purple-500 mt-2 font-medium">Distancia recorrida</span>
             </div>
         </div>
 
