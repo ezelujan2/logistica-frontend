@@ -13,6 +13,7 @@ import { MultiSelectModule } from 'primeng/multiselect';
 import { InputNumberModule } from 'primeng/inputnumber';
 import { TextareaModule } from 'primeng/textarea';
 import { DatePickerModule } from 'primeng/datepicker';
+import { CheckboxModule } from 'primeng/checkbox';
 import { Service, ServiceService } from '../../service/service.service';
 import { ConfigurationService, SystemConfiguration } from '../../service/configuration.service';
 import { Client, ClientService } from '../../service/client.service';
@@ -31,7 +32,14 @@ import { ActivatedRoute } from '@angular/router';
             <p-toast></p-toast>
             <div class="font-semibold text-xl mb-4">Servicios (Viajes)</div>
 
-            <p-table #dt1 [value]="services" dataKey="id" [rows]="10" [rowsPerPageOptions]="[10, 25, 50]" [loading]="loading" [paginator]="true"
+            <!-- Acciones Masivas -->
+            <div *ngIf="selectedServices.length > 0" class="flex gap-2 mb-4 p-3 bg-blue-50 dark:bg-blue-900/20 rounded-xl border border-blue-100 dark:border-blue-800 items-center animate-fadein">
+                <span class="font-bold text-blue-700 dark:text-blue-300">{{selectedServices.length}} seleccionados</span>
+                <p-divider layout="vertical"></p-divider>
+                <p-button label="Ver Resumen / Facturar" icon="pi pi-receipt" severity="success" [text]="true" (click)="openSummary()"></p-button>
+            </div>
+
+            <p-table #dt1 [value]="services" [(selection)]="selectedServices" dataKey="id" [rows]="10" [rowsPerPageOptions]="[10, 25, 50]" [loading]="loading" [paginator]="true"
                 [globalFilterFields]="['origin', 'destination', 'status']" styleClass="p-datatable-sm" responsiveLayout="stack" breakpoint="960px">
                 <ng-template pTemplate="caption">
                     <div class="flex flex-col md:flex-row justify-between items-center gap-4 md:gap-0">
@@ -48,6 +56,7 @@ import { ActivatedRoute } from '@angular/router';
                 </ng-template>
                 <ng-template pTemplate="header">
                     <tr>
+                        <th style="width: 4rem"><p-tableHeaderCheckbox></p-tableHeaderCheckbox></th>
                         <th pSortableColumn="startDate">Inicio <p-sortIcon field="startDate" /></th>
                         <th pSortableColumn="serviceType">Tipo <p-sortIcon field="serviceType" /></th>
                         <th pSortableColumn="origin">Origen <p-sortIcon field="origin" /></th>
@@ -61,6 +70,7 @@ import { ActivatedRoute } from '@angular/router';
                 </ng-template>
                 <ng-template pTemplate="body" let-service>
                     <tr>
+                        <td><p-tableCheckbox [value]="service"></p-tableCheckbox></td>
                         <td>{{ service.startDate | date:'dd/MM/yyyy HH:mm' }}</td>
                         <td><p-tag [value]="getServiceTypeLabel(service.serviceType)" severity="info"></p-tag></td>
                         <td>{{ service.origin }}</td>
@@ -284,10 +294,77 @@ import { ActivatedRoute } from '@angular/router';
                     <p-button label="Guardar" icon="pi pi-check" [text]="true" (click)="saveConfig()" />
                 </ng-template>
             </p-dialog>
+            <p-dialog [(visible)]="summaryDialog" [style]="{ width: '500px' }" header="Resumen de Servicios" [modal]="true" styleClass="p-fluid">
+                <ng-template pTemplate="content">
+                    <div class="flex flex-col gap-4">
+                        <div class="flex flex-col gap-2 p-4 bg-gray-50 dark:bg-surface-800 rounded-lg">
+                            <span class="text-sm text-gray-500">Servicios Seleccionados ({{selectedServices.length}})</span>
+
+                            <!-- Lista Resumen -->
+                            <div class="max-h-80 overflow-y-auto flex flex-col gap-2 mt-2">
+                                <div *ngFor="let s of selectedServices" class="flex flex-col border-b pb-2 gap-1 px-1">
+                                    <div class="flex justify-between items-start">
+                                        <div class="flex flex-col">
+                                            <span class="font-bold text-sm text-gray-800 dark:text-white">{{ s.startDate | date:'dd/MM HH:mm' }} - {{getServiceTypeLabel(s.serviceType)}}</span>
+                                            <span class="text-xs text-gray-600 dark:text-gray-300">{{ s.origin }} <i class="pi pi-arrow-right text-[10px]"></i> {{ s.destination }}</span>
+                                        </div>
+                                        <div class="flex flex-col items-end">
+                                            <!-- Fallback logic for price handling -->
+                                            <div *ngIf="s.discountPercentage; else noDiscount">
+                                                 <span class="text-xs text-gray-400 line-through mr-1">{{ ((s.total_amount || s.totalAmount || 0) + getDiscountValue(s)) | currency:'USD' }}</span>
+                                                 <span class="font-bold text-gray-800 dark:text-white">{{ (s.total_amount || s.totalAmount || 0) | currency:'USD' }}</span>
+                                                 <div class="flex justify-end mt-1">
+                                                     <p-tag severity="success" styleClass="text-[10px] py-0 px-1">
+                                                         <span class="flex items-center gap-1">
+                                                             <i class="pi pi-tag text-[10px]"></i>
+                                                             <span>-{{s.discountPercentage}}% ({{getDiscountValue(s) | currency:'USD'}})</span>
+                                                         </span>
+                                                     </p-tag>
+                                                 </div>
+                                            </div>
+                                            <ng-template #noDiscount>
+                                                <span class="font-bold text-gray-800 dark:text-white">{{ (s.total_amount || s.totalAmount || 0) | currency:'USD' }}</span>
+                                            </ng-template>
+                                        </div>
+                                    </div>
+                                    <span *ngIf="s.details" class="text-xs text-gray-500 italic px-2 border-l-2 border-gray-300">{{ s.details }}</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="flex items-center gap-2">
+                            <p-checkbox [(ngModel)]="summaryConfig.addVat" [binary]="true" inputId="summaryVat" (onChange)="calculateSummaryTotal()"></p-checkbox>
+                            <label for="summaryVat">Adicionar 21% IVA</label>
+                        </div>
+
+                        <p-divider></p-divider>
+
+                        <div class="flex flex-col gap-2">
+                             <div class="flex justify-between">
+                                 <span>Subtotal:</span>
+                                 <span>{{ summaryConfig.subtotal | currency:'USD' }}</span>
+                             </div>
+                             <div class="flex justify-between text-blue-600" *ngIf="summaryConfig.addVat">
+                                 <span>IVA (21%):</span>
+                                 <span>+ {{ summaryConfig.tax | currency:'USD' }}</span>
+                             </div>
+                             <div class="flex justify-between font-bold text-xl mt-2 p-2 bg-gray-100 dark:bg-surface-700 rounded">
+                                 <span>Total:</span>
+                                 <span>{{ summaryConfig.total | currency:'USD' }}</span>
+                             </div>
+                        </div>
+                    </div>
+                </ng-template>
+                <ng-template pTemplate="footer">
+                    <p-button label="Cerrar" icon="pi pi-times" [text]="true" (click)="summaryDialog = false" />
+                    <!-- Placeholder for future action -->
+                    <!-- <p-button label="Confirmar" icon="pi pi-check" (click)="confirmSummary()" /> -->
+                </ng-template>
+            </p-dialog>
         </div>
     `,
     standalone: true,
-    imports: [CommonModule, TableModule, ButtonModule, InputTextModule, IconFieldModule, InputIconModule, TagModule, DialogModule, FormsModule, SelectModule, MultiSelectModule, InputNumberModule, TextareaModule, DatePickerModule, ToastModule, PanelModule, DividerModule],
+    imports: [CommonModule, TableModule, ButtonModule, InputTextModule, IconFieldModule, InputIconModule, TagModule, DialogModule, FormsModule, SelectModule, MultiSelectModule, InputNumberModule, TextareaModule, DatePickerModule, ToastModule, PanelModule, DividerModule, CheckboxModule],
 
     providers: [MessageService, ServiceService, ClientService, DriverService, VehicleService, ConfigurationService]
 })
@@ -595,5 +672,35 @@ export class ServiceList implements OnInit {
         const hourPrice = this.service.driverHourPriceOverride || 0;
 
         return (km * kmPrice) + (hours * hourPrice);
+    }
+
+    // Summary View State
+    selectedServices: Service[] = [];
+    summaryDialog: boolean = false;
+    summaryConfig: any = { addVat: false, subtotal: 0, tax: 0, total: 0 };
+
+    openSummary() {
+        if (!this.selectedServices.length) return;
+        this.summaryConfig.addVat = false;
+        this.calculateSummaryTotal();
+        this.summaryDialog = true;
+    }
+
+    calculateSummaryTotal() {
+        // Handle snake_case vs camelCase if necessary (matching what we did before)
+        this.summaryConfig.subtotal = this.selectedServices.reduce((sum, s: any) => sum + Number(s.total_amount || s.totalAmount || 0), 0);
+        this.summaryConfig.tax = this.summaryConfig.addVat ? this.summaryConfig.subtotal * 0.21 : 0;
+        this.summaryConfig.total = this.summaryConfig.subtotal + this.summaryConfig.tax;
+    }
+
+    getDiscountValue(service: any): number {
+        if (!service.discountPercentage) return 0;
+        const total = Number(service.total_amount || service.totalAmount || 0);
+        // Original Price = Total / (1 - pct/100)
+        // Discount = Original - Total
+        // Math: D = T / (1 - rate) - T
+        const rate = service.discountPercentage / 100;
+        const originalPrice = total / (1 - rate);
+        return originalPrice - total;
     }
 }

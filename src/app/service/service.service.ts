@@ -19,7 +19,11 @@ export interface Service {
     driverKmPriceOverride?: number;
     driverHourPriceOverride?: number;
     discountPercentage?: number;
+
+    // Backend Consistency
+    total_amount?: number;
     totalAmount?: number;
+
     status: string;
     billingType: string;
 
