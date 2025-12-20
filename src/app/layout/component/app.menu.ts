@@ -49,6 +49,7 @@ export class AppMenu {
                          ]
                      },
                      { label: 'Autos', icon: 'pi pi-fw pi-car', routerLink: ['/vehicles'] },
+                     { label: 'Estadísticas', icon: 'pi pi-fw pi-chart-bar', routerLink: ['/statistics'] },
                      { label: 'Dashboard', icon: 'pi pi-fw pi-home', routerLink: ['/'] }
                 ]
             },
