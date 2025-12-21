@@ -37,4 +37,18 @@ export class StatisticsService {
     if (year) params.year = year;
     return firstValueFrom(this.http.get<any[]>(`${this.apiUrl}/monthly`, { params }));
   }
+
+  getExpenseStats(year?: number, month?: number) {
+    const params: any = {};
+    if (year) params.year = year;
+    if (month) params.month = month;
+    return firstValueFrom(this.http.get<any[]>(`${this.apiUrl}/expenses`, { params }));
+  }
+
+  getVehicleStats(year?: number, month?: number) {
+    const params: any = {};
+    if (year) params.year = year;
+    if (month) params.month = month;
+    return firstValueFrom(this.http.get<any[]>(`${this.apiUrl}/vehicles`, { params }));
+  }
 }

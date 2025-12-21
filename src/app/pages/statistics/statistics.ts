@@ -66,7 +66,7 @@ import { StatisticsService } from '../../service/statistics.service';
                 </div>
                 <span class="text-sm font-semibold text-gray-500 uppercase tracking-wider mb-1">Ganancia Neta</span>
                 <span class="text-3xl font-bold text-green-600 dark:text-green-400">{{ generalStats?.totalProfit | currency:'USD' }}</span>
-                <span class="text-xs text-gray-500 mt-2">Despúes de gastos chofer</span>
+                <span class="text-xs text-gray-500 mt-2">Despúes de gastos chofer y servicio</span>
             </div>
 
             <div class="p-4 bg-white dark:bg-surface-900 rounded-xl shadow-sm border border-surface-200 dark:border-surface-700 flex flex-col relative overflow-hidden">
@@ -88,7 +88,8 @@ import { StatisticsService } from '../../service/statistics.service';
             </div>
         </div>
 
-        <!-- Charts Section -->
+        <!-- Charts Section + Expenses (New) -->
+        <!-- Trying to fit Chart (Left), Expenses (Right) -->
         <div class="grid grid-cols-1 lg:grid-cols-3 gap-4">
             <!-- Monthly Revenue (Bar) -->
             <div class="lg:col-span-2 p-6 bg-white dark:bg-surface-900 rounded-xl shadow-sm border border-surface-200 dark:border-surface-700">
@@ -96,10 +97,9 @@ import { StatisticsService } from '../../service/statistics.service';
                 <p-chart type="bar" [data]="monthlyData" [options]="barOptions" height="300px"></p-chart>
             </div>
 
-            <!-- Client Distribution (Pie - mocked data or derived?) or just Top Drivers Summary -->
+            <!-- Top Clients List (Keep!) -->
              <div class="lg:col-span-1 p-6 bg-white dark:bg-surface-900 rounded-xl shadow-sm border border-surface-200 dark:border-surface-700 flex flex-col">
                 <h3 class="font-bold text-lg mb-4 text-gray-700 dark:text-gray-200">Top Clientes (Revenue)</h3>
-                <!-- Simple Table for sidebar list -->
                 <div class="flex-1 overflow-auto">
                     <div *ngFor="let c of topClients; let i = index" class="flex items-center justify-between p-3 border-b dark:border-surface-700 last:border-0 hover:bg-gray-50 dark:hover:bg-surface-800 rounded transition-colors">
                         <div class="flex items-center gap-3">
@@ -115,7 +115,8 @@ import { StatisticsService } from '../../service/statistics.service';
             </div>
         </div>
 
-        <!-- Detailed Tables -->
+        <!-- Lower Section: Drivers + Expenses + Vehicles -->
+        <!-- Grouping Drivers and Expenses in one row, Vehicles below? Or 3 cols? -->
         <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
              <!-- Drivers Ranking Table -->
              <div class="p-6 bg-white dark:bg-surface-900 rounded-xl shadow-sm border border-surface-200 dark:border-surface-700">
@@ -138,26 +139,47 @@ import { StatisticsService } from '../../service/statistics.service';
                 </p-table>
              </div>
 
-             <!-- Clients Ranking Table (Full) -->
-             <div class="p-6 bg-white dark:bg-surface-900 rounded-xl shadow-sm border border-surface-200 dark:border-surface-700">
-                <h3 class="font-bold text-lg mb-4 text-gray-700 dark:text-gray-200">Ranking Clientes</h3>
-                <p-table [value]="topClients" styleClass="p-datatable-sm" [scrollable]="true" scrollHeight="300px">
-                     <ng-template pTemplate="header">
-                        <tr>
-                            <th>Cliente</th>
-                            <th>Viajes</th>
-                            <th class="text-right">Facturación</th>
-                        </tr>
-                    </ng-template>
-                    <ng-template pTemplate="body" let-c>
-                        <tr>
-                            <td>{{c.name}}</td>
-                            <td>{{c.trips}}</td>
-                            <td class="text-right font-bold text-blue-600">{{c.revenue | currency:'USD'}}</td>
-                        </tr>
-                    </ng-template>
-                </p-table>
+             <!-- Expenses Summary (Replaces Client Ranking) -->
+             <div class="p-6 bg-white dark:bg-surface-900 rounded-xl shadow-sm border border-surface-200 dark:border-surface-700 flex flex-col">
+                <h3 class="font-bold text-lg mb-4 text-gray-700 dark:text-gray-200">Resumen de Gastos</h3>
+                <div class="flex-1 overflow-auto">
+                    <div *ngIf="expensesStats.length === 0" class="text-gray-500 text-center py-4">Sin gastos registrados</div>
+                    <div *ngFor="let e of expensesStats" class="flex items-center justify-between p-3 border-b dark:border-surface-700 last:border-0 hover:bg-gray-50 dark:hover:bg-surface-800 rounded transition-colors">
+                        <div class="flex items-center gap-3">
+                            <i *ngIf="e.type === 'FUEL'" class="pi pi-bolt text-blue-500"></i>
+                            <i *ngIf="e.type === 'TOLL'" class="pi pi-ticket text-orange-500"></i>
+                            <i *ngIf="e.type === 'WASH'" class="pi pi-info-circle text-cyan-500"></i>
+                            <i *ngIf="e.type === 'SNACK'" class="pi pi-apple text-green-500"></i>
+                            <i *ngIf="e.type === 'OTHER'" class="pi pi-exclamation-circle text-gray-500"></i>
+                            <span class="font-semibold text-sm">{{ getExpenseLabel(e.type) }}</span>
+                        </div>
+                        <span class="font-bold text-sm text-red-600 dark:text-red-400">- {{e.amount | currency:'USD'}}</span>
+                    </div>
+                </div>
              </div>
+        </div>
+
+        <!-- Vehicles Ranking (Full Width) -->
+        <div class="p-6 bg-white dark:bg-surface-900 rounded-xl shadow-sm border border-surface-200 dark:border-surface-700">
+            <h3 class="font-bold text-lg mb-4 text-gray-700 dark:text-gray-200">Ranking Vehículos</h3>
+            <p-table [value]="topVehicles" styleClass="p-datatable-sm" [scrollable]="true" scrollHeight="300px">
+                 <ng-template pTemplate="header">
+                    <tr>
+                        <th>Patente</th>
+                        <th>Modelo</th>
+                        <th class="text-right">KM</th>
+                        <th class="text-right">Profit</th>
+                    </tr>
+                </ng-template>
+                <ng-template pTemplate="body" let-v>
+                    <tr>
+                        <td class="font-bold">{{v.plate}}</td>
+                        <td class="text-sm text-gray-500">{{v.model}}</td>
+                        <td class="text-right">{{v.totalKm | number:'1.0-0'}} km</td>
+                        <td class="text-right font-bold text-green-600">{{v.profit | currency:'USD'}}</td>
+                    </tr>
+                </ng-template>
+            </p-table>
         </div>
 
     </div>
@@ -167,6 +189,8 @@ export class StatisticsComponent implements OnInit {
   generalStats: any;
   topDrivers: any[] = [];
   topClients: any[] = [];
+  topVehicles: any[] = [];
+  expensesStats: any[] = [];
 
   // Charts
   monthlyData: any;
@@ -191,16 +215,13 @@ export class StatisticsComponent implements OnInit {
   ];
 
   constructor(private statsService: StatisticsService) {
-      // Init Years (Current - 5 to Current)
       const currentYear = new Date().getFullYear();
       for(let i = currentYear; i >= 2024; i--) {
           this.years.push(i);
       }
-      // If 2024 is the only one, add current if distinct or ensure we have at least one
       if (!this.years.includes(currentYear)) this.years.push(currentYear);
 
-      // Default Month to current if Monthly? No, user chooses.
-      this.selectedMonth = new Date().getMonth() + 1; // Default to current month
+      this.selectedMonth = new Date().getMonth() + 1;
   }
 
   async ngOnInit() {
@@ -217,22 +238,36 @@ export class StatisticsComponent implements OnInit {
         const year = this.selectedYear;
         const month = this.viewMode === 'monthly' ? this.selectedMonth : undefined;
 
-        const [general, drivers, clients, monthly] = await Promise.all([
+        const [general, drivers, clients, monthly, vehicles, expenses] = await Promise.all([
             this.statsService.getGeneralStats(year, month),
             this.statsService.getDriverStats(year, month),
             this.statsService.getClientStats(year, month),
-            // Monthly Chart always follows the Year Context
-            this.statsService.getMonthlyStats(year)
+            this.statsService.getMonthlyStats(year),
+            this.statsService.getVehicleStats(year, month),
+            this.statsService.getExpenseStats(year, month)
         ]);
 
         this.generalStats = general;
         this.topDrivers = drivers;
         this.topClients = clients;
+        this.topVehicles = vehicles;
+        this.expensesStats = expenses;
 
         this.setupMonthlyChart(monthly);
     } catch (e) {
         console.error("Error loading stats", e);
     }
+  }
+
+  getExpenseLabel(type: string): string {
+      const map: any = {
+          'FUEL': 'Combustible',
+          'TOLL': 'Peajes',
+          'WASH': 'Lavadero',
+          'SNACK': 'Comida',
+          'OTHER': 'Otros'
+      };
+      return map[type] || type;
   }
 
   initChartOptions() {
@@ -297,5 +332,5 @@ export class StatisticsComponent implements OnInit {
           ]
       };
   }
-
 }
+
