@@ -58,4 +58,12 @@ export class ServiceService {
     async deleteService(id: number): Promise<void> {
         await firstValueFrom(this.http.delete(`${this.apiUrl}/${id}`));
     }
+
+    async createGroup(serviceIds: number[], clientId: number) {
+        return firstValueFrom(this.http.post<any>(environment.apiUrl + 'groups', { serviceIds, clientId }));
+    }
+
+    async getGroups(params?: any) {
+        return firstValueFrom(this.http.get<any[]>(environment.apiUrl + 'groups', { params }));
+    }
 }

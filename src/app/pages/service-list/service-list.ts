@@ -36,11 +36,25 @@ import { ActivatedRoute } from '@angular/router';
             <div class="font-semibold text-xl mb-4">Servicios (Viajes)</div>
 
             <!-- Acciones Masivas -->
-            <div *ngIf="selectedServices.length > 0 && activeStatusFilter !== 'CREATED' && activeStatusFilter !== 'PENDING'" class="flex gap-2 mb-4 p-3 bg-blue-50 dark:bg-blue-900/20 rounded-xl border border-blue-100 dark:border-blue-800 items-center animate-fadein">
-                <span class="font-bold text-blue-700 dark:text-blue-300">{{selectedServices.length}} seleccionados</span>
-                <p-divider layout="vertical"></p-divider>
-                <p-button label="Ver Resumen" icon="pi pi-receipt" severity="success" [text]="true" (click)="openSummary()"></p-button>
-            </div>
+            <!-- Acciones Masivas -->
+            @if (activeStatusFilter === 'PENDING_DETAILS' || activeStatusFilter === 'PENDING_INVOICE') {
+                <div class="flex gap-2 mb-4 p-3 bg-blue-50 dark:bg-blue-900/20 rounded-xl border border-blue-100 dark:border-blue-800 items-center animate-fadein">
+                    @if (selectedServices.length > 0) {
+                        <span class="font-bold text-blue-700 dark:text-blue-300">{{selectedServices.length}} seleccionados</span>
+                        <p-divider layout="vertical"></p-divider>
+                    }
+
+                    <!-- PENDING_DETAILS: Summary Only -->
+                    @if (activeStatusFilter === 'PENDING_DETAILS' && selectedServices.length > 0) {
+                        <p-button label="Ver Resumen" icon="pi pi-receipt" severity="success" [text]="true" (click)="openSummary()"></p-button>
+                    }
+
+                     <!-- PENDING_INVOICE: Billing (Always visible) -->
+                    @if (activeStatusFilter === 'PENDING_INVOICE') {
+                         <p-button label="Facturar" icon="pi pi-dollar" severity="help" [text]="true" (click)="openBilling()"></p-button>
+                    }
+                </div>
+            }
 
             <p-table #dt1 [value]="services" [(selection)]="selectedServices" dataKey="id" [rows]="10" [rowsPerPageOptions]="[10, 25, 50]" [loading]="loading" [paginator]="true"
                 [globalFilterFields]="['route', 'status', 'clientNames']" styleClass="p-datatable-sm" responsiveLayout="stack" breakpoint="960px">
@@ -143,6 +157,17 @@ import { ActivatedRoute } from '@angular/router';
                         </td>
                         <td><p-tag [value]="getMmStatusLabel(service.status)" [severity]="getSeverity(service.status)" /></td>
                         <td>
+                            <!-- View Report -->
+                            <p-button *ngIf="service.serviceGroup"
+                                      icon="pi pi-file-pdf"
+                                      [rounded]="true"
+                                      [text]="true"
+                                      severity="info"
+                                      (click)="openReport(service)"
+                                      pTooltip="Ver Reporte Generado"
+                                      tooltipPosition="left">
+                            </p-button>
+
                             <p-button *ngIf="getNextStatus(service)"
                                       icon="pi pi-arrow-right"
                                       [rounded]="true"
@@ -170,11 +195,11 @@ import { ActivatedRoute } from '@angular/router';
                                     <div class="flex gap-4">
                                         <div class="flex flex-col gap-2 flex-1">
                                             <label for="startDate">Fecha Inicio</label>
-                                            <p-datepicker [(ngModel)]="service.startDate" [showTime]="true" dateFormat="dd/mm/yy" appendTo="body" styleClass="w-full"></p-datepicker>
+                                            <p-datepicker [(ngModel)]="service.startDate" [showTime]="true" dateFormat="dd/mm/yy" appendTo="body" styleClass="w-full" [style]="{'width':'100%'}" inputStyleClass="w-full"></p-datepicker>
                                         </div>
                                         <div class="flex flex-col gap-2 flex-1">
                                             <label for="endDate">Fecha Fin</label>
-                                            <p-datepicker [(ngModel)]="service.endDate" [showTime]="true" dateFormat="dd/mm/yy" appendTo="body" styleClass="w-full"></p-datepicker>
+                                            <p-datepicker [(ngModel)]="service.endDate" [showTime]="true" dateFormat="dd/mm/yy" appendTo="body" styleClass="w-full" [style]="{'width':'100%'}" inputStyleClass="w-full"></p-datepicker>
                                         </div>
                                     </div>
                                     <div class="flex flex-col gap-2">
@@ -332,8 +357,28 @@ import { ActivatedRoute } from '@angular/router';
                 </ng-template>
 
                 <ng-template pTemplate="footer">
-                    <p-button label="Cancelar" icon="pi pi-times" [text]="true" (click)="hideDialog()" />
-                    <p-button label="Guardar" icon="pi pi-check" [text]="true" (click)="saveService()" />
+                    <div class="flex flex-col gap-2 w-full">
+                        <!-- Return Trip Switch (Only for new services) -->
+                        <div *ngIf="!service.id" class="flex items-center gap-4 p-3 bg-gray-50 dark:bg-gray-800/50 rounded-lg border border-gray-200 dark:border-gray-700">
+                             <div class="flex items-center gap-2">
+                                <p-checkbox [(ngModel)]="createReturnTrip" [binary]="true" inputId="returnTrip"></p-checkbox>
+                                <label for="returnTrip" class="cursor-pointer font-medium select-none text-gray-700 dark:text-gray-200" pTooltip="Se creará autom&aacute;ticamente un servicio de vuelta con origen y destino invertidos (sin gastos extra)." tooltipPosition="top">
+                                    Crear Vuelta <i class="pi pi-info-circle text-xs text-blue-500 ml-1"></i>
+                                </label>
+                             </div>
+
+                             <div *ngIf="createReturnTrip" class="flex flex-wrap gap-2 items-center ml-auto animate-fadein">
+                                <p-datepicker [(ngModel)]="returnStartDate" [showTime]="true" hourFormat="24" placeholder="Inicio" appendTo="body" styleClass="w-32" [style]="{'width':'100%'}" inputStyleClass="w-full" [showIcon]="false"></p-datepicker>
+                                <span class="text-gray-400">-</span>
+                                <p-datepicker [(ngModel)]="returnEndDate" [showTime]="true" hourFormat="24" placeholder="Fin" appendTo="body" styleClass="w-32" [style]="{'width':'100%'}" inputStyleClass="w-full" [showIcon]="false"></p-datepicker>
+                             </div>
+                        </div>
+
+                        <div class="flex justify-end gap-2 mt-2">
+                             <p-button label="Cancelar" icon="pi pi-times" [text]="true" (click)="hideDialog()" />
+                             <p-button label="Guardar" icon="pi pi-check" [text]="true" (click)="saveService()" />
+                        </div>
+                    </div>
                 </ng-template>
             </p-dialog>
 
@@ -438,9 +483,48 @@ import { ActivatedRoute } from '@angular/router';
                 </ng-template>
                 <ng-template pTemplate="footer">
                     <div class="flex gap-2">
-                        <p-button label="Generar Factura" icon="pi pi-receipt" severity="success" (click)="generateInvoice()" [loading]="loading" />
+                        <p-button label="Generar Reporte" icon="pi pi-file-pdf" severity="warn" (click)="generateReport()" [loading]="loading" />
                         <p-button label="Cerrar" icon="pi pi-times" [text]="true" (click)="summaryDialog = false" />
                     </div>
+                </ng-template>
+            </p-dialog>
+
+            <!-- Dialogo de Facturacion -->
+            <p-dialog [(visible)]="billingDialogVisible" header="Facturar Servicios" [modal]="true" [style]="{width: '800px'}" [maximizable]="true">
+                <div class="flex flex-col gap-4">
+                     <div class="flex flex-col gap-2">
+                         <label class="font-bold">Cliente a Facturar</label>
+                         <p-select [options]="clientsList" [(ngModel)]="billingClient" optionLabel="name" (onChange)="onBillingClientChange()" placeholder="Seleccione Cliente" appendTo="body" styleClass="w-full" [filter]="true" filterBy="name"></p-select>
+                     </div>
+
+                     <div *ngIf="billingClient" class="animate-fadein">
+                         <h3 class="font-bold text-lg mb-2">Grupos Pendientes de Facturación</h3>
+                         <p-table [value]="billingGroups" [(selection)]="selectedBillingGroups" dataKey="id" [scrollable]="true" scrollHeight="300px">
+                            <ng-template pTemplate="header">
+                               <tr>
+                                   <th style="width: 3rem"><p-tableHeaderCheckbox></p-tableHeaderCheckbox></th>
+                                   <th>Código Reporte</th>
+                                   <th>Cant. Viajes</th>
+                                   <th>Total Estimado</th>
+                               </tr>
+                            </ng-template>
+                            <ng-template pTemplate="body" let-group>
+                               <tr>
+                                   <td><p-tableCheckbox [value]="group"></p-tableCheckbox></td>
+                                   <td>{{group.code}}</td>
+                                   <td>{{group.serviceCount}}</td>
+                                   <td>{{group.totalAmount | currency}}</td>
+                               </tr>
+                            </ng-template>
+                             <ng-template pTemplate="emptymessage">
+                                <tr><td colspan="4" class="text-center p-4">No hay reportes ni grupos pendientes para este cliente.</td></tr>
+                            </ng-template>
+                         </p-table>
+                     </div>
+                </div>
+                <ng-template pTemplate="footer">
+                    <p-button label="Cancelar" icon="pi pi-times" [text]="true" (click)="billingDialogVisible = false"></p-button>
+                    <p-button label="Confirmar Factura" icon="pi pi-check" severity="success" (click)="confirmBilling()" [disabled]="!billingClient || selectedBillingGroups.length === 0"></p-button>
                 </ng-template>
             </p-dialog>
         </div>
@@ -464,6 +548,11 @@ export class ServiceList implements OnInit {
 
     loading: boolean = true;
     serviceDialog: boolean = false;
+
+    // Return Trip Features
+    createReturnTrip: boolean = false;
+    returnStartDate: Date | null = null;
+    returnEndDate: Date | null = null;
     configDialog: boolean = false;
     config: SystemConfiguration = { id: 0, kmPrice: 0, hourPrice: 0, driverKmPrice: 0, driverHourPrice: 0 };
     submitted: boolean = false;
@@ -520,17 +609,25 @@ export class ServiceList implements OnInit {
         if (!this.selectedServices.length) return;
 
         // Validate same client (Invoice usually per client)
-        const firstClientId = this.selectedServices[0].clientIds?.[0]; // Assuming single client per service for billing?
-        // Or if multiple, we pick the first one of the first service? logic is tricky if mixed.
-        // Let's assume user filters by Client or selects same client.
+        // Validate same client (Invoice usually per client)
+        const firstService = this.selectedServices[0];
+        const firstClientId = (firstService.clientIds && firstService.clientIds.length > 0) ? firstService.clientIds[0] : null;
 
         if (!firstClientId) {
-            this.messageService.add({ severity: 'error', summary: 'Error', detail: 'Los servicios deben tener cliente asignado' });
-            return;
+             // Fallback: Check if client object exists in service
+             const clientObj = (firstService as any).clients && (firstService as any).clients.length > 0 ? (firstService as any).clients[0] : null;
+             if (!clientObj) {
+                this.messageService.add({ severity: 'error', summary: 'Error', detail: 'Los servicios deben tener cliente asignado' });
+                return;
+             }
         }
 
         // Check mix
-        const mixed = this.selectedServices.some(s => !s.clientIds?.includes(firstClientId));
+        const currentClientId = firstClientId || (firstService as any).clients[0].id;
+        const mixed = this.selectedServices.some(s => {
+             const cId = (s.clientIds && s.clientIds.length > 0) ? s.clientIds[0] : ((s as any).clients?.[0]?.id);
+             return cId !== currentClientId;
+        });
         if (mixed) {
              this.messageService.add({ severity: 'warn', summary: 'Atención', detail: 'Se generará factura para el cliente del primer servicio seleccionado. Asegúrese de seleccionar servicios del mismo cliente.' });
              // proceed? or block? Let's proceed with firstClientId.
@@ -540,7 +637,7 @@ export class ServiceList implements OnInit {
             this.loading = true;
             await this.invoiceService.createInvoice(
                 this.selectedServices.map(s => s.id as number),
-                firstClientId
+                currentClientId as number
             );
             this.messageService.add({ severity: 'success', summary: 'Factura Generada', detail: 'La factura ha sido creada correctamente.' });
             this.summaryDialog = false;
@@ -677,9 +774,11 @@ export class ServiceList implements OnInit {
                 driverNames: s.drivers ? s.drivers.map((d: any) => d.name).join(', ') : '',
                 route: `${s.origin} -> ${s.destination}`
             }));
-            this.clientsList = clients;
-            this.driversList = drivers;
-            this.vehiclesList = vehicles;
+
+            // Deduplicate lists by ID
+            this.clientsList = [...new Map(clients.map((item: any) => [item.id, item])).values()];
+            this.driversList = [...new Map(drivers.map((item: any) => [item.id, item])).values()];
+            this.vehiclesList = [...new Map(vehicles.map((item: any) => [item.id, item])).values()];
 
             // Deduplicate for Filters (by Name)
             const uniqueClientNames = [...new Set(clients.map(c => c.name))].sort();
@@ -717,6 +816,11 @@ export class ServiceList implements OnInit {
     openNew() {
         this.service = this.getEmptyService();
         this.submitted = false;
+
+        // Reset Return Trip
+        this.createReturnTrip = false;
+        this.returnStartDate = null;
+        this.returnEndDate = null;
 
         // Load config defaults
         this.configService.getConfig().subscribe({
@@ -842,6 +946,25 @@ export class ServiceList implements OnInit {
 
     async saveService() {
         this.submitted = true;
+
+        // 0. Strict Validation for Non-New/Non-Created Statuses
+        // User Requirement: "En los demas casos cliente, chofer, autos, fechas y total tienen que estar si o si"
+        if (this.service.id && this.service.status !== 'CREATED') {
+            const hasClient = this.service.clientIds && this.service.clientIds.length > 0;
+            const hasDriver = this.service.driverIds && this.service.driverIds.length > 0;
+            const hasVehicle = this.service.vehicleIds && this.service.vehicleIds.length > 0;
+            const hasDates = this.service.startDate && this.service.endDate;
+            const hasTotal = this.calculateClientTotal > 0;
+
+            if (!hasClient || !hasDriver || !hasVehicle || !hasDates || !hasTotal) {
+                 this.messageService.add({
+                    severity: 'error',
+                    summary: 'Datos Incompletos',
+                    detail: 'Para guardar un servicio en curso/finalizado, debe tener Cliente, Chofer, Vehículo, Fechas y Total validos.'
+                 });
+                 return;
+            }
+        }
 
         // 1. Validate Minimum Requirements (Creation)
         if (!this.isValidForCreation(this.service)) {
@@ -1149,13 +1272,13 @@ export class ServiceList implements OnInit {
             return 'PAYMENT_PENDING';
         }
 
+        // Disable arrow for manual/batch flows
         if (current === 'PENDING_DETAILS') {
-            if (sendInvoices) return 'PENDING_INVOICE';
-            return 'PAYMENT_PENDING';
+            return null;
         }
 
         if (current === 'PENDING_INVOICE') {
-            return 'INVOICED';
+            return null;
         }
 
         if (current === 'INVOICED') {
@@ -1167,5 +1290,149 @@ export class ServiceList implements OnInit {
         }
 
         return null;
+    }
+
+    // --- Service Grouping & Reporting ---
+
+    async generateReport() {
+        if (!this.selectedServices || this.selectedServices.length === 0) return;
+
+        // 1. Validate Same Client
+        const firstService = this.selectedServices[0];
+        const firstClientId = (firstService.clientIds && firstService.clientIds.length > 0) ? firstService.clientIds[0] : null;
+
+        // Fallback to clients array check
+        let currentClientId = firstClientId;
+        if (!currentClientId) {
+             const clientObj = (firstService as any).clients && (firstService as any).clients.length > 0 ? (firstService as any).clients[0] : null;
+             if (!clientObj) {
+                this.messageService.add({ severity: 'error', summary: 'Error', detail: 'Los servicios deben tener cliente asignado' });
+                return;
+             }
+             currentClientId = clientObj.id;
+        }
+
+        const mixed = this.selectedServices.some(s => {
+             const cId = (s.clientIds && s.clientIds.length > 0) ? s.clientIds[0] : ((s as any).clients?.[0]?.id);
+             return cId !== currentClientId;
+        });
+
+        if (mixed) {
+             this.messageService.add({ severity: 'error', summary: 'Error', detail: 'Todos los servicios seleccionados deben pertenecer al mismo cliente principal.' });
+             return;
+        }
+
+        try {
+            this.loading = true;
+            await this.serviceService.createGroup(this.selectedServices.map(s => s.id!), currentClientId as number);
+
+            this.messageService.add({ severity: 'success', summary: 'Éxito', detail: 'Reporte generado y servicios agrupados.' });
+            this.summaryDialog = false;
+            this.selectedServices = [];
+            this.loadAllData(); // Refresh to move them to next status
+        } catch (error) {
+            console.error(error);
+            this.messageService.add({ severity: 'error', summary: 'Error', detail: 'Falló la generación del reporte.' });
+        } finally {
+            this.loading = false;
+        }
+    }
+
+    // --- Billing Dialog ---
+    billingDialogVisible: boolean = false;
+    billingClient: any = null;
+    billingGroups: any[] = [];
+    selectedBillingGroups: any[] = [];
+
+    openBilling() {
+        this.billingDialogVisible = true;
+        this.billingClient = null;
+        this.billingGroups = [];
+        this.selectedBillingGroups = [];
+
+        // Pre-select if single client
+        if (this.selectedServices.length > 0) {
+            const firstId = this.selectedServices[0].clientIds[0];
+            const allSame = this.selectedServices.every(s => s.clientIds.length > 0 && s.clientIds[0] === firstId);
+            if (allSame) {
+                this.billingClient = this.clientsList.find(c => c.id === firstId);
+                if (this.billingClient) {
+                    this.onBillingClientChange();
+                }
+            }
+        }
+    }
+
+    async onBillingClientChange() {
+        if (!this.billingClient) return;
+
+        this.loading = true;
+        try {
+            // Fetch Groups for this client (Status GENERATED = ready to invoice)
+            const groups = await this.serviceService.getGroups({ clientId: this.billingClient.id, status: 'GENERATED' });
+
+            // Transform/enrich if needed
+            this.billingGroups = groups.map(g => ({
+                ...g,
+                // Count services or sum amounts if not in group object
+                totalAmount: g.services ? g.services.reduce((sum: number, s: any) => sum + Number(s.total_amount || 0), 0) : 0,
+                serviceCount: g.services ? g.services.length : 0
+            }));
+
+        } catch (error) {
+            console.error(error);
+            this.messageService.add({ severity: 'error', summary: 'Error', detail: 'Error cargando grupos.' });
+        } finally {
+            this.loading = false;
+        }
+    }
+
+    async confirmBilling() {
+        if (!this.billingClient) return;
+        if (this.selectedBillingGroups.length === 0) {
+             this.messageService.add({ severity: 'warn', summary: 'Atención', detail: 'Seleccione al menos un grupo para facturar.' });
+             return;
+        }
+
+        try {
+            this.loading = true;
+
+            // Gather all Service IDs from selected groups
+            const allServiceIds: number[] = [];
+            this.selectedBillingGroups.forEach(g => {
+                if (g.services) {
+                    g.services.forEach((s: any) => allServiceIds.push(s.id));
+                }
+            });
+
+            // Create Invoice
+            await this.invoiceService.createInvoice(allServiceIds, this.billingClient.id);
+
+            this.billingDialogVisible = false;
+            this.messageService.add({ severity: 'success', summary: 'Éxito', detail: 'Factura creada correctamente.' });
+            this.loadAllData(); // Refresh list
+        } catch (error) {
+            console.error(error);
+            this.messageService.add({ severity: 'error', summary: 'Error', detail: 'Error al crear la factura.' });
+        } finally {
+            this.loading = false;
+        }
+    }
+
+    openReport(service: any) {
+        const group = service.serviceGroup;
+        if (!group) return;
+
+        if (group.pdfUrl) {
+            // Check if it's a relative path or full URL. Assuming backend might serve static or cloud.
+            // For now, if "TODO", show message.
+            if (group.pdfUrl === 'TODO' || !group.pdfUrl.startsWith('http')) {
+                 this.messageService.add({severity: 'info', summary: 'Reporte', detail: 'El reporte está siendo generado o es un placeholder.'});
+                 return;
+            }
+            window.open(group.pdfUrl, '_blank');
+        } else {
+             this.messageService.add({severity: 'warn', summary: 'Sin Reporte', detail: 'No hay reporte asociado a este grupo.'});
+        }
     }
 }
