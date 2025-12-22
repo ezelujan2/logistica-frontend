@@ -1,4 +1,4 @@
 export const environment = {
   production: false,
-  apiUrl: 'https://backend.lecma.fun'
+  apiUrl: 'https://backend.lecma.fun/'
 };
