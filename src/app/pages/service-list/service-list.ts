@@ -27,6 +27,7 @@ import { TooltipModule } from 'primeng/tooltip';
 import { PanelModule } from 'primeng/panel';
 import { DividerModule } from 'primeng/divider';
 import { ActivatedRoute } from '@angular/router';
+import { environment } from '../../../environments/environment';
 
 @Component({
     selector: 'app-service-list',
@@ -1419,20 +1420,30 @@ export class ServiceList implements OnInit {
         }
     }
 
+
+
     openReport(service: any) {
         const group = service.serviceGroup;
-        if (!group) return;
 
-        if (group.pdfUrl) {
-            // Check if it's a relative path or full URL. Assuming backend might serve static or cloud.
-            // For now, if "TODO", show message.
-            if (group.pdfUrl === 'TODO' || !group.pdfUrl.startsWith('http')) {
-                 this.messageService.add({severity: 'info', summary: 'Reporte', detail: 'El reporte está siendo generado o es un placeholder.'});
-                 return;
-            }
-            window.open(group.pdfUrl, '_blank');
-        } else {
-             this.messageService.add({severity: 'warn', summary: 'Sin Reporte', detail: 'No hay reporte asociado a este grupo.'});
+        if (!group || !group.pdfUrl || group.pdfUrl === 'TODO') {
+             this.messageService.add({severity: 'info', summary: 'Reporte', detail: 'El reporte está siendo generado o es un placeholder.'});
+             return;
         }
+
+        let url = group.pdfUrl;
+
+        // In Production, we MUST use the Nginx Proxy to inject the API Key.
+        // This means fetching the report from the Frontend domain (Relative Path), not the Backend directly.
+        if (environment.production) {
+            // regex to strip protocol and domain: https://anything.com/path -> /path
+            url = url.replace(/^https?:\/\/[^\/]+/, '');
+
+            // Ensure it starts with / (if specific case where it wasn't there)
+            if (!url.startsWith('/')) {
+                url = '/' + url;
+            }
+        }
+
+        window.open(url, '_blank');
     }
 }
