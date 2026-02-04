@@ -38,6 +38,7 @@ export class AppMenu {
                             { label: 'General', icon: 'pi pi-fw pi-list', routerLink: ['/services/all'] }
                         ]
                      },
+                     { label: 'Gastos', icon: 'pi pi-fw pi-money-bill', routerLink: ['/expenses'] },
                      { label: 'Clientes', icon: 'pi pi-fw pi-users', routerLink: ['/clients'] },
                      {
                          label: 'Choferes',

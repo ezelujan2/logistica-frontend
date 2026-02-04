@@ -1,0 +1,98 @@
+<div class="card px-6 py-6">
+    <p-toast></p-toast>
+    <p-toolbar styleClass="mb-4">
+        <ng-template pTemplate="left">
+            <div class="my-2">
+                <button pButton pRipple label="Nuevo Gasto" icon="pi pi-plus" class="p-button-success mr-2" (click)="openNew()"></button>
+            </div>
+        </ng-template>
+
+        <ng-template pTemplate="right">
+            <div class="flex flex-wrap gap-2 align-items-center">
+                <p-select [options]="years" [(ngModel)]="year" (onChange)="loadData()"></p-select>
+                <p-select [options]="months" [(ngModel)]="month" (onChange)="loadData()"></p-select>
+            </div>
+        </ng-template>
+    </p-toolbar>
+
+    <p-table #dt [value]="expenses" [rows]="10" [paginator]="true" [loading]="loading" responsiveLayout="scroll"
+        [globalFilterFields]="['description','driver.name','vehicle.plate', 'type']"
+        styleClass="p-datatable-sm" [tableStyle]="{'min-width': '60rem', 'width': '100%'}">
+
+        <ng-template pTemplate="caption">
+            <div class="flex flex-column md:flex-row md:justify-content-between md:align-items-center">
+                <h5 class="m-0">Gestión de Gastos</h5>
+            </div>
+        </ng-template>
+
+        <ng-template pTemplate="header">
+            <tr>
+                <th pSortableColumn="date" class="text-center" style="width: 10%">Fecha <p-sortIcon field="date"></p-sortIcon></th>
+                <th pSortableColumn="type" class="text-center" style="width: 10%">Tipo <p-sortIcon field="type"></p-sortIcon></th>
+                <th pSortableColumn="amount" class="text-right" style="width: 15%">Monto <p-sortIcon field="amount"></p-sortIcon></th>
+                <th style="width: 35%">Descripción</th>
+                <th class="text-center" style="width: 10%">Chofer</th>
+                <th class="text-center" style="width: 10%">Vehículo</th>
+                <th class="text-center" style="width: 10%">Acciones</th>
+            </tr>
+        </ng-template>
+        <ng-template pTemplate="body" let-expense>
+            <tr>
+                <td class="text-center">{{expense.date | date: 'dd/MM/yyyy'}}</td>
+                <td class="text-center">{{expense.type}}</td>
+                <td class="text-right">{{expense.amount | currency:'ARS':'symbol-narrow'}}</td>
+                <td>{{expense.description}}</td>
+                <td class="text-center">{{expense.driver?.name || '-'}}</td>
+                <td class="text-center">{{expense.vehicle?.plate || '-'}}</td>
+                <td class="text-center">
+                    <div class="flex justify-content-center">
+                        <button pButton pRipple icon="pi pi-pencil" class="p-button-rounded p-button-success mr-2" (click)="editExpense(expense)"></button>
+                        <button pButton pRipple icon="pi pi-trash" class="p-button-rounded p-button-warning" (click)="deleteExpense(expense)"></button>
+                    </div>
+                </td>
+            </tr>
+        </ng-template>
+    </p-table>
+</div>
+
+<p-dialog [(visible)]="expenseDialog" [style]="{width: '450px'}" header="Detalle de Gasto" [modal]="true" class="p-fluid">
+    <ng-template pTemplate="content">
+        <div class="field">
+            <label for="date">Fecha</label>
+            <p-datepicker [(ngModel)]="expense.date" dateFormat="dd/mm/yy" [showIcon]="true" appendTo="body" styleClass="w-full" [style]="{'width':'100%'}"></p-datepicker>
+        </div>
+
+        <div class="field">
+            <label for="type">Tipo</label>
+            <p-select [options]="expenseTypes" [(ngModel)]="expense.type" placeholder="Seleccionar Tipo" appendTo="body" styleClass="w-full" [style]="{'width':'100%'}"></p-select>
+        </div>
+
+        <div class="field">
+            <label for="amount">Monto</label>
+            <p-inputNumber id="amount" [(ngModel)]="expense.amount" mode="currency" currency="ARS" locale="es-AR" styleClass="w-full" [style]="{'width':'100%'}"></p-inputNumber>
+            <small class="p-error" *ngIf="submitted && !expense.amount">Monto requerido.</small>
+        </div>
+
+        <div class="field">
+            <label for="description">Descripción</label>
+            <textarea id="description" pInputTextarea [(ngModel)]="expense.description" rows="3" class="w-full"></textarea>
+        </div>
+
+        <div class="field">
+            <label for="driver">Chofer (Opcional)</label>
+            <p-select [options]="drivers" [(ngModel)]="expense.driverId" optionLabel="name" optionValue="id" [showClear]="true" placeholder="Seleccionar Chofer" appendTo="body" styleClass="w-full" [style]="{'width':'100%'}"></p-select>
+        </div>
+
+        <div class="field">
+            <label for="vehicle">Vehículo (Opcional)</label>
+            <p-select [options]="vehicles" [(ngModel)]="expense.vehicleId" optionLabel="plate" optionValue="id" [showClear]="true" placeholder="Seleccionar Vehículo" appendTo="body" styleClass="w-full" [style]="{'width':'100%'}"></p-select>
+        </div>
+    </ng-template>
+
+    <ng-template pTemplate="footer">
+        <button pButton pRipple label="Cancelar" icon="pi pi-times" class="p-button-text" (click)="hideDialog()"></button>
+        <button pButton pRipple label="Guardar" icon="pi pi-check" class="p-button-text" (click)="saveExpense()"></button>
+    </ng-template>
+</p-dialog>
+
+<p-confirmDialog [style]="{width: '450px'}"></p-confirmDialog>

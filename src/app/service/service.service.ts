@@ -33,6 +33,8 @@ export interface Service {
     vehicleIds: number[];
 
     expenses?: any[];
+    serviceGroup?: any;
+    serviceGroupId?: number;
 }
 
 @Injectable({
@@ -65,5 +67,9 @@ export class ServiceService {
 
     async getGroups(params?: any) {
         return firstValueFrom(this.http.get<any[]>(environment.apiUrl + 'groups', { params }));
+    }
+
+    async updateGroupStatus(id: number, status: string) {
+        return firstValueFrom(this.http.patch(environment.apiUrl + 'groups/' + id + '/status', { status }));
     }
 }

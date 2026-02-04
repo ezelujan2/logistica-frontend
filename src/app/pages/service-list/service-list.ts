@@ -26,6 +26,7 @@ import { PrimeNG } from 'primeng/config';
 import { TooltipModule } from 'primeng/tooltip';
 import { PanelModule } from 'primeng/panel';
 import { DividerModule } from 'primeng/divider';
+import { ToggleButtonModule } from 'primeng/togglebutton';
 import { ActivatedRoute } from '@angular/router';
 import { environment } from '../../../environments/environment';
 
@@ -58,7 +59,33 @@ import { environment } from '../../../environments/environment';
             }
 
             <p-table #dt1 [value]="services" [(selection)]="selectedServices" dataKey="id" [rows]="10" [rowsPerPageOptions]="[10, 25, 50]" [loading]="loading" [paginator]="true"
-                [globalFilterFields]="['route', 'status', 'clientNames']" styleClass="p-datatable-sm" responsiveLayout="stack" breakpoint="960px">
+                [globalFilterFields]="['route', 'status', 'clientNames', 'serviceGroup.code']" styleClass="p-datatable-sm" responsiveLayout="stack" breakpoint="960px"
+                [rowGroupMode]="isGroupedView ? 'subheader' : undefined"
+                [groupRowsBy]="isGroupedView ? 'serviceGroup.code' : ''">
+                <ng-template pTemplate="groupheader" let-service>
+                    <tr pRowGroupHeader>
+                        <td colspan="9" class="bg-gray-100 dark:bg-gray-800 font-bold">
+                            <div class="flex items-center gap-2">
+                                <i class="pi pi-folder text-lg"></i>
+                                <span class="vertical-align-middle text-lg ml-2">{{service.serviceGroup?.code || 'Servicios Sin Agrupar'}}</span>
+                                <p-tag *ngIf="service.serviceGroup" [value]="service.serviceGroup.status" severity="info" class="ml-2"></p-tag>
+
+                                <div class="ml-auto flex gap-2 items-center" *ngIf="service.serviceGroup">
+                                     <!-- PENDING_INVOICE -> Show PAYMENT_PENDING -->
+                                     <!-- Also handle INVOICED as requested by user -->
+                                     <p-button *ngIf="['PENDING_INVOICE', 'INVOICED', 'GENERATED'].includes(service.status)"
+                                               label="Pendiente Pago" size="small" [outlined]="true" severity="warn"
+                                               (click)="changeGroupStatus(service.serviceGroup.code, 'PAYMENT_PENDING')"></p-button>
+
+                                     <!-- PAYMENT_PENDING -> Show PAID -->
+                                     <p-button *ngIf="service.status === 'PAYMENT_PENDING'"
+                                               label="Pagado" size="small" [outlined]="true" severity="success"
+                                               (click)="changeGroupStatus(service.serviceGroup.code, 'PAID')"></p-button>
+                                </div>
+                            </div>
+                        </td>
+                    </tr>
+                </ng-template>
                 <ng-template pTemplate="caption">
                     <div class="flex flex-col md:flex-row justify-between items-center gap-4 md:gap-0">
                         <div class="flex items-center gap-2">
@@ -66,6 +93,12 @@ import { environment } from '../../../environments/environment';
                             <p-button label="Limpiar Filtros" icon="pi pi-filter-slash" [outlined]="true" severity="secondary" size="small" (click)="clear(dt1)" />
                         </div>
                         <div class="flex flex-col md:flex-row gap-2 w-full md:w-auto">
+                            <!-- Toggle Group View (Always Visible) -->
+                            <p-toggleButton [(ngModel)]="isGroupedView" onLabel="Agrupado" offLabel="Desagrupado"
+                                            onIcon="pi pi-list" offIcon="pi pi-align-justify"
+                                            (onChange)="toggleGroupView()"
+                                            styleClass="w-full md:w-auto"></p-toggleButton>
+
                             <p-button label="Nuevo Servicio" icon="pi pi-plus" (click)="openNew()" styleClass="w-full md:w-auto" />
                             <p-button label="Configuración" icon="pi pi-cog" severity="secondary" (click)="openConfig()" styleClass="w-full md:w-auto" />
                             <p-iconfield styleClass="w-full md:w-auto">
@@ -92,6 +125,12 @@ import { environment } from '../../../environments/environment';
                             </div>
                         </th>
                         <th style="min-width: 10rem">Detalles</th>
+                        <th style="min-width: 8rem">
+                             <div class="flex items-center gap-2">
+                                Grupo
+                                <p-columnFilter type="text" field="serviceGroup.code" display="menu" [showAddButton]="false"></p-columnFilter>
+                            </div>
+                        </th>
                         <th pSortableColumn="clientNames" style="min-width: 10rem">
                              <div class="flex items-center gap-2">
                                 Clientes <p-sortIcon field="clientNames" />
@@ -150,6 +189,12 @@ import { environment } from '../../../environments/environment';
                         <td><p-tag [value]="getServiceTypeLabel(service.serviceType)" severity="info"></p-tag></td>
                         <td>{{ service.route }}</td>
                         <td>{{ service.details }}</td>
+                        <td>
+                            <div *ngIf="service.serviceGroup" class="flex align-items-center gap-2">
+                                <p-tag [value]="service.serviceGroup.code" severity="warn" styleClass="cursor-pointer hover:bg-orange-600 transition-colors" (click)="openReport(service)" pTooltip="Ver Reporte (PDF)" tooltipPosition="top"></p-tag>
+                            </div>
+                            <span *ngIf="!service.serviceGroup" class="text-gray-400">-</span>
+                        </td>
                         <td>
                             {{ service.clientNames }}
                         </td>
@@ -531,7 +576,7 @@ import { environment } from '../../../environments/environment';
         </div>
     `,
     standalone: true,
-    imports: [CommonModule, TableModule, ButtonModule, InputTextModule, IconFieldModule, InputIconModule, TagModule, DialogModule, FormsModule, SelectModule, MultiSelectModule, InputNumberModule, TextareaModule, DatePickerModule, ToastModule, PanelModule, DividerModule, CheckboxModule, TooltipModule],
+    imports: [CommonModule, TableModule, ButtonModule, InputTextModule, IconFieldModule, InputIconModule, TagModule, DialogModule, FormsModule, SelectModule, MultiSelectModule, InputNumberModule, TextareaModule, DatePickerModule, ToastModule, PanelModule, DividerModule, CheckboxModule, TooltipModule, ToggleButtonModule],
 
     providers: [MessageService, ServiceService, ClientService, DriverService, VehicleService, ConfigurationService]
 })
@@ -1269,6 +1314,12 @@ export class ServiceList implements OnInit {
 
         if (current === 'PENDING') {
             if (sendDetails) return 'PENDING_DETAILS';
+
+            // Skip Invoice Step for Informal
+            if (service.billingType === 'INFORMAL') {
+                return 'PAYMENT_PENDING';
+            }
+
             if (sendInvoices) return 'PENDING_INVOICE';
             return 'PAYMENT_PENDING';
         }
@@ -1422,28 +1473,59 @@ export class ServiceList implements OnInit {
 
 
 
+    // --- Grouped View ---
+    isGroupedView: boolean = false;
+
+    toggleGroupView() {
+        if (this.isGroupedView) {
+            // Sort by Group Code (Ungrouped/Null last)
+            this.services.sort((a: any, b: any) => {
+                const codeA = a.serviceGroup?.code || '';
+                const codeB = b.serviceGroup?.code || '';
+
+                // If code is missing (empty), push to end? Or start?
+                // Let's grouping together.
+                if (codeA === codeB) return 0;
+                if (!codeA) return 1; // Nulls last
+                if (!codeB) return -1;
+
+                return codeA.localeCompare(codeB);
+            });
+        } else {
+             // Restore Default Sort: StartDate Desc
+             this.services.sort((a: any, b: any) => new Date(b.startDate).getTime() - new Date(a.startDate).getTime());
+        }
+    }
+
     openReport(service: any) {
         const group = service.serviceGroup;
+        if (!group) return;
 
-        if (!group || !group.pdfUrl || group.pdfUrl === 'TODO') {
-             this.messageService.add({severity: 'info', summary: 'Reporte', detail: 'El reporte está siendo generado o es un placeholder.'});
-             return;
+        // Dynamic URL Construction for Local Dev compatibility
+        if (group.code) {
+             const filename = group.code + '.pdf';
+             const relativeUrl = environment.apiUrl.replace('/api/', '/') + 'reports/' + filename;
+             window.open(relativeUrl, '_blank');
+        } else if (group.pdfUrl) {
+             window.open(group.pdfUrl, '_blank');
+        } else {
+             this.messageService.add({severity:'warn', summary:'Sin Reporte', detail:'Este grupo no tiene reporte generado.'});
         }
-
-        let url = group.pdfUrl;
-
-        // In Production, we MUST use the Nginx Proxy to inject the API Key.
-        // This means fetching the report from the Frontend domain (Relative Path), not the Backend directly.
-        if (environment.production) {
-            // regex to strip protocol and domain: https://anything.com/path -> /path
-            url = url.replace(/^https?:\/\/[^\/]+/, '');
-
-            // Ensure it starts with / (if specific case where it wasn't there)
-            if (!url.startsWith('/')) {
-                url = '/' + url;
-            }
-        }
-
-        window.open(url, '_blank');
     }
+
+    changeGroupStatus(groupCode: string, newStatus: string) {
+         if (!groupCode) return;
+
+         const service = this.services.find(s => s.serviceGroup?.code === groupCode);
+         if (!service || !service.serviceGroup) return;
+
+         this.serviceService.updateGroupStatus(service.serviceGroup.id, newStatus).then(() => {
+             this.messageService.add({ severity: 'success', summary: 'Actualizado', detail: 'Estado del grupo actualizado a ' + newStatus });
+             this.loadAllData();
+         }).catch(err => {
+             console.error(err);
+             this.messageService.add({ severity: 'error', summary: 'Error', detail: 'No se pudo actualizar el estado' });
+         });
+    }
+
 }
