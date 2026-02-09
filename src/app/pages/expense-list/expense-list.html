@@ -33,6 +33,7 @@
                 <th style="width: 35%">Descripción</th>
                 <th class="text-center" style="width: 10%">Chofer</th>
                 <th class="text-center" style="width: 10%">Vehículo</th>
+                <th class="text-center" style="width: 20%">Servicio</th>
                 <th class="text-center" style="width: 10%">Acciones</th>
             </tr>
         </ng-template>
@@ -44,6 +45,14 @@
                 <td>{{expense.description}}</td>
                 <td class="text-center">{{expense.driver?.name || '-'}}</td>
                 <td class="text-center">{{expense.vehicle?.plate || '-'}}</td>
+                <td class="text-center">
+                    <span *ngIf="expense.service" class="text-xs">
+                        {{expense.service.origin}} <i class="pi pi-arrow-right text-[10px]"></i> {{expense.service.destination}}
+                        <br>
+                        <span class="text-gray-500">{{expense.service.startDate | date: 'dd/MM'}}</span>
+                    </span>
+                    <span *ngIf="!expense.service">-</span>
+                </td>
                 <td class="text-center">
                     <div class="flex justify-content-center">
                         <button pButton pRipple icon="pi pi-pencil" class="p-button-rounded p-button-success mr-2" (click)="editExpense(expense)"></button>
@@ -81,6 +90,11 @@
         <div class="field">
             <label for="driver">Chofer (Opcional)</label>
             <p-select [options]="drivers" [(ngModel)]="expense.driverId" optionLabel="name" optionValue="id" [showClear]="true" placeholder="Seleccionar Chofer" appendTo="body" styleClass="w-full" [style]="{'width':'100%'}"></p-select>
+        </div>
+
+        <div class="field flex align-items-center gap-2">
+            <p-checkbox [(ngModel)]="expense.isDriverExpense" [binary]="true" inputId="isDriverExpense"></p-checkbox>
+            <label for="isDriverExpense" class="mb-0 cursor-pointer">A cargo del chofer</label>
         </div>
 
         <div class="field">

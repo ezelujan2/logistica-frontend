@@ -8,11 +8,12 @@ import { DividerModule } from 'primeng/divider';
 import { SelectButtonModule } from 'primeng/selectbutton';
 import { SelectModule } from 'primeng/select';
 import { StatisticsService } from '../../service/statistics.service';
+import { MultiSelectModule } from 'primeng/multiselect';
 
 @Component({
   selector: 'app-statistics',
   standalone: true,
-  imports: [CommonModule, FormsModule, ChartModule, TableModule, CardModule, DividerModule, SelectButtonModule, SelectModule],
+  imports: [CommonModule, FormsModule, ChartModule, TableModule, CardModule, DividerModule, SelectButtonModule, SelectModule, MultiSelectModule],
   template: `
     <div class="p-4 flex flex-col gap-6 animate-fadein">
         <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
@@ -46,6 +47,16 @@ import { StatisticsService } from '../../service/statistics.service';
                     optionValue="value"
                     class="w-full sm:w-40 animate-fadein">
                  </p-select>
+
+                 <p-multiSelect
+                    [options]="serviceTypeOptions"
+                    [(ngModel)]="selectedServiceTypes"
+                    (onChange)="onFilterChange()"
+                    defaultLabel="Tipos de Servicio"
+                    optionLabel="label"
+                    optionValue="value"
+                    class="w-full sm:w-48">
+                 </p-multiSelect>
             </div>
         </div>
 
@@ -62,29 +73,33 @@ import { StatisticsService } from '../../service/statistics.service';
 
             <div class="p-4 bg-white dark:bg-surface-900 rounded-xl shadow-sm border border-surface-200 dark:border-surface-700 flex flex-col relative overflow-hidden">
                 <div class="absolute right-0 top-0 p-4 opacity-10">
-                    <i class="pi pi-wallet text-6xl text-green-500"></i>
+                    <i class="pi pi-wallet text-6xl text-red-500"></i>
+                </div>
+                <span class="text-sm font-semibold text-gray-500 uppercase tracking-wider mb-1">Gastos Totales</span>
+                <span class="text-3xl font-bold text-red-600 dark:text-red-400">{{ generalStats?.totalExpenses | currency:'USD' }}</span>
+                <span class="text-xs text-gray-500 mt-2">Gastos operativos + Combustible</span>
+            </div>
+
+            <div class="p-4 bg-white dark:bg-surface-900 rounded-xl shadow-sm border border-surface-200 dark:border-surface-700 flex flex-col relative overflow-hidden">
+                <div class="absolute right-0 top-0 p-4 opacity-10">
+                    <i class="pi pi-briefcase text-6xl text-green-500"></i>
                 </div>
                 <span class="text-sm font-semibold text-gray-500 uppercase tracking-wider mb-1">Ganancia Neta</span>
                 <span class="text-3xl font-bold text-green-600 dark:text-green-400">{{ generalStats?.totalProfit | currency:'USD' }}</span>
                 <span class="text-xs text-gray-500 mt-2">Despúes de gastos chofer y servicio</span>
             </div>
 
-            <div class="p-4 bg-white dark:bg-surface-900 rounded-xl shadow-sm border border-surface-200 dark:border-surface-700 flex flex-col relative overflow-hidden">
-                <div class="absolute right-0 top-0 p-4 opacity-10">
-                    <i class="pi pi-car text-6xl text-orange-500"></i>
-                </div>
-                <span class="text-sm font-semibold text-gray-500 uppercase tracking-wider mb-1">Total Viajes</span>
-                <span class="text-3xl font-bold text-gray-800 dark:text-white">{{ generalStats?.servicesCount }}</span>
-                <span class="text-xs text-orange-500 mt-2 font-medium">Servicios completados</span>
-            </div>
+
 
             <div class="p-4 bg-white dark:bg-surface-900 rounded-xl shadow-sm border border-surface-200 dark:border-surface-700 flex flex-col relative overflow-hidden">
                 <div class="absolute right-0 top-0 p-4 opacity-10">
                     <i class="pi pi-map-marker text-6xl text-purple-500"></i>
                 </div>
-                <span class="text-sm font-semibold text-gray-500 uppercase tracking-wider mb-1">Total Km</span>
-                <span class="text-3xl font-bold text-gray-800 dark:text-white">{{ generalStats?.totalKm | number:'1.0-0' }} km</span>
-                <span class="text-xs text-purple-500 mt-2 font-medium">Distancia recorrida</span>
+                <span class="text-sm font-semibold text-gray-500 uppercase tracking-wider mb-1">Total Km / Viajes</span>
+                 <div class="flex flex-col">
+                    <span class="text-3xl font-bold text-gray-800 dark:text-white">{{ generalStats?.totalKm | number:'1.0-0' }} km</span>
+                    <span class="text-sm text-gray-500">{{ generalStats?.servicesCount }} Servicios</span>
+                </div>
             </div>
         </div>
 
@@ -136,6 +151,12 @@ import { StatisticsService } from '../../service/statistics.service';
                             <td class="text-right font-bold text-green-600">{{d.earnings | currency:'USD'}}</td>
                         </tr>
                     </ng-template>
+                    <ng-template pTemplate="footer">
+                        <tr>
+                            <td colspan="2" class="text-right font-bold">Total</td>
+                            <td class="text-right font-bold text-green-600">{{ generalStats?.totalDriverEarnings | currency:'USD' }}</td>
+                        </tr>
+                    </ng-template>
                 </p-table>
              </div>
 
@@ -151,10 +172,15 @@ import { StatisticsService } from '../../service/statistics.service';
                             <i *ngIf="e.type === 'WASH'" class="pi pi-info-circle text-cyan-500"></i>
                             <i *ngIf="e.type === 'SNACK'" class="pi pi-apple text-green-500"></i>
                             <i *ngIf="e.type === 'OTHER'" class="pi pi-exclamation-circle text-gray-500"></i>
+                            <i *ngIf="e.type === 'DRIVER_EXPENSES'" class="pi pi-user text-orange-500"></i>
                             <span class="font-semibold text-sm">{{ getExpenseLabel(e.type) }}</span>
                         </div>
-                        <span class="font-bold text-sm text-red-600 dark:text-red-400">- {{e.amount | currency:'USD'}}</span>
+                        <span class="font-bold text-sm" [class.text-orange-500]="e.type === 'DRIVER_EXPENSES'" [class.text-red-600]="e.type !== 'DRIVER_EXPENSES'">- {{e.amount | currency:'USD'}}</span>
                     </div>
+                </div>
+                <div class="mt-4 pt-4 border-t border-gray-200 dark:border-gray-700 flex justify-between items-center">
+                    <span class="font-bold text-gray-700 dark:text-gray-200">Total Gastos</span>
+                    <span class="font-bold text-red-600 text-lg">{{ generalStats?.totalExpenses | currency:'USD' }}</span>
                 </div>
              </div>
         </div>
@@ -214,6 +240,15 @@ export class StatisticsComponent implements OnInit {
       { label: 'Octubre', value: 10 }, { label: 'Noviembre', value: 11 }, { label: 'Diciembre', value: 12 }
   ];
 
+  selectedServiceTypes: string[] = [];
+  serviceTypeOptions = [
+      { label: 'Servicio', value: 'SERVICE' },
+      { label: 'Mensajeria', value: 'MESSAGING' },
+      { label: 'Conducción', value: 'DRIVING' },
+      { label: 'Media Vuelta', value: 'HALF_ROUND' },
+      { label: 'Otro', value: 'OTHER' }
+  ];
+
   constructor(private statsService: StatisticsService) {
       const currentYear = new Date().getFullYear();
       for(let i = currentYear; i >= 2024; i--) {
@@ -239,12 +274,12 @@ export class StatisticsComponent implements OnInit {
         const month = this.viewMode === 'monthly' ? this.selectedMonth : undefined;
 
         const [general, drivers, clients, monthly, vehicles, expenses] = await Promise.all([
-            this.statsService.getGeneralStats(year, month),
-            this.statsService.getDriverStats(year, month),
-            this.statsService.getClientStats(year, month),
-            this.statsService.getMonthlyStats(year),
-            this.statsService.getVehicleStats(year, month),
-            this.statsService.getExpenseStats(year, month)
+            this.statsService.getGeneralStats(year, month, this.selectedServiceTypes),
+            this.statsService.getDriverStats(year, month, this.selectedServiceTypes),
+            this.statsService.getClientStats(year, month, this.selectedServiceTypes),
+            this.statsService.getMonthlyStats(year, this.selectedServiceTypes),
+            this.statsService.getVehicleStats(year, month, this.selectedServiceTypes),
+            this.statsService.getExpenseStats(year, month, this.selectedServiceTypes)
         ]);
 
         this.generalStats = general;
@@ -265,7 +300,8 @@ export class StatisticsComponent implements OnInit {
           'TOLL': 'Peajes',
           'WASH': 'Lavadero',
           'SNACK': 'Comida',
-          'OTHER': 'Otros'
+          'OTHER': 'Otros',
+          'DRIVER_EXPENSES': 'Gastos de Choferes'
       };
       return map[type] || type;
   }

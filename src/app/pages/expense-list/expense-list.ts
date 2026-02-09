@@ -15,6 +15,7 @@ import { DatePickerModule } from 'primeng/datepicker';
 import { SelectModule } from 'primeng/select';
 import { TagModule } from 'primeng/tag';
 import { ConfirmDialogModule } from 'primeng/confirmdialog';
+import { CheckboxModule } from 'primeng/checkbox';
 import { ExpenseService } from '../../service/expense.service';
 import { DriverService } from '../../service/driver.service';
 import { VehicleService } from '../../service/vehicle.service';
@@ -38,7 +39,8 @@ import { VehicleService } from '../../service/vehicle.service';
         SelectModule,
         DatePickerModule,
         TagModule,
-        ConfirmDialogModule
+        ConfirmDialogModule,
+        CheckboxModule
     ],
     providers: [MessageService, ConfirmationService, DatePipe]
 })
@@ -160,12 +162,13 @@ export class ExpenseList implements OnInit {
             const body = {
                 ...this.expense,
                 driverId: this.expense.driver?.id || (this.expense.driverId ? this.expense.driverId : null),
-                vehicleId: this.expense.vehicle?.id || (this.expense.vehicleId ? this.expense.vehicleId : null)
+                vehicleId: this.expense.vehicle?.id || (this.expense.vehicleId ? this.expense.vehicleId : null),
+                isDriverExpense: this.expense.isDriverExpense || false
             };
 
             // Fix PrimeNG dropdown object vs value issue if happens
-            if (typeof body.driverId === 'object') body.driverId = body.driverId.id;
-            if (typeof body.vehicleId === 'object') body.vehicleId = body.vehicleId.id;
+            if (body.driverId && typeof body.driverId === 'object') body.driverId = body.driverId.id;
+            if (body.vehicleId && typeof body.vehicleId === 'object') body.vehicleId = body.vehicleId.id;
 
 
             if (this.expense.id) {

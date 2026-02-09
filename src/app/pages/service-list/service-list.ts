@@ -273,7 +273,7 @@ import { environment } from '../../../environments/environment';
                                         <label for="destination">Destino</label>
                                         <input type="text" pInputText id="destination" [(ngModel)]="service.destination" class="w-full" />
                                     </div>
-                                    <div class="grid grid-cols-12 gap-4">
+                                    <div class="grid grid-cols-12 gap-4" *ngIf="service.serviceType !== 'OTHER'">
                                         <div class="col-span-12 md:col-span-6 flex flex-col gap-2">
                                             <label for="kmTraveled">KM Recorridos</label>
                                             <p-inputNumber [(ngModel)]="service.kmTraveled" mode="decimal" [minFractionDigits]="2" styleClass="w-full"></p-inputNumber>
@@ -282,6 +282,20 @@ import { environment } from '../../../environments/environment';
                                             <label for="waitingHours">Horas de Espera</label>
                                             <p-inputNumber [(ngModel)]="service.waitingHours" mode="decimal" [minFractionDigits]="2" styleClass="w-full"></p-inputNumber>
                                         </div>
+                                    </div>
+
+                                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4" *ngIf="service.serviceType === 'OTHER'">
+                                         <div class="flex flex-col gap-2">
+                                             <label for="finalAmount">Monto Final Acordado (Cliente)</label>
+                                             <p-inputNumber [(ngModel)]="service.kmPriceOverride" mode="currency" currency="USD" locale="en-US" styleClass="w-full" placeholder="Monto total cliente"></p-inputNumber>
+                                         </div>
+                                         <div class="flex flex-col gap-2">
+                                             <label for="finalDriverAmount">Monto Final (Chofer)</label>
+                                             <p-inputNumber [(ngModel)]="service.driverKmPriceOverride" mode="currency" currency="USD" locale="en-US" styleClass="w-full" placeholder="Monto total chofer"></p-inputNumber>
+                                         </div>
+                                         <div class="col-span-2">
+                                             <small class="text-gray-500">Para servicios tipo 'Otro', estos montos son fijos.</small>
+                                         </div>
                                     </div>
                                     <div class="flex flex-col gap-2">
                                         <label for="details">Detalles Adicionales</label>
@@ -318,7 +332,7 @@ import { environment } from '../../../environments/environment';
 
                             <p-panel header="Precios (Opcional - Sobrescribe defaults)">
                                 <div class="flex flex-col gap-4">
-                                    <div class="grid grid-cols-12 gap-4">
+                                    <div class="grid grid-cols-12 gap-4" *ngIf="service.serviceType !== 'OTHER'">
                                         <div class="col-span-12 md:col-span-6 flex flex-col gap-2">
                                             <label>Precio KM (Cliente)</label>
                                             <p-inputNumber [(ngModel)]="service.kmPriceOverride" mode="currency" currency="USD" locale="en-US" styleClass="w-full"></p-inputNumber>
@@ -328,7 +342,7 @@ import { environment } from '../../../environments/environment';
                                             <p-inputNumber [(ngModel)]="service.hourPriceOverride" mode="currency" currency="USD" locale="en-US" styleClass="w-full"></p-inputNumber>
                                         </div>
                                     </div>
-                                    <div class="grid grid-cols-12 gap-4">
+                                    <div class="grid grid-cols-12 gap-4" *ngIf="service.serviceType !== 'OTHER'">
                                         <div class="col-span-12 md:col-span-6 flex flex-col gap-2">
                                             <label>Precio KM (Chofer)</label>
                                             <p-inputNumber [(ngModel)]="service.driverKmPriceOverride" mode="currency" currency="USD" locale="en-US" styleClass="w-full"></p-inputNumber>
@@ -378,21 +392,36 @@ import { environment } from '../../../environments/environment';
                     <!-- Sección de Gastos -->
                     <p-divider align="left"><b>Gastos Extra</b></p-divider>
                     <div class="flex flex-col gap-2">
-                         <div *ngFor="let expense of service.expenses; let i = index" class="grid grid-cols-12 gap-2 items-end">
-                            <div class="col-span-12 md:col-span-3 flex flex-col gap-2">
-                                <label *ngIf="i===0">Tipo</label>
-                                <p-select [options]="expenseTypes" [(ngModel)]="expense.type" appendTo="body" styleClass="w-full"></p-select>
+                         <div *ngFor="let expense of service.expenses; let i = index" class="p-3 bg-gray-50 dark:bg-surface-800 rounded-lg border border-gray-200 dark:border-gray-700 mb-2">
+                            <div class="grid grid-cols-12 gap-2 items-end">
+                                <div class="col-span-12 md:col-span-3 flex flex-col gap-2">
+                                    <label *ngIf="i===0">Tipo</label>
+                                    <p-select [options]="expenseTypes" [(ngModel)]="expense.type" appendTo="body" styleClass="w-full"></p-select>
+                                </div>
+                                <div class="col-span-12 md:col-span-3 flex flex-col gap-2">
+                                    <label *ngIf="i===0">Monto</label>
+                                    <p-inputNumber [(ngModel)]="expense.amount" mode="currency" currency="USD" locale="en-US" styleClass="w-full"></p-inputNumber>
+                                </div>
+                                <div class="col-span-12 md:col-span-5 flex flex-col gap-2">
+                                    <label *ngIf="i===0">Descripción</label>
+                                    <input type="text" pInputText [(ngModel)]="expense.description" class="w-full" />
+                                </div>
+                                <div class="col-span-12 md:col-span-1 flex justify-center pb-1">
+                                    <p-button icon="pi pi-trash" severity="danger" [text]="true" (click)="removeExpense(i)"></p-button>
+                                </div>
                             </div>
-                            <div class="col-span-12 md:col-span-3 flex flex-col gap-2">
-                                <label *ngIf="i===0">Monto</label>
-                                <p-inputNumber [(ngModel)]="expense.amount" mode="currency" currency="USD" locale="en-US" styleClass="w-full"></p-inputNumber>
-                            </div>
-                            <div class="col-span-12 md:col-span-5 flex flex-col gap-2">
-                                <label *ngIf="i===0">Descripción</label>
-                                <input type="text" pInputText [(ngModel)]="expense.description" class="w-full" />
-                            </div>
-                            <div class="col-span-12 md:col-span-1 flex justify-center pb-1">
-                                <p-button icon="pi pi-trash" severity="danger" [text]="true" (click)="removeExpense(i)"></p-button>
+
+                            <!-- Driver Charge Logic -->
+                            <div class="flex flex-wrap items-center gap-4 mt-3">
+                                <div class="flex items-center gap-2">
+                                   <p-checkbox [(ngModel)]="expense.isDriverExpense" [binary]="true" [inputId]="'isDriverExp'+i"></p-checkbox>
+                                   <label [for]="'isDriverExp'+i" class="cursor-pointer text-sm">A cargo del chofer</label>
+                                </div>
+
+                                <div *ngIf="expense.isDriverExpense" class="flex items-center gap-2 animate-fadein">
+                                    <label class="text-sm">Chofer:</label>
+                                    <p-select [options]="driversList" [(ngModel)]="expense.driverId" optionLabel="name" optionValue="id" placeholder="Seleccionar..." appendTo="body" styleClass="w-48"></p-select>
+                                </div>
                             </div>
                          </div>
                          <div class="mt-2">
@@ -631,7 +660,9 @@ export class ServiceList implements OnInit {
     serviceTypes = [
         { label: 'Servicio', value: 'SERVICE' },
         { label: 'Mensajeria', value: 'MESSAGING' },
-        { label: 'Conducción', value: 'DRIVING' }
+        { label: 'Conducción', value: 'DRIVING' },
+        { label: 'Media Vuelta', value: 'HALF_ROUND' },
+        { label: 'Otro', value: 'OTHER' }
     ];
 
 
@@ -971,7 +1002,10 @@ export class ServiceList implements OnInit {
         if (!hasClient || !hasBasic) return false;
 
         // 3. Check KM
-        const hasKm = service.kmTraveled !== undefined && service.kmTraveled !== null && Number(service.kmTraveled) > 0;
+        let hasKm = true;
+        if (service.serviceType !== 'OTHER') {
+            hasKm = service.kmTraveled !== undefined && service.kmTraveled !== null && Number(service.kmTraveled) > 0;
+        }
 
         // 4. Check Driver & Vehicle (Form uses Ids, Row uses relations)
         const hasDriver = (service.driverIds && service.driverIds.length > 0) || (service.drivers && service.drivers.length > 0);
@@ -988,6 +1022,17 @@ export class ServiceList implements OnInit {
         }
 
         return hasKm && hasDriver && hasVehicle && total > 0;
+
+        /*
+           Modificación solicitud usuario:
+           Si el servicio es 'OTHER', permitimos avanzar sin chofer/auto.
+           Sólo requerimos Cliente, Fechas y Total > 0.
+        */
+        if (service.serviceType === 'OTHER') {
+             return hasClient && hasBasic && total > 0;
+        }
+
+        return hasKm && hasDriver && hasVehicle && total > 0;
     }
 
     async saveService() {
@@ -995,18 +1040,24 @@ export class ServiceList implements OnInit {
 
         // 0. Strict Validation for Non-New/Non-Created Statuses
         // User Requirement: "En los demas casos cliente, chofer, autos, fechas y total tienen que estar si o si"
+        // Exception: 'OTHER' type doesn't need driver/vehicle
         if (this.service.id && this.service.status !== 'CREATED') {
             const hasClient = this.service.clientIds && this.service.clientIds.length > 0;
-            const hasDriver = this.service.driverIds && this.service.driverIds.length > 0;
-            const hasVehicle = this.service.vehicleIds && this.service.vehicleIds.length > 0;
             const hasDates = this.service.startDate && this.service.endDate;
             const hasTotal = this.calculateClientTotal > 0;
 
-            if (!hasClient || !hasDriver || !hasVehicle || !hasDates || !hasTotal) {
+            let hasResources = true;
+            if (this.service.serviceType !== 'OTHER') {
+                const hasDriver = this.service.driverIds && this.service.driverIds.length > 0;
+                const hasVehicle = this.service.vehicleIds && this.service.vehicleIds.length > 0;
+                hasResources = hasDriver && hasVehicle;
+            }
+
+            if (!hasClient || !hasResources || !hasDates || !hasTotal) {
                  this.messageService.add({
                     severity: 'error',
                     summary: 'Datos Incompletos',
-                    detail: 'Para guardar un servicio en curso/finalizado, debe tener Cliente, Chofer, Vehículo, Fechas y Total validos.'
+                    detail: 'Para guardar un servicio en curso/finalizado, debe tener Cliente, Fechas y Total validos. (Chofer/Vehículo requeridos salvo para tipo Otro)'
                  });
                  return;
             }
@@ -1144,6 +1195,15 @@ export class ServiceList implements OnInit {
     }
 
     get calculateClientNet(): number {
+        if (this.service.serviceType === 'OTHER') {
+            const fixed = this.service.kmPriceOverride || 0;
+            let discount = 0;
+            if (this.service.discountPercentage) {
+                discount = fixed * (this.service.discountPercentage / 100);
+            }
+            return fixed - discount;
+        }
+
         const km = this.service.kmTraveled || 0;
         const hours = this.service.waitingHours || 0;
         const kmPrice = this.service.kmPriceOverride || 0;
@@ -1173,6 +1233,10 @@ export class ServiceList implements OnInit {
     }
 
     get calculateDriverTotal(): number {
+        if (this.service.serviceType === 'OTHER') {
+            return this.service.driverKmPriceOverride || 0;
+        }
+
         const km = this.service.kmTraveled || 0;
         const hours = this.service.waitingHours || 0;
         const kmPrice = this.service.driverKmPriceOverride || 0;
