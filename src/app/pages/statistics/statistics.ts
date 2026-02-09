@@ -173,9 +173,13 @@ import { MultiSelectModule } from 'primeng/multiselect';
                             <i *ngIf="e.type === 'SNACK'" class="pi pi-apple text-green-500"></i>
                             <i *ngIf="e.type === 'OTHER'" class="pi pi-exclamation-circle text-gray-500"></i>
                             <i *ngIf="e.type === 'DRIVER_EXPENSES'" class="pi pi-user text-orange-500"></i>
+                            <i *ngIf="e.type === 'DRIVER_PAYMENT'" class="pi pi-users text-green-600"></i>
                             <span class="font-semibold text-sm">{{ getExpenseLabel(e.type) }}</span>
                         </div>
-                        <span class="font-bold text-sm" [class.text-orange-500]="e.type === 'DRIVER_EXPENSES'" [class.text-red-600]="e.type !== 'DRIVER_EXPENSES'">- {{e.amount | currency:'USD'}}</span>
+                        <span class="font-bold text-sm"
+                              [class.text-orange-500]="e.type === 'DRIVER_EXPENSES'"
+                              [class.text-green-600]="e.type === 'DRIVER_PAYMENT'"
+                              [class.text-red-600]="e.type !== 'DRIVER_EXPENSES' && e.type !== 'DRIVER_PAYMENT'">- {{e.amount | currency:'USD'}}</span>
                     </div>
                 </div>
                 <div class="mt-4 pt-4 border-t border-gray-200 dark:border-gray-700 flex justify-between items-center">
@@ -301,7 +305,8 @@ export class StatisticsComponent implements OnInit {
           'WASH': 'Lavadero',
           'SNACK': 'Comida',
           'OTHER': 'Otros',
-          'DRIVER_EXPENSES': 'Gastos de Choferes'
+          'DRIVER_EXPENSES': 'Gastos de Choferes',
+          'DRIVER_PAYMENT': 'Pago a Choferes'
       };
       return map[type] || type;
   }
