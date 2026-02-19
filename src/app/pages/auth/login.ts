@@ -38,7 +38,7 @@ import { AuthService } from '../../service/auth.service';
                                     />
                                 </g>
                             </svg>
-                            <div class="text-surface-900 dark:text-surface-0 text-3xl font-medium mb-4">Bienvenido a Autentica
+                            <div class="text-surface-900 dark:text-surface-0 text-3xl font-medium mb-4">Bienvenido a Lecma
                             </div>
                             <span class="text-muted-color font-medium">Ingresa tus credenciales para continuar</span>
                         </div>

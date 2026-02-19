@@ -35,7 +35,7 @@ import { Router } from '@angular/router';
                         />
                     </g>
                 </svg>
-                <span>SAKAI</span>
+                <span>LECMA</span>
             </a>
         </div>
 
