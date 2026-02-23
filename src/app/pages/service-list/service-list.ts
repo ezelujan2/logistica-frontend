@@ -415,7 +415,7 @@ import { environment } from '../../../environments/environment';
                             <div class="flex flex-wrap items-center gap-4 mt-3">
                                 <div class="flex items-center gap-2">
                                    <p-checkbox [(ngModel)]="expense.isDriverExpense" [binary]="true" [inputId]="'isDriverExp'+i"></p-checkbox>
-                                   <label [for]="'isDriverExp'+i" class="cursor-pointer text-sm">A cargo del chofer</label>
+                                   <label [for]="'isDriverExp'+i" class="cursor-pointer text-sm">Abonado por el chofer (Reembolsable)</label>
                                 </div>
 
                                 <div *ngIf="expense.isDriverExpense" class="flex items-center gap-2 animate-fadein">

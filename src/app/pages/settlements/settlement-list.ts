@@ -140,8 +140,8 @@ import { InputTextModule } from 'primeng/inputtext';
                           </p-table>
                       </p-panel>
 
-                      <!-- Pending Driver Expenses Table (Non-Reimbursable/Chargeable) -->
-                      <p-panel header="Gastos a Cargo del Chofer (Pendientes)" *ngIf="showDriverExpensesPanel()">
+                      <!-- Pending Driver Expenses Table (Reimbursable) -->
+                      <p-panel header="Gastos del Chofer a Reembolsar (Pendientes)" *ngIf="showDriverExpensesPanel()">
                            <!-- Filter expenses that are driver expenses -->
                            <p-table [value]="getDriverExpenses()">
                               <ng-template pTemplate="header">
@@ -161,7 +161,7 @@ import { InputTextModule } from 'primeng/inputtext';
                                       <td>{{ expense.date | date:'dd/MM/yy' }}</td>
                                       <td><p-tag [value]="expense.type" severity="warn"></p-tag></td>
                                       <td>{{ expense.description }}</td>
-                                      <td class="font-bold text-orange-600">{{ expense.amount | currency:'USD' }}</td>
+                                      <td class="font-bold text-green-600">+ {{ expense.amount | currency:'USD' }}</td>
                                   </tr>
                               </ng-template>
                           </p-table>
@@ -189,11 +189,6 @@ import { InputTextModule } from 'primeng/inputtext';
                                          <p-button icon="pi pi-plus" label="Agregar" (click)="addExpense()" [disabled]="!newExpense.description || !newExpense.amount" styleClass="w-full"></p-button>
                                     </div>
                                </div>
-                               <!-- Toggle for Driver Charge -->
-                               <div class="flex items-center gap-2 mt-2">
-                                   <p-checkbox [(ngModel)]="newExpense.isDriverExpense" [binary]="true" inputId="isDriverExpense"></p-checkbox>
-                                   <label for="isDriverExpense" class="cursor-pointer">A cargo del chofer (Se descontará de la liquidación / No se reembolsa)</label>
-                               </div>
                           </div>
 
                           <p-table [value]="viewMode === 'CREATE' ? addedExpenses : selectedSettlement.expenses">
@@ -202,7 +197,6 @@ import { InputTextModule } from 'primeng/inputtext';
                                       <th>Tipo</th>
                                       <th>Descripción</th>
                                       <th>Monto</th>
-                                      <th>A Cargo de</th>
                                       <th *ngIf="viewMode === 'CREATE'" style="width: 3rem"></th>
                                   </tr>
                               </ng-template>
@@ -210,14 +204,8 @@ import { InputTextModule } from 'primeng/inputtext';
                                   <tr>
                                       <td><p-tag [value]="expense.type" severity="info"></p-tag></td>
                                       <td>{{ expense.description }}</td>
-                                      <td class="font-bold">
-                                          <span [class.text-blue-600]="!expense.isDriverExpense" [class.text-gray-600]="expense.isDriverExpense">
-                                              {{ expense.amount | currency:'USD' }}
-                                          </span>
-                                      </td>
-                                      <td>
-                                          <p-tag *ngIf="expense.isDriverExpense" value="Chofer" severity="warn"></p-tag>
-                                          <span *ngIf="!expense.isDriverExpense" class="text-gray-500 text-sm">Empresa (Reembolso)</span>
+                                      <td class="font-bold text-green-600">
+                                          + {{ expense.amount | currency:'USD' }}
                                       </td>
                                       <td *ngIf="viewMode === 'CREATE'">
                                            <p-button icon="pi pi-times" [text]="true" severity="danger" (click)="removeExpense(expense)"></p-button>
@@ -236,8 +224,8 @@ import { InputTextModule } from 'primeng/inputtext';
                       <div class="flex justify-end p-4 bg-gray-50 dark:bg-surface-800 rounded-xl">
                            <div class="text-right">
                                 <div class="text-gray-600 dark:text-gray-400">Total Servicios: {{ totalServices | currency:'USD' }}</div>
-                                <div class="text-blue-600 dark:text-blue-400">Total Gastos (Reembolso): + {{ totalExpenses | currency:'USD' }}</div>
-                                <div class="text-orange-600 dark:text-orange-400">Total Gastos (Chofer): - {{ totalDriverExpenses | currency:'USD' }}</div>
+                                <div *ngIf="totalExpenses > 0" class="text-green-600 dark:text-green-400">Gastos a Reembolsar (Agregados): + {{ totalExpenses | currency:'USD' }}</div>
+                                <div *ngIf="totalDriverExpenses > 0" class="text-green-600 dark:text-green-400">Gastos a Reembolsar (Pendientes): + {{ totalDriverExpenses | currency:'USD' }}</div>
                                 <div class="text-red-500 dark:text-red-400">Total Descuentos: - {{ totalAdvances | currency:'USD' }}</div>
                                 <div class="text-2xl font-bold mt-2 text-gray-800 dark:text-white">A Pagar: {{ finalTotal | currency:'USD' }}</div>
                            </div>
@@ -455,17 +443,13 @@ export class SettlementList implements OnInit {
             .reduce((sum, a) => sum + Number(a.amount || 0), 0);
 
         this.totalExpenses = this.addedExpenses
-            .filter(e => !e.isDriverExpense)
             .reduce((sum, e) => sum + Number(e.amount || 0), 0);
 
         this.totalDriverExpenses = this.pendingExpenses
             .filter(e => e.selected && e.isDriverExpense)
-            .reduce((sum, e) => sum + Number(e.amount || 0), 0) +
-            this.addedExpenses
-            .filter(e => e.isDriverExpense)
             .reduce((sum, e) => sum + Number(e.amount || 0), 0);
 
-        this.finalTotal = this.totalServices + this.totalExpenses - this.totalAdvances - this.totalDriverExpenses;
+        this.finalTotal = this.totalServices + this.totalExpenses + this.totalDriverExpenses - this.totalAdvances;
     }
 
     resetTotals() {
