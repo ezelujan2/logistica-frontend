@@ -18,7 +18,7 @@ import { Router } from '@angular/router';
                 <i class="pi pi-bars"></i>
             </button>
             <a class="layout-topbar-logo" routerLink="/">
-                <svg viewBox="0 0 54 40" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <!-- <svg viewBox="0 0 54 40" fill="none" xmlns="http://www.w3.org/2000/svg">
                     <path
                         fill-rule="evenodd"
                         clip-rule="evenodd"
@@ -34,8 +34,36 @@ import { Router } from '@angular/router';
                             fill="var(--primary-color)"
                         />
                     </g>
+                </svg> -->
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 520 130" style="height: 60px; width: 240px;">
+                    <defs>
+                        <style>
+                            @import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@400;900&amp;display=swap');
+                            .marca {
+                                font-family: 'Montserrat', sans-serif;
+                                font-weight: 900;
+                                font-size: 85px;
+                                fill: #0c2340;
+                                /* Reducido el letter spacing entre LECM para estar mas agruapdos */
+                                letter-spacing: -2px; 
+                            }
+                            .bajada {
+                                font-family: 'Montserrat', sans-serif;
+                                font-weight: 400;
+                                font-size: 17px;
+                                fill: #8a8d8f;
+                                letter-spacing: 10.5px;
+                            }
+                        </style>
+                    </defs>
+
+                    <text x="0" y="90" class="marca">LECM</text>
+
+                    <!-- Movido hacia la izquierda restando a las X: M 285 25 L 245 90 ... -->
+                    <path d="M 285 25 L 245 90 L 270 90 L 285 55 L 300 90 L 325 90 Z" fill="#0C2340" />
+
+                    <text x="5" y="120" class="bajada">MOVILIDAD CORPORATIVA</text>
                 </svg>
-                <span>LECMA</span>
             </a>
         </div>
 
@@ -86,7 +114,11 @@ import { Router } from '@angular/router';
 export class AppTopbar {
     items!: MenuItem[];
 
-    constructor(public layoutService: LayoutService, private authService: AuthService, private router: Router) {}
+    constructor(
+        public layoutService: LayoutService,
+        private authService: AuthService,
+        private router: Router
+    ) {}
 
     toggleDarkMode() {
         this.layoutService.layoutConfig.update((state) => ({ ...state, darkTheme: !state.darkTheme }));
