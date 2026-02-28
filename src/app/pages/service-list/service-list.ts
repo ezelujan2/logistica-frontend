@@ -373,11 +373,13 @@ import { environment } from '../../../environments/environment';
                                         <!-- Tax -->
                                         <span *ngIf="calculateClientTax > 0" class="text-xs text-blue-600 font-bold">+ IVA (21%): {{ calculateClientTax | currency:'USD' }}</span>
 
-                                        <!-- Total -->
+                                        <span class="text-xs text-gray-500 line-through mb-1">{{(calculateClientTotal + getDiscountValue(service)) | currency:'USD'}}</span>
                                         <span class="text-2xl font-bold text-gray-800 dark:text-white mt-1">{{ calculateClientTotal | currency:'USD' }}</span>
                                     </div>
 
                                     <span *ngIf="service.discountPercentage" class="text-xs text-green-600 mt-1">Desc. {{service.discountPercentage}}% aplicado</span>
+
+                                    <span *ngIf="calculateReimbursableTotal > 0" class="text-xs text-blue-600 mt-1">+ Reembolsos: {{calculateReimbursableTotal | currency:'USD'}}</span>
                                 </div>
 
                                 <!-- Card Chofer -->
@@ -427,13 +429,44 @@ import { environment } from '../../../environments/environment';
                          <div class="mt-2">
                              <p-button label="Agregar Gasto" icon="pi pi-plus" [text]="true" (click)="addExpense()"></p-button>
                          </div>
-                    </div>
-
+                     <!-- Sección de Gastos Reembolsables (A facturar al Cliente) -->
+                     <p-divider align="left"><b>Gastos a Reembolsar (Facturación Cliente)</b></p-divider>
+                     <div class="flex flex-col gap-2">
+                          <div *ngFor="let reimbursable of service.clientReimbursables; let j = index" class="p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-200 dark:border-blue-800 mb-2">
+                             <div class="grid grid-cols-12 gap-2 items-end">
+                                 <div class="col-span-12 md:col-span-4 flex flex-col gap-2">
+                                     <label *ngIf="j===0">Descripción / Concepto</label>
+                                     <input type="text" pInputText [(ngModel)]="reimbursable.description" class="w-full" placeholder="Ej. Peaje adicional, Carga extra..." />
+                                 </div>
+                                 <div class="col-span-12 md:col-span-4 flex flex-col gap-2">
+                                     <label *ngIf="j===0">Monto</label>
+                                     <p-inputNumber [(ngModel)]="reimbursable.amount" mode="currency" currency="USD" locale="en-US" styleClass="w-full"></p-inputNumber>
+                                 </div>
+                                 <div class="col-span-12 md:col-span-3 flex flex-col gap-2">
+                                     <label *ngIf="j===0">Evidencias (Opcional)</label>
+                                     <div class="flex flex-col gap-2">
+                                         <input type="file" multiple accept="image/*,.pdf" (change)="onReimbursableUpload($event, j)" class="text-sm w-full block border border-gray-200 dark:border-gray-700 rounded-md p-2 bg-white dark:bg-gray-800" />
+                                         <div class="flex flex-wrap gap-2 mt-1" *ngIf="reimbursable.photoUrls && reimbursable.photoUrls.length > 0">
+                                             <div *ngFor="let url of reimbursable.photoUrls; let fIndex = index" class="relative group">
+                                                 <a [href]="getAbsoluteUrl(url)" target="_blank" pTooltip="Ver Archivo" class="p-button p-button-sm p-button-secondary p-button-outlined"><i class="pi pi-file mr-1"></i> Evidencia {{fIndex + 1}}</a>
+                                                 <button pButton pRipple icon="pi pi-times" class="p-button-rounded p-button-danger p-button-text p-button-sm absolute -top-2 -right-2 w-6 h-6 opacity-0 group-hover:opacity-100 transition-opacity bg-white dark:bg-gray-800 shadow-sm" (click)="removePhoto(j, fIndex)" pTooltip="Quitar"></button>
+                                             </div>
+                                         </div>
+                                     </div>
+                                 </div>
+                                 <div class="col-span-12 md:col-span-1 flex justify-center pb-1">
+                                     <p-button icon="pi pi-trash" severity="danger" [text]="true" (click)="removeReimbursable(j)"></p-button>
+                                 </div>
+                             </div>
+                          </div>
+                           <div class="mt-2">
+                              <p-button label="Agregar Reembolso" icon="pi pi-plus" [text]="true" severity="info" (click)="addReimbursable()"></p-button>
+                          </div>
+                     </div>
+                     </div>
                 </ng-template>
 
                 <ng-template pTemplate="footer">
-                    <div class="flex flex-col gap-2 w-full">
-                        <!-- Return Trip Switch (Only for new services) -->
                         <div *ngIf="!service.id" class="flex items-center gap-4 p-3 bg-gray-50 dark:bg-gray-800/50 rounded-lg border border-gray-200 dark:border-gray-700">
                              <div class="flex items-center gap-2">
                                 <p-checkbox [(ngModel)]="createReturnTrip" [binary]="true" inputId="returnTrip"></p-checkbox>
@@ -453,7 +486,6 @@ import { environment } from '../../../environments/environment';
                              <p-button label="Cancelar" icon="pi pi-times" [text]="true" (click)="hideDialog()" />
                              <p-button label="Guardar" icon="pi pi-check" [text]="true" (click)="saveService()" />
                         </div>
-                    </div>
                 </ng-template>
             </p-dialog>
 
@@ -948,7 +980,8 @@ export class ServiceList implements OnInit {
             clientIds: [],
             driverIds: [],
             vehicleIds: [],
-            expenses: []
+            expenses: [],
+            clientReimbursables: []
         };
     }
 
@@ -971,7 +1004,8 @@ export class ServiceList implements OnInit {
             clientIds: service.clients ? service.clients.map((c: any) => c.id) : [],
             driverIds: service.drivers ? service.drivers.map((d: any) => d.id) : [],
             vehicleIds: service.vehicles ? service.vehicles.map((v: any) => v.id) : [],
-            expenses: service.expenses || []
+            expenses: service.expenses || [],
+            clientReimbursables: service.clientReimbursables || []
         };
         this.serviceDialog = true;
     }
@@ -1115,6 +1149,72 @@ export class ServiceList implements OnInit {
         this.service.expenses.splice(index, 1);
     }
 
+    addReimbursable() {
+        if (!this.service.clientReimbursables) this.service.clientReimbursables = [];
+        this.service.clientReimbursables.push({ description: '', amount: 0 });
+    }
+
+    removeReimbursable(index: number) {
+        this.service.clientReimbursables.splice(index, 1);
+    }
+
+    onReimbursableUpload(event: any, index: number) {
+        const files = event.target.files;
+        if (!files || files.length === 0) return;
+
+        if (!this.service.clientReimbursables[index].photoUrls) {
+            this.service.clientReimbursables[index].photoUrls = [];
+        }
+
+        const token = localStorage.getItem('token');
+
+        Array.from(files).forEach((file: any) => {
+            if (file.size > 5000000) {
+                this.messageService.add({ severity: 'error', summary: 'Error', detail: `El archivo ${file.name} excede los 5MB permitidos.` });
+                return;
+            }
+
+            const formData = new FormData();
+            formData.append('file', file);
+
+            fetch(`${environment.apiUrl}upload`, {
+                method: 'POST',
+                headers: {
+                    ...(token ? { 'Authorization': `Bearer ${token}` } : {})
+                },
+                body: formData
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.status === 'success') {
+                    this.service.clientReimbursables[index].photoUrls.push(data.url);
+                    this.messageService.add({ severity: 'success', summary: 'Éxito', detail: `Archivo ${file.name} subido correctamente.` });
+                } else {
+                    this.messageService.add({ severity: 'error', summary: 'Error', detail: data.message || `Error al subir ${file.name}.` });
+                }
+            })
+            .catch(err => {
+                this.messageService.add({ severity: 'error', summary: 'Error', detail: `Problema de red al subir archivo ${file.name}.` });
+            });
+        });
+
+        // Limpiar para permitir volver a subir el mismo si lo borra
+        event.target.value = '';
+    }
+
+    removePhoto(reimbursableIndex: number, photoIndex: number) {
+        if (this.service.clientReimbursables[reimbursableIndex].photoUrls) {
+            this.service.clientReimbursables[reimbursableIndex].photoUrls.splice(photoIndex, 1);
+        }
+    }
+
+    getAbsoluteUrl(url: string): string {
+        if (!url) return '';
+        if (url.startsWith('http')) return url;
+        const baseUrl = environment.apiUrl.replace('/api/', ''); // e.g. http://localhost:3000
+        return `${baseUrl}${url}`;
+    }
+
     getSeverity(status: string): any {
         switch (status) {
             case 'CREATED': return 'secondary';
@@ -1219,17 +1319,45 @@ export class ServiceList implements OnInit {
         return subtotal - discount;
     }
 
-    get calculateClientTax(): number {
-        const net = this.calculateClientNet;
-        const bType = this.service.billingType;
-        if (bType === 'OFFICIAL_A' || bType === 'MONOTRIBUTO') {
-            return net * 0.21;
+    // Helper to get the base net amount before discount and reimbursables
+    private getServiceNetBase(service: any): number {
+        if (service.serviceType === 'OTHER') {
+            return service.kmPriceOverride || 0;
         }
-        return 0;
+        const km = service.kmTraveled || 0;
+        const hours = service.waitingHours || 0;
+        const kmPrice = service.kmPriceOverride || 0;
+        const hourPrice = service.hourPriceOverride || 0;
+        return (km * kmPrice) + (hours * hourPrice);
     }
 
     get calculateClientTotal(): number {
-        return this.calculateClientNet + this.calculateClientTax;
+        const netBase = this.getServiceNetBase(this.service);
+        // Descuento se hace sobre el neto *base*
+        const netAfterDiscount = netBase - this.getDiscountValue(this.service);
+
+        let total = netAfterDiscount;
+
+        if (this.service.billingType === 'OFFICIAL_A' || this.service.billingType === 'OFFICIAL_B') {
+            total = total * 1.21;
+        }
+        return total;
+    }
+
+    get calculateReimbursableTotal(): number {
+        if (!this.service || !this.service.clientReimbursables || !this.service.clientReimbursables.length) return 0;
+        return this.service.clientReimbursables.reduce((sum: number, r: any) => sum + Number(r.amount || 0), 0);
+    }
+
+    get calculateClientTax(): number {
+        // This method calculates the tax component of the service base net.
+        const netBase = this.getServiceNetBase(this.service);
+        const netAfterDiscount = netBase - this.getDiscountValue(this.service);
+
+        if (this.service.billingType === 'OFFICIAL_A' || this.service.billingType === 'OFFICIAL_B') {
+            return netAfterDiscount * 0.21;
+        }
+        return 0;
     }
 
     get calculateDriverTotal(): number {
@@ -1468,9 +1596,9 @@ export class ServiceList implements OnInit {
 
         // Pre-select if single client
         if (this.selectedServices.length > 0) {
-            const firstId = this.selectedServices[0].clientIds[0];
-            const allSame = this.selectedServices.every(s => s.clientIds.length > 0 && s.clientIds[0] === firstId);
-            if (allSame) {
+            const firstId = this.selectedServices[0].clientIds?.[0];
+            const allSame = this.selectedServices.every(s => s.clientIds && s.clientIds.length > 0 && s.clientIds[0] === firstId);
+            if (!allSame) {
                 this.billingClient = this.clientsList.find(c => c.id === firstId);
                 if (this.billingClient) {
                     this.onBillingClientChange();

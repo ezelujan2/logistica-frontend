@@ -2,6 +2,18 @@ import { HttpClient, HttpParams } from '@angular/common/http';
 import { Injectable } from '@angular/core';
 import { environment } from '../../environments/environment';
 
+export interface Expense {
+    id?: number;
+    type: string;
+    amount: number;
+    description?: string;
+    date?: Date;
+    serviceId?: number;
+    driverId?: number;
+    vehicleId?: number;
+    isDriverExpense?: boolean;
+}
+
 @Injectable({
     providedIn: 'root'
 })

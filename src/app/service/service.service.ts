@@ -3,38 +3,64 @@ import { HttpClient } from '@angular/common/http';
 import { firstValueFrom } from 'rxjs';
 
 import { environment } from '../../environments/environment';
+import { Client } from './client.service';
+import { Driver } from './driver.service';
+import { Vehicle } from './vehicle.service';
+import { Expense } from './expense.service';
+
+export interface ClientReimbursable {
+  id?: number;
+  description: string;
+  amount: number;
+  photoUrls?: string[];
+  serviceId?: number;
+}
 
 export interface Service {
-    id?: number;
-    startDate: Date;
-    endDate?: Date;
-    serviceType: string;
-    origin: string;
-    destination: string;
-    details?: string;
-    kmTraveled?: number;
-    waitingHours?: number;
-    kmPriceOverride?: number;
-    hourPriceOverride?: number;
-    driverKmPriceOverride?: number;
-    driverHourPriceOverride?: number;
-    discountPercentage?: number;
+  id?: number;
+  startDate: Date | string;
+  endDate?: Date | string;
 
-    // Backend Consistency
-    total_amount?: number;
-    totalAmount?: number;
+  serviceType: string;
 
-    status: string;
-    billingType: string;
+  origin?: string;
+  destination?: string;
+  details?: string;
 
-    // Relations
-    clientIds: number[];
-    driverIds: number[];
-    vehicleIds: number[];
+  // Pricing Overrides (Split Rates)
+  kmPriceOverride?: number;
+  hourPriceOverride?: number;
+  driverKmPriceOverride?: number;
+  driverHourPriceOverride?: number;
 
-    expenses?: any[];
-    serviceGroup?: any;
-    serviceGroupId?: number;
+  kmTraveled?: number;
+  waitingHours?: number;
+  discountPercentage?: number;
+
+  net_amount?: number;
+  tax_amount?: number;
+  total_amount?: number;
+  driver_amount?: number;
+  status: string;
+
+  billingType?: string;
+
+  clients?: Client[];
+  drivers?: Driver[];
+  vehicles?: Vehicle[];
+
+  clientIds?: number[];
+  driverIds?: number[];
+  vehicleIds?: number[];
+
+  expenses?: Expense[];
+  clientReimbursables?: ClientReimbursable[];
+
+  serviceGroupId?: number;
+  serviceGroup?: any; // Add typing later if needed
+
+  clientNames?: string;
+  driverNames?: string;
 }
 
 @Injectable({
