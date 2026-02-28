@@ -141,6 +141,7 @@ import { MultiSelectModule } from 'primeng/multiselect';
                         <tr>
                             <th>Chofer</th>
                             <th>Viajes</th>
+                            <th class="text-right">KM</th>
                             <th class="text-right">Ganancias</th>
                         </tr>
                     </ng-template>
@@ -148,12 +149,13 @@ import { MultiSelectModule } from 'primeng/multiselect';
                         <tr>
                             <td>{{d.name}}</td>
                             <td>{{d.trips}}</td>
+                            <td class="text-right">{{d.totalKm | number:'1.0-0'}} km</td>
                             <td class="text-right font-bold text-green-600">{{d.earnings | currency:'USD'}}</td>
                         </tr>
                     </ng-template>
                     <ng-template pTemplate="footer">
                         <tr>
-                            <td colspan="2" class="text-right font-bold">Total</td>
+                            <td colspan="3" class="text-right font-bold">Total</td>
                             <td class="text-right font-bold text-green-600">{{ generalStats?.totalDriverEarnings | currency:'USD' }}</td>
                         </tr>
                     </ng-template>
