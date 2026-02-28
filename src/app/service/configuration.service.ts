@@ -4,7 +4,9 @@ import { Observable } from 'rxjs';
 import { environment } from '../../environments/environment';
 
 export interface SystemConfiguration {
-    id: number;
+    id?: number;
+    name?: string;
+    isFavorite?: boolean;
     kmPrice: number;
     hourPrice: number;
     driverKmPrice: number;
@@ -19,11 +21,23 @@ export class ConfigurationService {
 
     constructor(private http: HttpClient) {}
 
-    getConfig(): Observable<SystemConfiguration> {
-        return this.http.get<SystemConfiguration>(this.apiUrl);
+    getConfigs(): Observable<SystemConfiguration[]> {
+        return this.http.get<SystemConfiguration[]>(this.apiUrl);
     }
 
-    updateConfig(config: Partial<SystemConfiguration>): Observable<SystemConfiguration> {
-        return this.http.put<SystemConfiguration>(this.apiUrl, config);
+    createConfig(config: SystemConfiguration): Observable<SystemConfiguration> {
+        return this.http.post<SystemConfiguration>(this.apiUrl, config);
+    }
+
+    updateConfig(id: number, config: Partial<SystemConfiguration>): Observable<SystemConfiguration> {
+        return this.http.put<SystemConfiguration>(`${this.apiUrl}/${id}`, config);
+    }
+
+    deleteConfig(id: number): Observable<any> {
+        return this.http.delete(`${this.apiUrl}/${id}`);
+    }
+
+    increaseRates(percentages: { clientKmInc: number, clientHourInc: number, driverKmInc: number, driverHourInc: number }): Observable<SystemConfiguration[]> {
+        return this.http.post<SystemConfiguration[]>(`${this.apiUrl}/increase`, percentages);
     }
 }

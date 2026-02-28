@@ -260,6 +260,10 @@ import { environment } from '../../../environments/environment';
                                         <label for="billingType">Tipo de Facturación</label>
                                         <p-select [options]="billingTypes" [(ngModel)]="service.billingType" optionLabel="label" optionValue="value" appendTo="body" styleClass="w-full"></p-select>
                                     </div>
+                                    <div class="flex flex-col gap-2">
+                                        <label for="selectedConfig">Tarifa a Aplicar</label>
+                                        <p-select [options]="configs" [(ngModel)]="selectedConfig" optionLabel="name" appendTo="body" styleClass="w-full" (onChange)="onConfigSelected($event)" placeholder="Elegir Tarifa..."></p-select>
+                                    </div>
                                 </div>
                             </p-panel>
 
@@ -467,18 +471,32 @@ import { environment } from '../../../environments/environment';
                 </ng-template>
 
                 <ng-template pTemplate="footer">
-                        <div *ngIf="!service.id" class="flex items-center gap-4 p-3 bg-gray-50 dark:bg-gray-800/50 rounded-lg border border-gray-200 dark:border-gray-700">
-                             <div class="flex items-center gap-2">
-                                <p-checkbox [(ngModel)]="createReturnTrip" [binary]="true" inputId="returnTrip"></p-checkbox>
-                                <label for="returnTrip" class="cursor-pointer font-medium select-none text-gray-700 dark:text-gray-200" pTooltip="Se creará autom&aacute;ticamente un servicio de vuelta con origen y destino invertidos (sin gastos extra)." tooltipPosition="top">
-                                    Crear Vuelta <i class="pi pi-info-circle text-xs text-blue-500 ml-1"></i>
-                                </label>
+                        <div *ngIf="!service.id" class="flex flex-col gap-2 p-3 bg-gray-50 dark:bg-gray-800/50 rounded-lg border border-gray-200 dark:border-gray-700">
+                             <div class="flex items-center gap-4">
+                                 <div class="flex items-center gap-2">
+                                     <p-checkbox [(ngModel)]="createReturnTrip" [binary]="true" inputId="returnTrip"></p-checkbox>
+                                     <label for="returnTrip" class="cursor-pointer font-medium select-none text-gray-700 dark:text-gray-200" pTooltip="Se creará autom&aacute;ticamente un servicio de vuelta con origen y destino invertidos." tooltipPosition="top">
+                                         Crear Vuelta <i class="pi pi-info-circle text-xs text-blue-500 ml-1"></i>
+                                     </label>
+                                 </div>
+                                 <div *ngIf="createReturnTrip" class="flex flex-wrap gap-2 items-center animate-fadein">
+                                     <p-datepicker [(ngModel)]="returnStartDate" [showTime]="true" hourFormat="24" placeholder="Inicio" appendTo="body" styleClass="w-32" [style]="{'width':'100%'}" inputStyleClass="w-full" [showIcon]="false"></p-datepicker>
+                                     <span class="text-gray-400">-</span>
+                                     <p-datepicker [(ngModel)]="returnEndDate" [showTime]="true" hourFormat="24" placeholder="Fin" appendTo="body" styleClass="w-32" [style]="{'width':'100%'}" inputStyleClass="w-full" [showIcon]="false"></p-datepicker>
+                                 </div>
                              </div>
 
-                             <div *ngIf="createReturnTrip" class="flex flex-wrap gap-2 items-center ml-auto animate-fadein">
-                                <p-datepicker [(ngModel)]="returnStartDate" [showTime]="true" hourFormat="24" placeholder="Inicio" appendTo="body" styleClass="w-32" [style]="{'width':'100%'}" inputStyleClass="w-full" [showIcon]="false"></p-datepicker>
-                                <span class="text-gray-400">-</span>
-                                <p-datepicker [(ngModel)]="returnEndDate" [showTime]="true" hourFormat="24" placeholder="Fin" appendTo="body" styleClass="w-32" [style]="{'width':'100%'}" inputStyleClass="w-full" [showIcon]="false"></p-datepicker>
+                             <div *ngIf="!createReturnTrip" class="flex flex-col gap-2 mt-2 pt-2 border-t border-gray-200 dark:border-gray-700">
+                                 <div class="flex items-center gap-2">
+                                     <p-checkbox [(ngModel)]="createRecurringTrip" [binary]="true" inputId="recurringTrip"></p-checkbox>
+                                     <label for="recurringTrip" class="cursor-pointer font-medium select-none text-gray-700 dark:text-gray-200" pTooltip="Permite agendar múltiples copias exactas de este viaje eligiendo varios días." tooltipPosition="top">
+                                         Programación Masiva (Días Múltiples) <i class="pi pi-clone text-xs text-blue-500 ml-1"></i>
+                                     </label>
+                                 </div>
+                                 <div *ngIf="createRecurringTrip" class="flex flex-col gap-2 animate-fadein">
+                                     <label class="text-sm text-gray-600">Seleccioná los días extras en el calendario (El horario será el mismo de arriba):</label>
+                                     <p-datepicker [(ngModel)]="recurringDates" selectionMode="multiple" [inline]="false" appendTo="body" styleClass="w-full" [style]="{'width':'100%'}" inputStyleClass="w-full" placeholder="Click para seleccionar múltiples fechas..." dateFormat="dd/mm/yy"></p-datepicker>
+                                 </div>
                              </div>
                         </div>
 
@@ -489,41 +507,146 @@ import { environment } from '../../../environments/environment';
                 </ng-template>
             </p-dialog>
 
-            <p-dialog [(visible)]="configDialog" [style]="{ width: '450px' }" header="Configuración General" [modal]="true" styleClass="p-fluid">
+            <p-dialog [(visible)]="configDialog" [style]="{ width: '800px', 'max-width': '95vw' }" header="Configuración de Tarifas" [modal]="true" styleClass="p-fluid">
                 <ng-template pTemplate="content">
-                    <div class="flex flex-col gap-4">
+                    <div class="flex justify-between items-center mb-4">
+                         <p-button label="Nueva Tarifa" icon="pi pi-plus" (click)="openNewConfig()"></p-button>
+                         <p-button label="Ajuste Masivo" icon="pi pi-percentage" severity="warn" (click)="openIncreaseDialog()"></p-button>
+                    </div>
+                    <p-table [value]="configs" [tableStyle]="{ 'min-width': '50rem' }" [rowHover]="true" styleClass="p-datatable-sm">
+                        <ng-template pTemplate="header">
+                            <tr>
+                                <th>Nombre</th>
+                                <th>Favorita</th>
+                                <th>C. KM</th>
+                                <th>C. Hora</th>
+                                <th>CH. KM</th>
+                                <th>CH. Hora</th>
+                                <th>Acciones</th>
+                            </tr>
+                        </ng-template>
+                        <ng-template pTemplate="body" let-c>
+                            <tr>
+                                <td>{{ c.name }}</td>
+                                <td>
+                                    <i class="pi" [ngClass]="{'text-yellow-500 pi-star-fill': c.isFavorite, 'text-gray-400 pi-star': !c.isFavorite}"></i>
+                                </td>
+                                <td>{{ c.kmPrice | currency:'USD' }}</td>
+                                <td>{{ c.hourPrice | currency:'USD' }}</td>
+                                <td>{{ c.driverKmPrice | currency:'USD' }}</td>
+                                <td>{{ c.driverHourPrice | currency:'USD' }}</td>
+                                <td>
+                                    <div class="flex gap-2">
+                                        <p-button icon="pi pi-pencil" [rounded]="true" [text]="true" (click)="editConfig(c)" />
+                                        <p-button icon="pi pi-trash" severity="danger" [rounded]="true" [text]="true" (click)="deleteConfig(c)" />
+                                    </div>
+                                </td>
+                            </tr>
+                        </ng-template>
+                    </p-table>
+                </ng-template>
+            </p-dialog>
+
+            <!-- Single Config Editor Dialog -->
+            <p-dialog [(visible)]="configEditDialog" [style]="{ width: '450px' }" [header]="config.id ? 'Editar Tarifa' : 'Nueva Tarifa'" [modal]="true" styleClass="p-fluid">
+                <ng-template pTemplate="content">
+                    <div class="flex flex-col gap-4 mt-2">
                         <div class="flex flex-col gap-2">
-                             <label class="font-bold">Precios Cliente (Default)</label>
+                            <label>Nombre de Tarifa</label>
+                            <input pInputText [(ngModel)]="config.name" />
+                        </div>
+                        <div class="flex items-center gap-2">
+                            <p-checkbox [(ngModel)]="config.isFavorite" [binary]="true" inputId="fav"></p-checkbox>
+                            <label for="fav">Marcar como Favorita Predeterminada</label>
+                        </div>
+                        <p-divider></p-divider>
+                        <div class="flex flex-col gap-2">
+                             <label class="font-bold">Precios Cliente</label>
                              <div class="grid grid-cols-2 gap-4">
                                 <div class="flex flex-col gap-2">
                                     <label>Precio KM</label>
-                                    <p-inputNumber [(ngModel)]="config.kmPrice" mode="currency" currency="USD" locale="en-US" styleClass="w-full"></p-inputNumber>
+                                    <p-inputNumber [(ngModel)]="config.kmPrice" mode="currency" currency="USD" locale="en-US"></p-inputNumber>
                                 </div>
                                 <div class="flex flex-col gap-2">
                                     <label>Precio Hora</label>
-                                    <p-inputNumber [(ngModel)]="config.hourPrice" mode="currency" currency="USD" locale="en-US" styleClass="w-full"></p-inputNumber>
+                                    <p-inputNumber [(ngModel)]="config.hourPrice" mode="currency" currency="USD" locale="en-US"></p-inputNumber>
                                 </div>
                              </div>
                         </div>
-                         <p-divider></p-divider>
-                         <div class="flex flex-col gap-2">
-                             <label class="font-bold">Precios Chofer (Default)</label>
+                        <p-divider></p-divider>
+                        <div class="flex flex-col gap-2">
+                             <label class="font-bold">Precios Chofer</label>
                              <div class="grid grid-cols-2 gap-4">
                                 <div class="flex flex-col gap-2">
                                     <label>Precio KM</label>
-                                    <p-inputNumber [(ngModel)]="config.driverKmPrice" mode="currency" currency="USD" locale="en-US" styleClass="w-full"></p-inputNumber>
+                                    <p-inputNumber [(ngModel)]="config.driverKmPrice" mode="currency" currency="USD" locale="en-US"></p-inputNumber>
                                 </div>
                                 <div class="flex flex-col gap-2">
                                     <label>Precio Hora</label>
-                                    <p-inputNumber [(ngModel)]="config.driverHourPrice" mode="currency" currency="USD" locale="en-US" styleClass="w-full"></p-inputNumber>
+                                    <p-inputNumber [(ngModel)]="config.driverHourPrice" mode="currency" currency="USD" locale="en-US"></p-inputNumber>
                                 </div>
                              </div>
                         </div>
                     </div>
                 </ng-template>
                  <ng-template pTemplate="footer">
-                    <p-button label="Cancelar" icon="pi pi-times" [text]="true" (click)="configDialog = false" />
+                    <p-button label="Cancelar" icon="pi pi-times" [text]="true" (click)="configEditDialog = false" />
                     <p-button label="Guardar" icon="pi pi-check" [text]="true" (click)="saveConfig()" />
+                </ng-template>
+            </p-dialog>
+
+            <!-- Mass Adjustment Dialog -->
+            <p-dialog [(visible)]="increaseDialog" [style]="{ width: '450px' }" header="Ajuste Masivo de Tarifas" [modal]="true" styleClass="p-fluid">
+                <ng-template pTemplate="content">
+                    <div class="flex flex-col gap-4 mt-2">
+                        <!-- Type selector -->
+                        <div class="flex justify-center gap-4 mb-2">
+                             <div class="flex items-center gap-2 cursor-pointer p-4 border rounded-xl flex-1 transition-all duration-200" [ngClass]="{'border-green-500 bg-green-50 shadow-sm': increaseType === 'INCREASE', 'border-gray-200': increaseType !== 'INCREASE'}" (click)="increaseType = 'INCREASE'">
+                                  <i class="pi pi-arrow-up text-green-500 text-xl"></i>
+                                  <span class="font-bold text-green-700">Aumento</span>
+                             </div>
+                             <div class="flex items-center gap-2 cursor-pointer p-4 border rounded-xl flex-1 transition-all duration-200" [ngClass]="{'border-red-500 bg-red-50 shadow-sm': increaseType === 'DISCOUNT', 'border-gray-200': increaseType !== 'DISCOUNT'}" (click)="increaseType = 'DISCOUNT'">
+                                  <i class="pi pi-arrow-down text-red-500 text-xl"></i>
+                                  <span class="font-bold text-red-700">Descuento</span>
+                             </div>
+                        </div>
+
+                        <div class="flex flex-col gap-2 bg-blue-50/50 p-4 border border-blue-100 rounded-lg">
+                             <label class="font-bold text-blue-800"><i class="pi pi-user mr-2"></i>Porcentajes Clientes</label>
+                             <div class="grid grid-cols-2 gap-4">
+                                <div class="flex flex-col gap-1">
+                                    <label class="text-xs font-semibold text-gray-600">Por KM (%)</label>
+                                    <p-inputNumber [(ngModel)]="increaseRates.clientKmInc" suffix="%" [min]="0" styleClass="w-full"></p-inputNumber>
+                                </div>
+                                <div class="flex flex-col gap-1">
+                                    <label class="text-xs font-semibold text-gray-600">Por Hora (%)</label>
+                                    <p-inputNumber [(ngModel)]="increaseRates.clientHourInc" suffix="%" [min]="0" styleClass="w-full"></p-inputNumber>
+                                </div>
+                             </div>
+                        </div>
+                        <div class="flex flex-col gap-2 bg-orange-50/50 p-4 border border-orange-100 rounded-lg">
+                             <label class="font-bold text-orange-800"><i class="pi pi-car mr-2"></i>Porcentajes Choferes</label>
+                             <div class="grid grid-cols-2 gap-4">
+                                <div class="flex flex-col gap-1">
+                                    <label class="text-xs font-semibold text-gray-600">Por KM (%)</label>
+                                    <p-inputNumber [(ngModel)]="increaseRates.driverKmInc" suffix="%" [min]="0" styleClass="w-full"></p-inputNumber>
+                                </div>
+                                <div class="flex flex-col gap-1">
+                                    <label class="text-xs font-semibold text-gray-600">Por Hora (%)</label>
+                                    <p-inputNumber [(ngModel)]="increaseRates.driverHourInc" suffix="%" [min]="0" styleClass="w-full"></p-inputNumber>
+                                </div>
+                             </div>
+                        </div>
+
+                        <small class="text-gray-500 text-center mt-2 px-4">
+                            <i class="pi pi-info-circle mr-1"></i>
+                            Los cambios se aplicarán <span class="font-bold">a todas</span> las tarifas globales de forma permanente.
+                        </small>
+                    </div>
+                </ng-template>
+                 <ng-template pTemplate="footer">
+                    <p-button label="Cancelar" icon="pi pi-times" [text]="true" (click)="increaseDialog = false" />
+                    <p-button [label]="increaseType === 'INCREASE' ? 'Aplicar Aumento' : 'Aplicar Descuento'" icon="pi pi-check" [text]="true" (click)="applyMassIncrease()" [severity]="increaseType === 'INCREASE' ? 'warn' : 'danger'" />
                 </ng-template>
             </p-dialog>
             <p-dialog [(visible)]="summaryDialog" [style]="{ width: '500px' }" header="Resumen de Servicios" [modal]="true" styleClass="p-fluid">
@@ -660,8 +783,18 @@ export class ServiceList implements OnInit {
     createReturnTrip: boolean = false;
     returnStartDate: Date | null = null;
     returnEndDate: Date | null = null;
+    // Multiple Schedule Features
+    createRecurringTrip: boolean = false;
+    recurringDates: Date[] = [];
+
     configDialog: boolean = false;
-    config: SystemConfiguration = { id: 0, kmPrice: 0, hourPrice: 0, driverKmPrice: 0, driverHourPrice: 0 };
+    configEditDialog: boolean = false;
+    increaseDialog: boolean = false;
+    increaseType: 'INCREASE' | 'DISCOUNT' = 'INCREASE';
+    configs: SystemConfiguration[] = [];
+    selectedConfig: SystemConfiguration | null = null;
+    config: SystemConfiguration = { id: 0, name: '', isFavorite: false, kmPrice: 0, hourPrice: 0, driverKmPrice: 0, driverHourPrice: 0 };
+    increaseRates = { clientKmInc: 0, clientHourInc: 0, driverKmInc: 0, driverHourInc: 0 };
     submitted: boolean = false;
     activeStatusFilter: string | undefined = undefined;
 
@@ -864,12 +997,15 @@ export class ServiceList implements OnInit {
                 filters.status = this.activeStatusFilter;
             }
 
-            const [services, clients, drivers, vehicles] = await Promise.all([
+            const [services, clients, drivers, vehicles, configs] = await Promise.all([
                 this.serviceService.getServices(filters),
                 this.clientService.getClients(),
                 this.driverService.getDrivers(),
-                this.vehicleService.getVehicles()
+                this.vehicleService.getVehicles(),
+                this.configService.getConfigs().toPromise()
             ]);
+
+            this.configs = configs || [];
 
             this.services = services.map((s: any) => ({
                 ...s,
@@ -926,46 +1062,110 @@ export class ServiceList implements OnInit {
         this.service = this.getEmptyService();
         this.submitted = false;
 
-        // Reset Return Trip
         this.createReturnTrip = false;
         this.returnStartDate = null;
         this.returnEndDate = null;
+        this.createRecurringTrip = false;
+        this.recurringDates = [];
 
-        // Load config defaults
-        this.configService.getConfig().subscribe({
-            next: (config) => {
-                this.service.kmPriceOverride = config.kmPrice;
-                this.service.hourPriceOverride = config.hourPrice;
-                this.service.driverKmPriceOverride = config.driverKmPrice;
-                this.service.driverHourPriceOverride = config.driverHourPrice;
-                this.serviceDialog = true;
-            },
-            error: () => {
-                this.messageService.add({severity: 'error', summary: 'Error', detail: 'No se pudo cargar la configuración default'});
-                this.serviceDialog = true; // Open anyway
-            }
-        });
+        this.selectedConfig = this.configs?.find(c => c.isFavorite) || this.configs?.[0] || null;
+        if (this.selectedConfig) {
+             this.applyConfig(this.selectedConfig);
+        }
+        this.serviceDialog = true;
+    }
+
+    applyConfig(c: SystemConfiguration) {
+        this.service.kmPriceOverride = c.kmPrice;
+        this.service.hourPriceOverride = c.hourPrice;
+        this.service.driverKmPriceOverride = c.driverKmPrice;
+        this.service.driverHourPriceOverride = c.driverHourPrice;
+    }
+
+    onConfigSelected(event: any) {
+         if (event.value) {
+             this.applyConfig(event.value);
+         }
     }
 
     openConfig() {
-        this.configService.getConfig().subscribe({
-            next: (config) => {
-                this.config = config;
-                this.configDialog = true;
-            },
-            error: () => this.messageService.add({severity:'error', summary:'Error', detail:'Error cargando configuración'})
+        this.loadConfigs();
+        this.configDialog = true;
+    }
+
+    loadConfigs() {
+        this.configService.getConfigs().subscribe({
+             next: data => this.configs = data,
+             error: () => this.messageService.add({severity:'error', summary:'Error', detail:'Error cargando configuración'})
         });
     }
 
+    openNewConfig() {
+        this.config = { name: 'Nueva Tarifa', isFavorite: false, kmPrice: 0, hourPrice: 0, driverKmPrice: 0, driverHourPrice: 0 } as SystemConfiguration;
+        this.configEditDialog = true;
+    }
+
+    editConfig(c: SystemConfiguration) {
+        this.config = { ...c };
+        this.configEditDialog = true;
+    }
+
     saveConfig() {
-        this.configService.updateConfig(this.config).subscribe({
-            next: (newConfig) => {
-                this.config = newConfig;
-                this.messageService.add({severity:'success', summary:'Actualizado', detail:'Configuración global actualizada'});
-                this.configDialog = false;
+        if (this.config.id) {
+             this.configService.updateConfig(this.config.id, this.config).subscribe({
+                 next: () => {
+                     this.messageService.add({severity:'success', summary:'Actualizado', detail:'Tarifa actualizada'});
+                     this.configEditDialog = false;
+                     this.loadConfigs();
+                 },
+                 error: () => this.messageService.add({severity:'error', summary:'Error', detail:'Error guardando tarifa'})
+             });
+        } else {
+             this.configService.createConfig(this.config).subscribe({
+                 next: () => {
+                     this.messageService.add({severity:'success', summary:'Creado', detail:'Tarifa creada'});
+                     this.configEditDialog = false;
+                     this.loadConfigs();
+                 },
+                 error: () => this.messageService.add({severity:'error', summary:'Error', detail:'Error creando tarifa'})
+             });
+        }
+    }
+
+    deleteConfig(c: SystemConfiguration) {
+        if (!c.id) return;
+        this.configService.deleteConfig(c.id).subscribe({
+            next: () => {
+                this.messageService.add({severity:'success', summary:'Eliminado', detail:'Tarifa eliminada'});
+                this.loadConfigs();
             },
-            error: () => this.messageService.add({severity:'error', summary:'Error', detail:'Error guardando configuración'})
+            error: () => this.messageService.add({severity:'error', summary:'Error', detail:'Error eliminando tarifa'})
         });
+    }
+
+    openIncreaseDialog() {
+         this.increaseRates = { clientKmInc: 0, clientHourInc: 0, driverKmInc: 0, driverHourInc: 0 };
+         this.increaseType = 'INCREASE';
+         this.increaseDialog = true;
+    }
+
+    applyMassIncrease() {
+         const multiplier = this.increaseType === 'DISCOUNT' ? -1 : 1;
+         const requestPayload = {
+              clientKmInc: (this.increaseRates.clientKmInc || 0) * multiplier,
+              clientHourInc: (this.increaseRates.clientHourInc || 0) * multiplier,
+              driverKmInc: (this.increaseRates.driverKmInc || 0) * multiplier,
+              driverHourInc: (this.increaseRates.driverHourInc || 0) * multiplier
+         };
+
+         this.configService.increaseRates(requestPayload).subscribe({
+             next: (updatedConfigs) => {
+                  this.configs = updatedConfigs;
+                  this.messageService.add({severity:'success', summary:'Tarifas Ajustadas', detail: `Se aplicó el ${this.increaseType === 'DISCOUNT' ? 'descuento' : 'aumento'} correctamente`});
+                  this.increaseDialog = false;
+             },
+             error: () => this.messageService.add({severity:'error', summary:'Error', detail:'Error aplicando ajustes'})
+         });
     }
 
     getEmptyService() {
@@ -1118,8 +1318,48 @@ export class ServiceList implements OnInit {
                 await this.serviceService.updateService(this.service.id, this.service);
                 this.messageService.add({ severity: 'success', summary: 'Éxito', detail: 'Servicio actualizado', life: 3000 });
             } else {
-                await this.serviceService.createService(this.service);
-                this.messageService.add({ severity: 'success', summary: 'Éxito', detail: 'Servicio creado', life: 3000 });
+                if (this.createRecurringTrip && this.recurringDates && this.recurringDates.length > 0) {
+                     const startHours = this.service.startDate.getHours();
+                     const startMins = this.service.startDate.getMinutes();
+                     const startSecs = this.service.startDate.getSeconds();
+                     const baseDuration = this.service.endDate ? (new Date(this.service.endDate).getTime() - this.service.startDate.getTime()) : 0;
+
+                     const servicesToCreate = [this.service];
+
+                     for (let d of this.recurringDates) {
+                          const newStart = new Date(d);
+                          newStart.setHours(startHours, startMins, startSecs, 0);
+
+                          let newEnd = null;
+                          if (this.service.endDate) {
+                              newEnd = new Date(newStart.getTime() + baseDuration);
+                          }
+
+                          servicesToCreate.push({
+                              ...this.service,
+                              startDate: newStart,
+                              endDate: newEnd
+                          });
+                     }
+
+                     await this.serviceService.createBulkServices(servicesToCreate);
+                     this.messageService.add({ severity: 'success', summary: 'Éxito', detail: `${servicesToCreate.length} servicios generados correctamente`, life: 3000 });
+                } else if (this.createReturnTrip && this.returnStartDate && this.returnEndDate) {
+                     const returnService = {
+                         ...this.service,
+                         startDate: this.returnStartDate,
+                         endDate: this.returnEndDate,
+                         origin: this.service.destination,
+                         destination: this.service.origin,
+                         expenses: [],
+                         clientReimbursables: []
+                     };
+                     await this.serviceService.createBulkServices([this.service, returnService]);
+                     this.messageService.add({ severity: 'success', summary: 'Éxito', detail: 'Servicio y viaje de vuelta creados', life: 3000 });
+                } else {
+                    await this.serviceService.createService(this.service);
+                    this.messageService.add({ severity: 'success', summary: 'Éxito', detail: 'Servicio creado', life: 3000 });
+                }
             }
             this.serviceDialog = false;
             this.selectedServices = []; // Clear selection

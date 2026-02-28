@@ -79,6 +79,10 @@ export class ServiceService {
         return await firstValueFrom(this.http.post<Service>(this.apiUrl, service));
     }
 
+    async createBulkServices(services: any[]): Promise<any> {
+        return await firstValueFrom(this.http.post<any>(`${this.apiUrl}/bulk`, { services }));
+    }
+
     async updateService(id: number, service: any): Promise<Service> {
         return await firstValueFrom(this.http.put<Service>(`${this.apiUrl}/${id}`, service));
     }
