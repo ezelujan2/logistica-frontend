@@ -59,6 +59,10 @@ export interface Service {
   serviceGroupId?: number;
   serviceGroup?: any; // Add typing later if needed
 
+  invoiceId?: number;
+  invoice?: { id: number; invoiceNumber: string; status?: string };
+  invoiceNumber?: string; // Flattened for display/filtering
+
   clientNames?: string;
   driverNames?: string;
 }

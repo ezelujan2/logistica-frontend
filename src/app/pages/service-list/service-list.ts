@@ -1,7 +1,7 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, ViewChild } from '@angular/core';
 import { InvoiceService } from '../../service/invoice.service';
 import { CommonModule } from '@angular/common';
-import { TableModule } from 'primeng/table';
+import { Table, TableModule } from 'primeng/table';
 import { ButtonModule } from 'primeng/button';
 import { InputTextModule } from 'primeng/inputtext';
 import { IconFieldModule } from 'primeng/iconfield';
@@ -59,7 +59,7 @@ import { environment } from '../../../environments/environment';
             }
 
             <p-table #dt1 [value]="services" [(selection)]="selectedServices" dataKey="id" [rows]="10" [rowsPerPageOptions]="[10, 25, 50]" [loading]="loading" [paginator]="true"
-                [globalFilterFields]="['route', 'status', 'clientNames', 'serviceGroup.code']" styleClass="p-datatable-sm" responsiveLayout="stack" breakpoint="960px"
+                [globalFilterFields]="['route', 'status', 'clientNames', 'serviceGroup.code', 'invoiceNumber']" styleClass="p-datatable-sm" responsiveLayout="stack" breakpoint="960px"
                 [rowGroupMode]="isGroupedView ? 'subheader' : undefined"
                 [groupRowsBy]="isGroupedView ? 'serviceGroup.code' : ''">
                 <ng-template pTemplate="groupheader" let-service>
@@ -90,7 +90,7 @@ import { environment } from '../../../environments/environment';
                     <div class="flex flex-col md:flex-row justify-between items-center gap-4 md:gap-0">
                         <div class="flex items-center gap-2">
                             <span class="text-xl font-bold">{{ getHeaderTitle() }}</span>
-                            <p-button label="Limpiar Filtros" icon="pi pi-filter-slash" [outlined]="true" severity="secondary" size="small" (click)="clear(dt1)" />
+                            <p-button label="Limpiar Filtros" icon="pi pi-filter-slash" [outlined]="!hasActiveTableFilters()" [severity]="hasActiveTableFilters() ? 'warn' : 'secondary'" size="small" (click)="clear(dt1)" />
                         </div>
                         <div class="flex flex-col md:flex-row gap-2 w-full md:w-auto">
                             <!-- Toggle Group View (Always Visible) -->
@@ -129,6 +129,12 @@ import { environment } from '../../../environments/environment';
                              <div class="flex items-center gap-2">
                                 Grupo
                                 <p-columnFilter type="text" field="serviceGroup.code" display="menu" [showAddButton]="false"></p-columnFilter>
+                            </div>
+                        </th>
+                        <th style="min-width: 10rem">
+                             <div class="flex items-center gap-2">
+                                Nro Factura
+                                <p-columnFilter type="text" field="invoiceNumber" display="menu" [showAddButton]="false"></p-columnFilter>
                             </div>
                         </th>
                         <th pSortableColumn="clientNames" style="min-width: 10rem">
@@ -196,6 +202,10 @@ import { environment } from '../../../environments/environment';
                             <span *ngIf="!service.serviceGroup" class="text-gray-400">-</span>
                         </td>
                         <td>
+                            <span *ngIf="service.invoiceNumber" class="font-semibold text-purple-600 dark:text-purple-400">{{ service.invoiceNumber }}</span>
+                            <span *ngIf="!service.invoiceNumber" class="text-gray-400">-</span>
+                        </td>
+                        <td>
                             {{ service.clientNames }}
                         </td>
                         <td>
@@ -241,7 +251,7 @@ import { environment } from '../../../environments/environment';
                                     <div class="flex gap-4">
                                         <div class="flex flex-col gap-2 flex-1">
                                             <label for="startDate">Fecha Inicio</label>
-                                            <p-datepicker [(ngModel)]="service.startDate" [showTime]="true" dateFormat="dd/mm/yy" appendTo="body" styleClass="w-full" [style]="{'width':'100%'}" inputStyleClass="w-full"></p-datepicker>
+                                            <p-datepicker [(ngModel)]="service.startDate" [showTime]="true" dateFormat="dd/mm/yy" appendTo="body" styleClass="w-full" [style]="{'width':'100%'}" inputStyleClass="w-full" (onSelect)="onStartDateSelect($event)"></p-datepicker>
                                         </div>
                                         <div class="flex flex-col gap-2 flex-1">
                                             <label for="endDate">Fecha Fin</label>
@@ -402,7 +412,7 @@ import { environment } from '../../../environments/environment';
                             <div class="grid grid-cols-12 gap-2 items-end">
                                 <div class="col-span-12 md:col-span-3 flex flex-col gap-2">
                                     <label *ngIf="i===0">Tipo</label>
-                                    <p-select [options]="expenseTypes" [(ngModel)]="expense.type" appendTo="body" styleClass="w-full"></p-select>
+                                    <p-select [options]="expenseTypes" [(ngModel)]="expense.type" appendTo="body" styleClass="w-full" [filter]="true" filterBy="label"></p-select>
                                 </div>
                                 <div class="col-span-12 md:col-span-3 flex flex-col gap-2">
                                     <label *ngIf="i===0">Monto</label>
@@ -494,8 +504,17 @@ import { environment } from '../../../environments/environment';
                                      </label>
                                  </div>
                                  <div *ngIf="createRecurringTrip" class="flex flex-col gap-2 animate-fadein">
-                                     <label class="text-sm text-gray-600">Seleccioná los días extras en el calendario (El horario será el mismo de arriba):</label>
-                                     <p-datepicker [(ngModel)]="recurringDates" selectionMode="multiple" [inline]="false" appendTo="body" styleClass="w-full" [style]="{'width':'100%'}" inputStyleClass="w-full" placeholder="Click para seleccionar múltiples fechas..." dateFormat="dd/mm/yy"></p-datepicker>
+                                     <label class="text-sm text-gray-600">Agregá los días extras (podés repetir el mismo día para crear múltiples servicios):</label>
+                                     <div class="flex gap-2 items-end">
+                                         <p-datepicker [(ngModel)]="recurringDateToAdd" [inline]="false" appendTo="body" styleClass="flex-1" inputStyleClass="w-full" placeholder="Seleccionar fecha..." dateFormat="dd/mm/yy"></p-datepicker>
+                                         <p-button icon="pi pi-plus" label="Agregar" severity="secondary" [outlined]="true" size="small" (click)="addRecurringDate()" [disabled]="!recurringDateToAdd"></p-button>
+                                     </div>
+                                     <div *ngIf="recurringDates.length > 0" class="flex flex-wrap gap-2 mt-1">
+                                         <p-tag *ngFor="let d of recurringDates; let i = index" [value]="(d | date:'dd/MM/yyyy')!" severity="info" [rounded]="true" styleClass="cursor-pointer" (click)="removeRecurringDate(i)">
+                                             <i class="pi pi-times text-xs ml-1"></i>
+                                         </p-tag>
+                                     </div>
+                                     <small *ngIf="recurringDates.length > 0" class="text-gray-500">{{recurringDates.length}} día(s) extra → {{recurringDates.length + 1}} servicios en total. Click en una fecha para quitarla.</small>
                                  </div>
                              </div>
                         </div>
@@ -727,6 +746,12 @@ import { environment } from '../../../environments/environment';
                          <p-select [options]="clientsList" [(ngModel)]="billingClient" optionLabel="name" (onChange)="onBillingClientChange()" placeholder="Seleccione Cliente" appendTo="body" styleClass="w-full" [filter]="true" filterBy="name"></p-select>
                      </div>
 
+                     <div class="flex flex-col gap-2">
+                         <label class="font-bold">Número de Factura</label>
+                         <input pInputText [(ngModel)]="billingInvoiceNumber" placeholder="Ej: FC-A-00001234" class="w-full" />
+                         <small class="text-gray-500"><i class="pi pi-info-circle mr-1"></i>Ingresá el número de la factura que generaste (obligatorio).</small>
+                     </div>
+
                      <div *ngIf="billingClient" class="animate-fadein">
                          <h3 class="font-bold text-lg mb-2">Grupos Pendientes de Facturación</h3>
                          <p-table [value]="billingGroups" [(selection)]="selectedBillingGroups" dataKey="id" [scrollable]="true" scrollHeight="300px">
@@ -754,7 +779,7 @@ import { environment } from '../../../environments/environment';
                 </div>
                 <ng-template pTemplate="footer">
                     <p-button label="Cancelar" icon="pi pi-times" [text]="true" (click)="billingDialogVisible = false"></p-button>
-                    <p-button label="Confirmar Factura" icon="pi pi-check" severity="success" (click)="confirmBilling()" [disabled]="!billingClient || selectedBillingGroups.length === 0"></p-button>
+                    <p-button label="Confirmar Factura" icon="pi pi-check" severity="success" (click)="confirmBilling()" [disabled]="!billingClient || selectedBillingGroups.length === 0 || !billingInvoiceNumber.trim()"></p-button>
                 </ng-template>
             </p-dialog>
         </div>
@@ -778,6 +803,7 @@ export class ServiceList implements OnInit {
 
     loading: boolean = true;
     serviceDialog: boolean = false;
+    @ViewChild('dt1') dt1!: Table;
 
     // Return Trip Features
     createReturnTrip: boolean = false;
@@ -786,6 +812,7 @@ export class ServiceList implements OnInit {
     // Multiple Schedule Features
     createRecurringTrip: boolean = false;
     recurringDates: Date[] = [];
+    recurringDateToAdd: Date | null = null;
 
     configDialog: boolean = false;
     configEditDialog: boolean = false;
@@ -797,6 +824,7 @@ export class ServiceList implements OnInit {
     increaseRates = { clientKmInc: 0, clientHourInc: 0, driverKmInc: 0, driverHourInc: 0 };
     submitted: boolean = false;
     activeStatusFilter: string | undefined = undefined;
+    billingInvoiceNumber: string = '';
 
     statuses = [
         { label: 'Creado', value: 'CREATED' },
@@ -819,6 +847,21 @@ export class ServiceList implements OnInit {
          { label: 'Peaje', value: 'TOLL' },
          { label: 'Lavadero', value: 'WASH' },
          { label: 'Comida', value: 'SNACK' },
+         { label: 'Taller / Mantenimiento', value: 'MAINTENANCE' },
+         { label: 'Seguros', value: 'INSURANCE' },
+         { label: 'Strix (Seguimiento Satelital)', value: 'STRIX' },
+         { label: 'Starlink', value: 'STARLINK' },
+         { label: 'Patentes', value: 'PATENTS' },
+         { label: 'Media Vuelta', value: 'HALF_ROUND' },
+         { label: 'Seguro Accidentes Personales', value: 'PERSONAL_ACCIDENT_INSURANCE' },
+         { label: 'Ingresos Brutos', value: 'GROSS_INCOME' },
+         { label: 'Contadores', value: 'ACCOUNTANTS' },
+         { label: 'Régimen Autónomos', value: 'AUTONOMOUS_REGIME' },
+         { label: 'Cocheras', value: 'PARKING' },
+         { label: 'Pasajes / Movilidad', value: 'TRAVEL_MOBILITY' },
+         { label: 'Mantenimiento Web', value: 'WEB_MAINTENANCE' },
+         { label: 'IVA', value: 'VAT' },
+         { label: 'Ganancias', value: 'PROFITS' },
          { label: 'Otro', value: 'OTHER' }
     ];
 
@@ -1017,7 +1060,8 @@ export class ServiceList implements OnInit {
                 endDate: s.endDate ? new Date(s.endDate) : null,
                 clientNames: s.clients ? s.clients.map((c: any) => c.name).join(', ') : '',
                 driverNames: s.drivers ? s.drivers.map((d: any) => d.name).join(', ') : '',
-                route: `${s.origin} -> ${s.destination}`
+                route: `${s.origin} -> ${s.destination}`,
+                invoiceNumber: s.invoice?.invoiceNumber || ''
             }));
 
             // Deduplicate lists by ID
@@ -1058,11 +1102,46 @@ export class ServiceList implements OnInit {
         this.selectedServices = [];
     }
 
+    hasActiveTableFilters(): boolean {
+        const dt = this.dt1;
+        if (!dt || !dt.filters) return false;
+        for (const key of Object.keys(dt.filters)) {
+            if (key === 'global') continue;
+            const filter = dt.filters[key];
+            if (Array.isArray(filter)) {
+                if (filter.some((f: any) => f.value !== null && f.value !== undefined && f.value !== '')) return true;
+            } else if (filter && (filter as any).value !== null && (filter as any).value !== undefined && (filter as any).value !== '') {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    onStartDateSelect(date: Date) {
+        if (!this.service.id) {
+            const endDate = new Date(date.getTime());
+            endDate.setHours(endDate.getHours() + 3);
+            this.service.endDate = endDate;
+        }
+    }
+
+    addRecurringDate() {
+        if (this.recurringDateToAdd) {
+            this.recurringDates.push(new Date(this.recurringDateToAdd));
+            this.recurringDateToAdd = null;
+        }
+    }
+
+    removeRecurringDate(index: number) {
+        this.recurringDates.splice(index, 1);
+    }
+
     openNew() {
         this.service = this.getEmptyService();
         this.submitted = false;
 
         this.createReturnTrip = false;
+        this.recurringDateToAdd = null;
         this.returnStartDate = null;
         this.returnEndDate = null;
         this.createRecurringTrip = false;
@@ -1833,6 +1912,7 @@ export class ServiceList implements OnInit {
         this.billingClient = null;
         this.billingGroups = [];
         this.selectedBillingGroups = [];
+        this.billingInvoiceNumber = '';
 
         // Pre-select if single client
         if (this.selectedServices.length > 0) {
@@ -1890,7 +1970,7 @@ export class ServiceList implements OnInit {
             });
 
             // Create Invoice
-            await this.invoiceService.createInvoice(allServiceIds, this.billingClient.id);
+            await this.invoiceService.createInvoice(allServiceIds, this.billingClient.id, this.billingInvoiceNumber || undefined);
 
             this.billingDialogVisible = false;
             this.messageService.add({ severity: 'success', summary: 'Éxito', detail: 'Factura creada correctamente.' });

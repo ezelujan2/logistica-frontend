@@ -63,6 +63,20 @@ export class ExpenseList implements OnInit {
         { label: 'Lavado', value: 'WASH' },
         { label: 'Viático', value: 'SNACK' },
         { label: 'Taller / Mantenimiento', value: 'MAINTENANCE' },
+        { label: 'Seguros', value: 'INSURANCE' },
+        { label: 'Strix (Seguimiento Satelital)', value: 'STRIX' },
+        { label: 'Starlink', value: 'STARLINK' },
+        { label: 'Patentes', value: 'PATENTS' },
+        { label: 'Media Vuelta', value: 'HALF_ROUND' },
+        { label: 'Seguro Accidentes Personales', value: 'PERSONAL_ACCIDENT_INSURANCE' },
+        { label: 'Ingresos Brutos', value: 'GROSS_INCOME' },
+        { label: 'Contadores', value: 'ACCOUNTANTS' },
+        { label: 'Régimen Autónomos', value: 'AUTONOMOUS_REGIME' },
+        { label: 'Cocheras', value: 'PARKING' },
+        { label: 'Pasajes / Movilidad', value: 'TRAVEL_MOBILITY' },
+        { label: 'Mantenimiento Web', value: 'WEB_MAINTENANCE' },
+        { label: 'IVA', value: 'VAT' },
+        { label: 'Ganancias', value: 'PROFITS' },
         { label: 'Otro', value: 'OTHER' }
     ];
 

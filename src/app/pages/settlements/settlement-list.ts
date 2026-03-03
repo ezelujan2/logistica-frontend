@@ -15,6 +15,7 @@ import { PanelModule } from 'primeng/panel';
 import { DividerModule } from 'primeng/divider';
 import { CheckboxModule } from 'primeng/checkbox';
 import { InputTextModule } from 'primeng/inputtext';
+import { TooltipModule } from 'primeng/tooltip';
 
 @Component({
     selector: 'app-settlement-list',
@@ -51,6 +52,7 @@ import { InputTextModule } from 'primeng/inputtext';
                             </td>
                             <td>
                                 <p-button icon="pi pi-eye" [text]="true" [rounded]="true" (click)="viewDetails(settlement)"></p-button>
+                                <p-button icon="pi pi-file-pdf" [text]="true" [rounded]="true" severity="danger" (click)="generatePdf(settlement)" pTooltip="Descargar PDF"></p-button>
                             </td>
                         </tr>
                     </ng-template>
@@ -175,7 +177,7 @@ import { InputTextModule } from 'primeng/inputtext';
                                <div class="grid grid-cols-12 gap-2 items-end">
                                     <div class="col-span-12 md:col-span-3 flex flex-col gap-1">
                                         <label>Tipo</label>
-                                        <p-select [options]="expenseTypes" [(ngModel)]="newExpense.type" appendTo="body" styleClass="w-full"></p-select>
+                                        <p-select [options]="expenseTypes" [(ngModel)]="newExpense.type" appendTo="body" styleClass="w-full" [filter]="true" filterBy="label"></p-select>
                                     </div>
                                     <div class="col-span-12 md:col-span-4 flex flex-col gap-1">
                                         <label>Descripción</label>
@@ -226,7 +228,7 @@ import { InputTextModule } from 'primeng/inputtext';
                                 <div class="text-gray-600 dark:text-gray-400">Total Servicios: {{ totalServices | currency:'USD' }}</div>
                                 <div *ngIf="totalExpenses > 0" class="text-green-600 dark:text-green-400">Gastos a Reembolsar (Agregados): + {{ totalExpenses | currency:'USD' }}</div>
                                 <div *ngIf="totalDriverExpenses > 0" class="text-green-600 dark:text-green-400">Gastos a Reembolsar (Pendientes): + {{ totalDriverExpenses | currency:'USD' }}</div>
-                                <div class="text-red-500 dark:text-red-400">Total Descuentos: - {{ totalAdvances | currency:'USD' }}</div>
+                                <div class="text-red-500 dark:text-red-400">Total Adelantos: - {{ totalAdvances | currency:'USD' }}</div>
                                 <div class="text-2xl font-bold mt-2 text-gray-800 dark:text-white">A Pagar: {{ finalTotal | currency:'USD' }}</div>
                            </div>
                       </div>
@@ -248,7 +250,7 @@ import { InputTextModule } from 'primeng/inputtext';
         </div>
     `,
     standalone: true,
-    imports: [CommonModule, TableModule, ButtonModule, DialogModule, FormsModule, SelectModule, DatePickerModule, ToastModule, TagModule, PanelModule, DividerModule, CheckboxModule, InputTextModule],
+    imports: [CommonModule, TableModule, ButtonModule, DialogModule, FormsModule, SelectModule, DatePickerModule, ToastModule, TagModule, PanelModule, DividerModule, CheckboxModule, InputTextModule, TooltipModule],
     providers: [MessageService, SettlementService, DriverService]
 })
 export class SettlementList implements OnInit {
@@ -275,6 +277,20 @@ export class SettlementList implements OnInit {
         { label: 'Lavado', value: 'WASH' },
         { label: 'Viático', value: 'SNACK' },
         { label: 'Taller / Mantenimiento', value: 'MAINTENANCE' },
+        { label: 'Seguros', value: 'INSURANCE' },
+        { label: 'Strix (Seguimiento Satelital)', value: 'STRIX' },
+        { label: 'Starlink', value: 'STARLINK' },
+        { label: 'Patentes', value: 'PATENTS' },
+        { label: 'Media Vuelta', value: 'HALF_ROUND' },
+        { label: 'Seguro Accidentes Personales', value: 'PERSONAL_ACCIDENT_INSURANCE' },
+        { label: 'Ingresos Brutos', value: 'GROSS_INCOME' },
+        { label: 'Contadores', value: 'ACCOUNTANTS' },
+        { label: 'Régimen Autónomos', value: 'AUTONOMOUS_REGIME' },
+        { label: 'Cocheras', value: 'PARKING' },
+        { label: 'Pasajes / Movilidad', value: 'TRAVEL_MOBILITY' },
+        { label: 'Mantenimiento Web', value: 'WEB_MAINTENANCE' },
+        { label: 'IVA', value: 'VAT' },
+        { label: 'Ganancias', value: 'PROFITS' },
         { label: 'Otro', value: 'OTHER' }
     ];
 
@@ -390,16 +406,19 @@ export class SettlementList implements OnInit {
     }
 
     generatePdf(settlement: any) {
-        if (settlement.pdfUrl) {
-            window.open(settlement.pdfUrl, '_blank');
-        } else {
-            this.messageService.add({severity:'info', summary:'Generando PDF...', detail:'Esta funcionalidad está en desarrollo.'});
-            // Call backend generation if needed, or just show message as backend is placeholder
-            this.settlementService.generatePdf(settlement.id).subscribe(res => {
-                 if (res.url) window.open(res.url, '_blank');
-                 else this.messageService.add({severity:'warn', summary:'Info', detail:'PDF no disponible aún'});
-            });
-        }
+        this.messageService.add({severity:'info', summary:'Generando PDF...', detail:'Esto puede tardar unos segundos.', life: 2000});
+        this.settlementService.generatePdf(settlement.id).subscribe({
+            next: (res) => {
+                if (res.url) {
+                    settlement.pdfUrl = res.url;
+                    window.open(res.url, '_blank');
+                    this.messageService.add({severity:'success', summary:'PDF Generado', detail:'El PDF se abrió en una nueva pestaña.', life: 3000});
+                }
+            },
+            error: () => {
+                this.messageService.add({severity:'error', summary:'Error', detail:'No se pudo generar el PDF.'});
+            }
+        });
     }
 
     loadPendingItems() {
@@ -507,6 +526,11 @@ export class SettlementList implements OnInit {
     }
 
     viewDetails(settlement: any) {
+        // Sort by date
+        settlement.services.sort((a: any, b: any) => new Date(a.startDate).getTime() - new Date(b.startDate).getTime());
+        settlement.advances.sort((a: any, b: any) => new Date(a.date).getTime() - new Date(b.date).getTime());
+        if (settlement.expenses) settlement.expenses.sort((a: any, b: any) => new Date(a.date || a.createdAt).getTime() - new Date(b.date || b.createdAt).getTime());
+
         this.selectedSettlement = settlement;
         this.viewMode = 'DETAILS';
 

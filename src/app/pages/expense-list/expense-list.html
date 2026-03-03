@@ -73,7 +73,7 @@
 
         <div class="field">
             <label for="type">Tipo</label>
-            <p-select [options]="expenseTypes" [(ngModel)]="expense.type" placeholder="Seleccionar Tipo" appendTo="body" styleClass="w-full" [style]="{'width':'100%'}"></p-select>
+            <p-select [options]="expenseTypes" [(ngModel)]="expense.type" placeholder="Seleccionar Tipo" appendTo="body" styleClass="w-full" [style]="{'width':'100%'}" [filter]="true" filterBy="label"></p-select>
         </div>
 
         <div class="field">

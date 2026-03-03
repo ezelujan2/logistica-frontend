@@ -11,8 +11,8 @@ export class InvoiceService {
 
   constructor(private http: HttpClient) {}
 
-  createInvoice(serviceIds: number[], clientId: number) {
-    return firstValueFrom(this.http.post<any>(this.apiUrl, { serviceIds, clientId }));
+  createInvoice(serviceIds: number[], clientId: number, invoiceNumber?: string) {
+    return firstValueFrom(this.http.post<any>(this.apiUrl, { serviceIds, clientId, invoiceNumber }));
   }
 
   getInvoices() {
