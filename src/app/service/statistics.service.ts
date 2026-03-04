@@ -57,4 +57,8 @@ export class StatisticsService {
     if (serviceTypes && serviceTypes.length > 0) params.serviceTypes = serviceTypes.join(',');
     return firstValueFrom(this.http.get<any[]>(`${this.apiUrl}/vehicles`, { params }));
   }
+
+  getReceivablesStats() {
+    return firstValueFrom(this.http.get<any>(`${this.apiUrl}/receivables`));
+  }
 }
