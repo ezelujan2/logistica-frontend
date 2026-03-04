@@ -1265,6 +1265,7 @@ export class ServiceList implements OnInit {
     }
 
     editService(service: any) {
+        this.selectedConfig = null;
         this.service = {
             ...service,
             startDate: new Date(service.startDate),
@@ -1292,6 +1293,7 @@ export class ServiceList implements OnInit {
     hideDialog() {
         this.serviceDialog = false;
         this.submitted = false;
+        this.selectedConfig = null;
     }
 
     isValidForCreation(service: any): boolean {
@@ -1441,6 +1443,7 @@ export class ServiceList implements OnInit {
                 }
             }
             this.serviceDialog = false;
+            this.selectedConfig = null;
             this.selectedServices = []; // Clear selection
             this.loadAllData();
         } catch (error) {
