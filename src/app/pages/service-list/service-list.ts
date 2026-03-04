@@ -69,6 +69,7 @@ import { environment } from '../../../environments/environment';
                                 <i class="pi pi-folder text-lg"></i>
                                 <span class="vertical-align-middle text-lg ml-2">{{service.serviceGroup?.code || 'Servicios Sin Agrupar'}}</span>
                                 <p-tag *ngIf="service.serviceGroup" [value]="service.serviceGroup.status" severity="info" class="ml-2"></p-tag>
+                                <p-button *ngIf="service.serviceGroup" icon="pi pi-pencil" [rounded]="true" [text]="true" size="small" severity="secondary" (click)="openEditGroupNotes(service.serviceGroup)" pTooltip="Editar Notas del Reporte" tooltipPosition="top" styleClass="p-0 w-8 h-8 ml-2"></p-button>
 
                                 <div class="ml-auto flex gap-2 items-center" *ngIf="service.serviceGroup">
                                      <!-- PENDING_INVOICE -> Show PAYMENT_PENDING -->
@@ -198,6 +199,7 @@ import { environment } from '../../../environments/environment';
                         <td>
                             <div *ngIf="service.serviceGroup" class="flex align-items-center gap-2">
                                 <p-tag [value]="service.serviceGroup.code" severity="warn" styleClass="cursor-pointer hover:bg-orange-600 transition-colors" (click)="openReport(service)" pTooltip="Ver Reporte (PDF)" tooltipPosition="top"></p-tag>
+                                <p-button icon="pi pi-pencil" [rounded]="true" [text]="true" size="small" (click)="openEditGroupNotes(service.serviceGroup)" pTooltip="Editar Notas del Reporte" tooltipPosition="top" styleClass="p-0 w-8 h-8"></p-button>
                             </div>
                             <span *ngIf="!service.serviceGroup" class="text-gray-400">-</span>
                         </td>
@@ -315,6 +317,11 @@ import { environment } from '../../../environments/environment';
                                         <label for="details">Detalles Adicionales</label>
                                         <textarea pTextarea [(ngModel)]="service.details" rows="3" class="w-full"></textarea>
                                     </div>
+                                     <div class="flex flex-col gap-2 mt-4">
+                                         <label for="notes" class="font-bold text-blue-600 dark:text-blue-400">Comentarios (Visibles en el Reporte PDF)</label>
+                                         <textarea pTextarea [(ngModel)]="service.notes" rows="3" class="w-full border-blue-200 focus:border-blue-400" placeholder="Ej: Demora en la carga, desvio de ruta, etc."></textarea>
+                                     </div>
+
                                 </div>
                             </p-panel>
                         </div>
@@ -325,15 +332,15 @@ import { environment } from '../../../environments/environment';
                                 <div class="flex flex-col gap-4">
                                     <div class="flex flex-col gap-2">
                                         <label>Clientes</label>
-                                        <p-multiSelect [options]="clientsList" [(ngModel)]="service.clientIds" optionLabel="name" optionValue="id" placeholder="Seleccionar Clientes" display="chip" appendTo="body" styleClass="w-full"></p-multiSelect>
+                                        <p-multiSelect #clientMulti [options]="clientsList" [(ngModel)]="service.clientIds" optionLabel="name" optionValue="id" placeholder="Seleccionar Clientes" display="chip" appendTo="body" styleClass="w-full" (onChange)="clientMulti.hide()"></p-multiSelect>
                                     </div>
                                     <div class="flex flex-col gap-2">
                                         <label>Choferes</label>
-                                        <p-multiSelect [options]="driversList" [(ngModel)]="service.driverIds" optionLabel="name" optionValue="id" placeholder="Seleccionar Choferes" display="chip" appendTo="body" styleClass="w-full"></p-multiSelect>
+                                        <p-multiSelect #driverMulti [options]="driversList" [(ngModel)]="service.driverIds" optionLabel="name" optionValue="id" placeholder="Seleccionar Choferes" display="chip" appendTo="body" styleClass="w-full" (onChange)="driverMulti.hide()"></p-multiSelect>
                                     </div>
                                     <div class="flex flex-col gap-2">
                                         <label>Autos</label>
-                                        <p-multiSelect [options]="vehiclesList" [(ngModel)]="service.vehicleIds" optionLabel="plate" optionValue="id" placeholder="Seleccionar Autos" display="chip" appendTo="body" styleClass="w-full">
+                                        <p-multiSelect #vehicleMulti [options]="vehiclesList" [(ngModel)]="service.vehicleIds" optionLabel="plate" optionValue="id" placeholder="Seleccionar Autos" display="chip" appendTo="body" styleClass="w-full" (onChange)="vehicleMulti.hide()">
                                             <ng-template let-car pTemplate="item">
                                                 <div class="flex align-items-center gap-2">
                                                     <span>{{ car.plate }} - {{ car.model }}</span>
@@ -412,7 +419,7 @@ import { environment } from '../../../environments/environment';
                             <div class="grid grid-cols-12 gap-2 items-end">
                                 <div class="col-span-12 md:col-span-3 flex flex-col gap-2">
                                     <label *ngIf="i===0">Tipo</label>
-                                    <p-select [options]="expenseTypes" [(ngModel)]="expense.type" appendTo="body" styleClass="w-full" [filter]="true" filterBy="label"></p-select>
+                                    <p-select [options]="expenseTypes" [(ngModel)]="expense.type" appendTo="body" styleClass="w-full" [filter]="true" filterBy="label" optionLabel="label" optionValue="value"></p-select>
                                 </div>
                                 <div class="col-span-12 md:col-span-3 flex flex-col gap-2">
                                     <label *ngIf="i===0">Monto</label>
@@ -482,7 +489,7 @@ import { environment } from '../../../environments/environment';
 
                 <ng-template pTemplate="footer">
                         <div *ngIf="!service.id" class="flex flex-col gap-2 p-3 bg-gray-50 dark:bg-gray-800/50 rounded-lg border border-gray-200 dark:border-gray-700">
-                             <div class="flex items-center gap-4">
+                             <!-- <div class="flex items-center gap-4">
                                  <div class="flex items-center gap-2">
                                      <p-checkbox [(ngModel)]="createReturnTrip" [binary]="true" inputId="returnTrip"></p-checkbox>
                                      <label for="returnTrip" class="cursor-pointer font-medium select-none text-gray-700 dark:text-gray-200" pTooltip="Se creará autom&aacute;ticamente un servicio de vuelta con origen y destino invertidos." tooltipPosition="top">
@@ -494,7 +501,7 @@ import { environment } from '../../../environments/environment';
                                      <span class="text-gray-400">-</span>
                                      <p-datepicker [(ngModel)]="returnEndDate" [showTime]="true" hourFormat="24" placeholder="Fin" appendTo="body" styleClass="w-32" [style]="{'width':'100%'}" inputStyleClass="w-full" [showIcon]="false"></p-datepicker>
                                  </div>
-                             </div>
+                             </div> -->
 
                              <div *ngIf="!createReturnTrip" class="flex flex-col gap-2 mt-2 pt-2 border-t border-gray-200 dark:border-gray-700">
                                  <div class="flex items-center gap-2">
@@ -712,6 +719,12 @@ import { environment } from '../../../environments/environment';
                              * El IVA se calcula automáticamente según el tipo de facturación de cada servicio.
                         </div>
 
+                        <!-- Add Notes Field -->
+                        <div class="flex flex-col gap-2 mt-2">
+                            <label class="font-bold text-sm">Comentarios / Observaciones (Opcional)</label>
+                            <textarea pInputTextarea [(ngModel)]="reportNotes" rows="3" placeholder="Estos comentarios se imprimirán en el reporte PDF..." class="w-full"></textarea>
+                        </div>
+
                         <p-divider></p-divider>
 
                         <div class="flex flex-col gap-2">
@@ -734,6 +747,22 @@ import { environment } from '../../../environments/environment';
                     <div class="flex gap-2">
                         <p-button label="Generar Reporte" icon="pi pi-file-pdf" severity="warn" (click)="generateReport()" [loading]="loading" />
                         <p-button label="Cerrar" icon="pi pi-times" [text]="true" (click)="summaryDialog = false" />
+                    </div>
+                </ng-template>
+            </p-dialog>
+
+            <!-- Dialogo de Edición de Comentarios Grupales -->
+            <p-dialog [(visible)]="groupNotesDialogVisible" header="Editar Comentarios del Reporte" [modal]="true" [style]="{width: '500px'}">
+                <div class="flex flex-col gap-4">
+                    <div class="flex flex-col gap-2">
+                        <label for="groupNotes">Comentarios / Observaciones</label>
+                        <textarea pTextarea [(ngModel)]="editingGroupNotes" rows="5" class="w-full" placeholder="Estos comentarios reemplazarán los actuales y se visualizarán en el PDF..."></textarea>
+                    </div>
+                </div>
+                <ng-template pTemplate="footer">
+                    <div class="flex gap-2 justify-end">
+                        <p-button label="Cancelar" icon="pi pi-times" [text]="true" (click)="groupNotesDialogVisible = false" />
+                        <p-button label="Guardar" icon="pi pi-check" severity="success" (click)="saveGroupNotes()" [loading]="savingGroupNotes" />
                     </div>
                 </ng-template>
             </p-dialog>
@@ -1699,9 +1728,40 @@ export class ServiceList implements OnInit {
     selectedServices: Service[] = [];
     summaryDialog: boolean = false;
     summaryConfig: any = { subtotal: 0, tax: 0, total: 0 };
+    reportNotes: string = '';
+
+    // Group Notes Editing State
+    groupNotesDialogVisible: boolean = false;
+    editingGroupNotes: string = '';
+    editingGroupId: number | null = null;
+    savingGroupNotes: boolean = false;
+
+    openEditGroupNotes(group: any) {
+        if (!group) return;
+        this.editingGroupId = group.id;
+        this.editingGroupNotes = group.notes || '';
+        this.groupNotesDialogVisible = true;
+    }
+
+    async saveGroupNotes() {
+        if (!this.editingGroupId) return;
+        this.savingGroupNotes = true;
+        try {
+            await this.serviceService.updateGroupNotes(this.editingGroupId, this.editingGroupNotes);
+            this.messageService.add({severity: 'success', summary: 'Éxito', detail: 'Comentarios del grupo actualizados.'});
+            this.groupNotesDialogVisible = false;
+            this.loadAllData();
+        } catch(error) {
+            console.error(error);
+            this.messageService.add({severity: 'error', summary: 'Error', detail: 'No se pudieron actualizar los comentarios.'});
+        } finally {
+            this.savingGroupNotes = false;
+        }
+    }
 
     openSummary() {
         if (!this.selectedServices.length) return;
+        this.reportNotes = '';
         this.calculateSummaryTotal();
         this.summaryDialog = true;
     }
@@ -1890,11 +1950,12 @@ export class ServiceList implements OnInit {
 
         try {
             this.loading = true;
-            await this.serviceService.createGroup(this.selectedServices.map(s => s.id!), currentClientId as number);
+            await this.serviceService.createGroup(this.selectedServices.map(s => s.id!), currentClientId as number, this.reportNotes);
 
             this.messageService.add({ severity: 'success', summary: 'Éxito', detail: 'Reporte generado y servicios agrupados.' });
             this.summaryDialog = false;
             this.selectedServices = [];
+            this.reportNotes = ''; // Reset notes
             this.loadAllData(); // Refresh to move them to next status
         } catch (error) {
             console.error(error);

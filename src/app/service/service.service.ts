@@ -95,8 +95,8 @@ export class ServiceService {
         await firstValueFrom(this.http.delete(`${this.apiUrl}/${id}`));
     }
 
-    async createGroup(serviceIds: number[], clientId: number) {
-        return firstValueFrom(this.http.post<any>(environment.apiUrl + 'groups', { serviceIds, clientId }));
+    async createGroup(serviceIds: number[], clientId: number, notes?: string) {
+        return firstValueFrom(this.http.post<any>(environment.apiUrl + 'groups', { serviceIds, clientId, notes }));
     }
 
     async getGroups(params?: any) {
@@ -105,5 +105,9 @@ export class ServiceService {
 
     async updateGroupStatus(id: number, status: string) {
         return firstValueFrom(this.http.patch(environment.apiUrl + 'groups/' + id + '/status', { status }));
+    }
+
+    async updateGroupNotes(id: number, notes: string) {
+        return firstValueFrom(this.http.patch(environment.apiUrl + 'groups/' + id, { notes }));
     }
 }

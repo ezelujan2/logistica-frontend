@@ -177,7 +177,7 @@ import { TooltipModule } from 'primeng/tooltip';
                                <div class="grid grid-cols-12 gap-2 items-end">
                                     <div class="col-span-12 md:col-span-3 flex flex-col gap-1">
                                         <label>Tipo</label>
-                                        <p-select [options]="expenseTypes" [(ngModel)]="newExpense.type" appendTo="body" styleClass="w-full" [filter]="true" filterBy="label"></p-select>
+                                        <p-select [options]="expenseTypes" [(ngModel)]="newExpense.type" appendTo="body" styleClass="w-full" [filter]="true" filterBy="label" optionLabel="label" optionValue="value"></p-select>
                                     </div>
                                     <div class="col-span-12 md:col-span-4 flex flex-col gap-1">
                                         <label>Descripción</label>

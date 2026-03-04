@@ -64,16 +64,16 @@
     </p-table>
 </div>
 
-<p-dialog [(visible)]="expenseDialog" [style]="{width: '450px'}" header="Detalle de Gasto" [modal]="true" class="p-fluid">
+<p-dialog [(visible)]="expenseDialog" [style]="{width: '450px'}" header="Detalle de Gasto" [modal]="true" class="p-fluid" [focusOnShow]="false">
     <ng-template pTemplate="content">
         <div class="field">
             <label for="date">Fecha</label>
-            <p-datepicker [(ngModel)]="expense.date" dateFormat="dd/mm/yy" [showIcon]="true" appendTo="body" styleClass="w-full" [style]="{'width':'100%'}"></p-datepicker>
+            <p-datepicker [(ngModel)]="expense.date" dateFormat="dd/mm/yy" [showIcon]="true" appendTo="body" styleClass="w-full" [style]="{'width':'100%'}" inputId="date"></p-datepicker>
         </div>
 
         <div class="field">
             <label for="type">Tipo</label>
-            <p-select [options]="expenseTypes" [(ngModel)]="expense.type" placeholder="Seleccionar Tipo" appendTo="body" styleClass="w-full" [style]="{'width':'100%'}" [filter]="true" filterBy="label"></p-select>
+            <p-select [options]="expenseTypes" [(ngModel)]="expense.type" placeholder="Seleccionar Tipo" appendTo="body" styleClass="w-full" [style]="{'width':'100%'}" [filter]="true" filterBy="label" optionLabel="label" optionValue="value"></p-select>
         </div>
 
         <div class="field">
