@@ -5,16 +5,21 @@ import { ButtonModule } from 'primeng/button';
 import { StyleClassModule } from 'primeng/styleclass';
 import { PanelMenuModule } from 'primeng/panelmenu';
 import { Service, ServiceService } from '../../service/service.service';
+import { AuditService, AuditLog } from '../../service/audit.service';
 import { Router } from '@angular/router';
 import { TagModule } from 'primeng/tag';
 import { CardModule } from 'primeng/card';
 import { DividerModule } from 'primeng/divider';
 import { SkeletonModule } from 'primeng/skeleton';
+import { DialogModule } from 'primeng/dialog';
+import { InputTextModule } from 'primeng/inputtext';
+import { SelectModule } from 'primeng/select';
+import { FormsModule } from '@angular/forms';
 
 @Component({
     selector: 'app-dashboard',
     standalone: true,
-    imports: [CommonModule, TableModule, ButtonModule, StyleClassModule, PanelMenuModule, TagModule, CardModule, DividerModule, SkeletonModule],
+    imports: [CommonModule, TableModule, ButtonModule, StyleClassModule, PanelMenuModule, TagModule, CardModule, DividerModule, SkeletonModule, DialogModule, InputTextModule, SelectModule, FormsModule],
     template: `
         <div class="grid grid-cols-12 gap-6">
 
@@ -154,15 +159,163 @@ import { SkeletonModule } from 'primeng/skeleton';
                              <i class="pi pi-check-circle text-4xl text-green-500 mb-2"></i>
                              <p>¡Todo al día! No hay tareas pendientes.</p>
                          </div>
-                    </div>
+                     </div>
                  </div>
             </div>
+
+            <!-- Audit Logs Table -->
+            <div class="col-span-12">
+                <div class="card bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 shadow rounded-xl">
+                    <div class="flex justify-between items-center mb-4 px-4 pt-4">
+                        <h5 class="text-lg font-bold m-0">Registro de Auditoría</h5>
+                    </div>
+                    <p-table
+                        #dtAudits
+                        [value]="audits"
+                        [loading]="loading"
+                        [paginator]="true"
+                        [rows]="10"
+                        [rowsPerPageOptions]="[10, 25, 50]"
+                        [globalFilterFields]="['entity', 'action', 'user.name', 'entityId']"
+                        [rowHover]="true"
+                        styleClass="p-datatable-sm"
+                        responsiveLayout="scroll"
+                    >
+                        <ng-template pTemplate="caption">
+                            <div class="flex justify-end p-2">
+                                <span class="p-input-icon-left w-full sm:w-auto">
+                                    <i class="pi pi-search"></i>
+                                    <input pInputText type="text" (input)="onGlobalFilter(dtAudits, $event)" placeholder="Buscar en auditoría..." class="w-full sm:w-auto" />
+                                </span>
+                            </div>
+                        </ng-template>
+                        <ng-template pTemplate="header">
+                            <tr>
+                                <th pSortableColumn="createdAt">Fecha <p-sortIcon field="createdAt"></p-sortIcon></th>
+                                <th pSortableColumn="user.name">Usuario <p-sortIcon field="user.name"></p-sortIcon>
+                                    <p-columnFilter type="text" field="user.name" display="menu"></p-columnFilter>
+                                </th>
+                                <th pSortableColumn="action">Acción <p-sortIcon field="action"></p-sortIcon>
+                                    <p-columnFilter type="text" field="action" display="menu"></p-columnFilter>
+                                </th>
+                                <th pSortableColumn="entity">Módulo <p-sortIcon field="entity"></p-sortIcon>
+                                    <p-columnFilter field="entity" matchMode="equals" display="menu">
+                                        <ng-template pTemplate="filter" let-value let-filter="filterCallback">
+                                            <p-select [ngModel]="value" [options]="auditModules" (onChange)="filter($event.value)" placeholder="Todos" [showClear]="true">
+                                                <ng-template let-option pTemplate="item">
+                                                    <span class="ml-2">{{option.label}}</span>
+                                                </ng-template>
+                                            </p-select>
+                                        </ng-template>
+                                    </p-columnFilter>
+                                </th>
+                                <th>Registro ID</th>
+                                <th>Detalles</th>
+                            </tr>
+                        </ng-template>
+                        <ng-template pTemplate="body" let-audit>
+                            <tr>
+                                <td>{{ audit.createdAt | date:'dd/MM/yyyy HH:mm:ss' }}</td>
+                                <td>{{ audit.user?.name || 'Sistema' }}</td>
+                                <td>
+                                    <p-tag [value]="audit.action" [severity]="getAuditActionSeverity(audit.action)"></p-tag>
+                                </td>
+                                <td>{{ audit.entity }}</td>
+                                <td>#{{ audit.entityId }}</td>
+                                <td>
+                                    <p-button icon="pi pi-eye" [text]="true" [rounded]="true" (click)="viewAuditDetails(audit)"></p-button>
+                                </td>
+                            </tr>
+                        </ng-template>
+                        <ng-template pTemplate="emptymessage">
+                            <tr>
+                                <td colspan="6" class="text-center p-4">No hay registros de auditoría.</td>
+                            </tr>
+                        </ng-template>
+                    </p-table>
+                </div>
+            </div>
+
         </div>
+
+        <p-dialog [(visible)]="displayAuditDialog" [header]="'Detalles de Auditoría - ' + selectedAudit?.entity + ' #' + selectedAudit?.entityId" [modal]="true" [style]="{width: '50vw'}" [breakpoints]="{'960px': '75vw', '640px': '100vw'}" [draggable]="false" [resizable]="false">
+            <div *ngIf="selectedAudit">
+                <div class="grid grid-cols-2 gap-4 mb-4">
+                    <div>
+                        <span class="font-bold text-gray-700 block mb-1">Acción</span>
+                        <p-tag [value]="selectedAudit.action" [severity]="getAuditActionSeverity(selectedAudit.action)"></p-tag>
+                    </div>
+                    <div>
+                        <span class="font-bold text-gray-700 block mb-1">Usuario</span>
+                        <span>{{ selectedAudit.user?.name || 'Sistema' }} ({{ selectedAudit.user?.email || 'N/A' }})</span>
+                    </div>
+                    <div>
+                        <span class="font-bold text-gray-700 block mb-1">Fecha</span>
+                        <span>{{ selectedAudit.createdAt | date:'dd/MM/yyyy HH:mm:ss' }}</span>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div class="col-span-1 md:col-span-2" *ngIf="selectedAudit.oldData || selectedAudit.newData">
+                        <span class="font-bold text-gray-700 block mb-2">Diferencias (Campos alterados)</span>
+                        <div class="bg-gray-100 rounded p-3 overflow-x-auto">
+                            <table class="w-full text-sm text-left">
+                                <thead>
+                                    <tr class="border-b border-gray-300">
+                                        <th class="py-2 px-3 font-semibold text-gray-600">Campo</th>
+                                        <th class="py-2 px-3 font-semibold text-gray-600 w-2/5">Antes</th>
+                                        <th class="py-2 px-3 font-semibold text-gray-600 w-2/5">Después</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr *ngFor="let diff of auditDiffs" class="border-b border-gray-200 last:border-0 hover:bg-gray-50">
+                                        <td class="py-2 px-3 font-mono text-xs">{{ diff.key }}</td>
+                                        <td class="py-2 px-3">
+                                            <span *ngIf="diff.oldValue !== undefined" class="bg-red-100 text-red-800 px-1 py-0.5 rounded break-all">{{ diff.oldValue | json }}</span>
+                                            <span *ngIf="diff.oldValue === undefined" class="text-gray-400 italic">--</span>
+                                        </td>
+                                        <td class="py-2 px-3">
+                                            <span *ngIf="diff.newValue !== undefined" class="bg-green-100 text-green-800 px-1 py-0.5 rounded break-all">{{ diff.newValue | json }}</span>
+                                            <span *ngIf="diff.newValue === undefined" class="text-gray-400 italic">--</span>
+                                        </td>
+                                    </tr>
+                                    <tr *ngIf="auditDiffs.length === 0">
+                                        <td colspan="3" class="py-4 text-center text-gray-500 italic">No se detectaron diferencias visibles (o es un registro nuevo/eliminado completo).</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Toggle to raw JSON -->
+                <div class="mt-4" *ngIf="selectedAudit.oldData || selectedAudit.newData">
+                    <p-button [text]="true" [rounded]="true" [icon]="showRawJson ? 'pi pi-table' : 'pi pi-code'" (click)="showRawJson = !showRawJson" [label]="showRawJson ? 'Ver Diferencias' : 'Ver JSON Completo'" styleClass="p-button-sm p-button-secondary"></p-button>
+                </div>
+
+                <!-- Raw JSON View -->
+                <div *ngIf="showRawJson && (selectedAudit.oldData || selectedAudit.newData)" class="grid grid-cols-1 md:grid-cols-2 gap-4 mt-3">
+                    <div *ngIf="selectedAudit.oldData">
+                        <span class="font-bold text-red-600 block mb-2"><i class="pi pi-minus-circle mr-1"></i>Datos Anteriores</span>
+                        <pre class="bg-red-50 border border-red-200 p-3 rounded text-xs overflow-x-auto max-h-80 overflow-y-auto">{{ selectedAudit.oldData | json }}</pre>
+                    </div>
+                    <div *ngIf="selectedAudit.newData">
+                        <span class="font-bold text-green-600 block mb-2"><i class="pi pi-plus-circle mr-1"></i>Datos Nuevos</span>
+                        <pre class="bg-green-50 border border-green-200 p-3 rounded text-xs overflow-x-auto max-h-80 overflow-y-auto">{{ selectedAudit.newData | json }}</pre>
+                    </div>
+                </div>
+
+            </div>
+            <ng-template pTemplate="footer">
+                <p-button icon="pi pi-check" (click)="displayAuditDialog=false" label="Cerrar" styleClass="p-button-text"></p-button>
+            </ng-template>
+        </p-dialog>
     `
 })
 export class Dashboard implements OnInit {
     upcomingServices: Service[] = [];
     pendingServices: Service[] = [];
+    audits: AuditLog[] = [];
     loading: boolean = true;
 
     todayCount: number = 0;
@@ -171,7 +324,13 @@ export class Dashboard implements OnInit {
     paymentPendingCount: number = 0;
     upcomingCount: number = 0;
 
-    constructor(private serviceService: ServiceService, private router: Router) {}
+    displayAuditDialog: boolean = false;
+    selectedAudit: AuditLog | null = null;
+    auditModules: any[] = [];
+    auditDiffs: { key: string, oldValue: any, newValue: any }[] = [];
+    showRawJson: boolean = false;
+
+    constructor(private serviceService: ServiceService, private auditService: AuditService, private router: Router) {}
 
     async ngOnInit() {
         await this.loadDashboardData();
@@ -223,6 +382,18 @@ export class Dashboard implements OnInit {
              // Sort pending by date asc
             this.pendingServices.sort((a, b) => new Date(a.startDate).getTime() - new Date(b.startDate).getTime());
 
+            // 3. Audit Logs
+            try {
+                const fetchedAudits = await this.auditService.getAudits();
+                this.audits = fetchedAudits || [];
+
+                // Extract unique modules for the dropdown filter
+                const uniqueModules = Array.from(new Set(this.audits.map(a => a.entity)));
+                this.auditModules = uniqueModules.map(m => ({ label: m, value: m }));
+            } catch (auditError) {
+                console.error("Error loading audits", auditError);
+                this.audits = [];
+            }
 
         } catch (error) {
             console.error("Error loading dashboard data", error);
@@ -289,5 +460,69 @@ export class Dashboard implements OnInit {
             case 'PAYMENT_PENDING': return 'bg-orange-500';
             default: return 'bg-gray-500';
         }
+    }
+
+    getAuditActionSeverity(action: string): 'success' | 'info' | 'warn' | 'danger' | 'secondary' | 'contrast' | null | undefined {
+        const a = action?.toUpperCase();
+        if (a === 'CREATE') return 'success';
+        if (a === 'UPDATE') return 'info';
+        if (a === 'DELETE') return 'danger';
+        return 'contrast';
+    }
+
+    viewAuditDetails(audit: AuditLog) {
+        this.selectedAudit = audit;
+        this.showRawJson = false;
+        this.auditDiffs = this.computeAuditDiff(audit.oldData, audit.newData, audit.action);
+        this.displayAuditDialog = true;
+    }
+
+    computeAuditDiff(oldData: any, newData: any, action: string): { key: string, oldValue: any, newValue: any }[] {
+        const diffs: { key: string, oldValue: any, newValue: any }[] = [];
+
+        if (action === 'CREATE' && newData) {
+            Object.keys(newData).forEach(key => {
+                if(key !== 'createdAt' && key !== 'updatedAt' && newData[key] !== null) {
+                   diffs.push({ key, oldValue: undefined, newValue: newData[key] });
+                }
+            });
+            return diffs;
+        }
+
+        if (action === 'DELETE' && oldData) {
+            Object.keys(oldData).forEach(key => {
+                if(key !== 'createdAt' && key !== 'updatedAt' && oldData[key] !== null) {
+                    diffs.push({ key, oldValue: oldData[key], newValue: undefined });
+                }
+            });
+            return diffs;
+        }
+
+        if (action === 'UPDATE' && oldData && newData) {
+            const allKeys = Array.from(new Set([...Object.keys(oldData), ...Object.keys(newData)]));
+
+            allKeys.forEach(key => {
+                if (key === 'updatedAt' || key === 'createdAt') return; // Ignore timestamps usually
+
+                const oldVal = oldData[key];
+                const newVal = newData[key];
+
+                // Simple equality check (this might fail for nested objects, but Prisma flat responses usually work fine)
+                if (JSON.stringify(oldVal) !== JSON.stringify(newVal)) {
+                    diffs.push({
+                        key,
+                        oldValue: oldVal,
+                        newValue: newVal
+                    });
+                }
+            });
+            return diffs;
+        }
+
+        return diffs;
+    }
+
+    onGlobalFilter(table: any, event: Event) {
+        table.filterGlobal((event.target as HTMLInputElement).value, 'contains');
     }
 }

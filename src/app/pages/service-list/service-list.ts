@@ -58,7 +58,7 @@ import { environment } from '../../../environments/environment';
                 </div>
             }
 
-            <p-table #dt1 [value]="services" [(selection)]="selectedServices" dataKey="id" [rows]="10" [rowsPerPageOptions]="[10, 25, 50]" [loading]="loading" [paginator]="true"
+            <p-table #dt1 [value]="services" [(selection)]="selectedServices" dataKey="id" [rows]="50" [rowsPerPageOptions]="[10, 25, 50]" [loading]="loading" [paginator]="true"
                 [globalFilterFields]="['route', 'status', 'clientNames', 'serviceGroup.code', 'invoiceNumber']" styleClass="p-datatable-sm" responsiveLayout="stack" breakpoint="960px"
                 [rowGroupMode]="isGroupedView ? 'subheader' : undefined"
                 [groupRowsBy]="isGroupedView ? 'serviceGroup.code' : ''">
