@@ -12,6 +12,7 @@ export interface Advance {
     description?: string;
     isDeducted?: boolean;
     settlementId?: number;
+    settlement?: any;
 }
 
 @Injectable({

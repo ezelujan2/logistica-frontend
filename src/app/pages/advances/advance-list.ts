@@ -48,8 +48,8 @@ import { TagModule } from 'primeng/tag';
                             <p-tag [value]="advance.isDeducted ? 'Deducido' : 'Pendiente'" [severity]="advance.isDeducted ? 'success' : 'warn'"></p-tag>
                         </td>
                         <td>
-                             <p-button icon="pi pi-pencil" [rounded]="true" [text]="true" severity="info" (click)="editAdvance(advance)" [disabled]="advance.isDeducted" class="mr-2"></p-button>
-                             <p-button icon="pi pi-trash" [rounded]="true" [text]="true" severity="danger" (click)="deleteAdvance(advance)" [disabled]="advance.isDeducted"></p-button>
+                             <p-button icon="pi pi-pencil" [rounded]="true" [text]="true" severity="info" (click)="editAdvance(advance)" [disabled]="advance.settlement?.status === 'PAID'" class="mr-2"></p-button>
+                             <p-button icon="pi pi-trash" [rounded]="true" [text]="true" severity="danger" (click)="deleteAdvance(advance)" [disabled]="advance.settlement?.status === 'PAID'"></p-button>
                         </td>
                     </tr>
                 </ng-template>
@@ -150,7 +150,7 @@ export class AdvanceList implements OnInit {
                         this.advanceDialog = false;
                         this.loadAdvances();
                     },
-                    error: () => this.messageService.add({severity:'error', summary:'Error', detail:'No se pudo actualizar'})
+                    error: (err) => this.messageService.add({severity:'error', summary:'Error', detail: err.error?.error || 'No se pudo actualizar'})
                 });
             } else {
                 this.advanceService.createAdvance(this.advance).subscribe({
