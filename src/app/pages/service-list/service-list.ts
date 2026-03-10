@@ -1562,6 +1562,10 @@ export class ServiceList implements OnInit {
     getAbsoluteUrl(url: string): string {
         if (!url) return '';
         if (url.startsWith('http')) return url;
+        // Fix for legacy images: rewrite `/uploads/` to `/api/uploads/` so the proxy catches it
+        if (url.startsWith('/uploads/')) {
+            url = `/api${url}`;
+        }
         const baseUrl = environment.apiUrl.replace('/api/', ''); // e.g. http://localhost:3000
         return `${baseUrl}${url}`;
     }
