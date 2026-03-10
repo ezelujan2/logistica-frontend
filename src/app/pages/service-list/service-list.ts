@@ -1562,10 +1562,14 @@ export class ServiceList implements OnInit {
     getAbsoluteUrl(url: string): string {
         if (!url) return '';
         if (url.startsWith('http')) return url;
-        // Fix for legacy images: rewrite `/uploads/` to `/api/uploads/` so the proxy catches it
-        if (url.startsWith('/uploads/')) {
-            url = `/api${url}`;
+
+        // Final Nginx Bypass: use query parameter ?file=...
+        // This stops Nginx from thinking it's a static file even if it has an extension
+        if (url.includes('/uploads/')) {
+            const filename = url.split('/').pop();
+            url = `/api/media-viewer?file=${filename}`;
         }
+
         const baseUrl = environment.apiUrl.replace('/api/', ''); // e.g. http://localhost:3000
         return `${baseUrl}${url}`;
     }
