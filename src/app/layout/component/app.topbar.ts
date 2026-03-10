@@ -45,7 +45,7 @@ import { Router } from '@angular/router';
                                 font-size: 85px;
                                 fill: #0c2340;
                                 /* Reducido el letter spacing entre LECM para estar mas agruapdos */
-                                letter-spacing: -2px; 
+                                letter-spacing: -2px;
                             }
                             .bajada {
                                 font-family: 'Montserrat', sans-serif;
@@ -94,10 +94,10 @@ import { Router } from '@angular/router';
 
             <div class="layout-topbar-menu hidden lg:block">
                 <div class="layout-topbar-menu-content">
-                    <button type="button" class="layout-topbar-action">
+                    <a routerLink="/services/calendar" class="layout-topbar-action" style="text-decoration: none;">
                         <i class="pi pi-calendar"></i>
                         <span>Calendar</span>
-                    </button>
+                    </a>
                     <button type="button" class="layout-topbar-action">
                         <i class="pi pi-inbox"></i>
                         <span>Messages</span>

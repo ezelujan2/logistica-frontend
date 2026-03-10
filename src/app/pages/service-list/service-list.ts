@@ -29,13 +29,19 @@ import { DividerModule } from 'primeng/divider';
 import { ToggleButtonModule } from 'primeng/togglebutton';
 import { ActivatedRoute } from '@angular/router';
 import { environment } from '../../../environments/environment';
+import { ServiceCalendar } from '../service-calendar/service-calendar';
 
 @Component({
     selector: 'app-service-list',
     template: `
         <div class="card">
             <p-toast></p-toast>
-            <div class="font-semibold text-xl mb-4">Servicios (Viajes)</div>
+
+            <div *ngIf="isCalendarView">
+                <app-service-calendar [allServices]="services" (editService)="editService($event)"></app-service-calendar>
+            </div>
+
+            <div *ngIf="!isCalendarView" class="font-semibold text-xl mb-4">Servicios (Viajes)</div>
 
             <!-- Acciones Masivas -->
             <!-- Acciones Masivas -->
@@ -58,7 +64,7 @@ import { environment } from '../../../environments/environment';
                 </div>
             }
 
-            <p-table #dt1 [value]="services" [(selection)]="selectedServices" dataKey="id" [rows]="50" [rowsPerPageOptions]="[10, 25, 50]" [loading]="loading" [paginator]="true"
+            <p-table *ngIf="!isCalendarView" #dt1 [value]="services" [(selection)]="selectedServices" dataKey="id" [rows]="50" [rowsPerPageOptions]="[10, 25, 50]" [loading]="loading" [paginator]="true"
                 [globalFilterFields]="['route', 'status', 'clientNames', 'serviceGroup.code', 'invoiceNumber']" styleClass="p-datatable-sm" responsiveLayout="stack" breakpoint="960px"
                 [rowGroupMode]="isGroupedView ? 'subheader' : undefined"
                 [groupRowsBy]="isGroupedView ? 'serviceGroup.code' : ''">
@@ -814,7 +820,7 @@ import { environment } from '../../../environments/environment';
         </div>
     `,
     standalone: true,
-    imports: [CommonModule, TableModule, ButtonModule, InputTextModule, IconFieldModule, InputIconModule, TagModule, DialogModule, FormsModule, SelectModule, MultiSelectModule, InputNumberModule, TextareaModule, DatePickerModule, ToastModule, PanelModule, DividerModule, CheckboxModule, TooltipModule, ToggleButtonModule],
+    imports: [CommonModule, TableModule, ButtonModule, InputTextModule, IconFieldModule, InputIconModule, TagModule, DialogModule, FormsModule, SelectModule, MultiSelectModule, InputNumberModule, TextareaModule, DatePickerModule, ToastModule, PanelModule, DividerModule, CheckboxModule, TooltipModule, ToggleButtonModule, ServiceCalendar],
 
     providers: [MessageService, ServiceService, ClientService, DriverService, VehicleService, ConfigurationService]
 })
@@ -1033,17 +1039,24 @@ export class ServiceList implements OnInit {
 
     // In handleStatusChange
     handleStatusChange(status: string | null) {
-        const statusMap: any = {
-            'created': 'CREATED',
-            'pending': 'PENDING',
-            'pending_details': 'PENDING_DETAILS',
-            'pending_invoice': 'PENDING_INVOICE',
-            'payment_pending': 'PAYMENT_PENDING',
-            'paid': 'PAID',
-            'cancelled': 'CANCELLED',
-            'all': undefined
-        };
-        this.activeStatusFilter = statusMap[status || 'all'];
+        if (status === 'calendar') {
+            this.isCalendarView = true;
+            this.activeStatusFilter = undefined;
+        } else {
+            this.isCalendarView = false;
+            const statusMap: any = {
+                'created': 'CREATED',
+                'pending': 'PENDING',
+                'pending_details': 'PENDING_DETAILS',
+                'pending_invoice': 'PENDING_INVOICE',
+                'payment_pending': 'PAYMENT_PENDING',
+                'paid': 'PAID',
+                'cancelled': 'CANCELLED',
+                'all': undefined
+            };
+            this.activeStatusFilter = statusMap[status || 'all'];
+        }
+
         this.selectedServices = []; // Clear selection
         this.loadAllData();
     }
@@ -2058,7 +2071,8 @@ export class ServiceList implements OnInit {
 
 
     // --- Grouped View ---
-    isGroupedView: boolean = false;
+    isGroupedView: boolean = true;
+    isCalendarView: boolean = false;
 
     toggleGroupView() {
         if (this.isGroupedView) {
