@@ -38,7 +38,7 @@ import { ServiceCalendar } from '../service-calendar/service-calendar';
             <p-toast></p-toast>
 
             <div *ngIf="isCalendarView">
-                <app-service-calendar [allServices]="services" (editService)="editService($event)"></app-service-calendar>
+                <app-service-calendar [allServices]="services" (editService)="editService($event)" (addServiceDate)="openNewWithDate($event)"></app-service-calendar>
             </div>
 
             <div *ngIf="!isCalendarView" class="font-semibold text-xl mb-4">Servicios (Viajes)</div>
@@ -1194,6 +1194,21 @@ export class ServiceList implements OnInit {
              this.applyConfig(this.selectedConfig);
         }
         this.serviceDialog = true;
+    }
+
+    openNewWithDate(date: Date) {
+        this.openNew();
+
+        // Start date at 08:00 of the selected day
+        const startDate = new Date(date);
+        startDate.setHours(8, 0, 0, 0);
+
+        // End date at 09:00 of the selected day
+        const endDate = new Date(startDate);
+        endDate.setHours(9, 0, 0, 0);
+
+        this.service.startDate = startDate;
+        this.service.endDate = endDate;
     }
 
     applyConfig(c: SystemConfiguration) {

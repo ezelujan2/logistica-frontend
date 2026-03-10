@@ -3,6 +3,8 @@ import { CommonModule, DatePipe } from '@angular/common';
 import { ButtonModule } from 'primeng/button';
 import { TooltipModule } from 'primeng/tooltip';
 import { BadgeModule } from 'primeng/badge';
+import { SelectButtonModule } from 'primeng/selectbutton';
+import { FormsModule } from '@angular/forms';
 import { Service } from '../../service/service.service';
 
 interface CalendarDay {
@@ -15,37 +17,39 @@ interface CalendarDay {
 @Component({
     selector: 'app-service-calendar',
     standalone: true,
-    imports: [CommonModule, ButtonModule, TooltipModule, BadgeModule],
+    imports: [CommonModule, ButtonModule, TooltipModule, BadgeModule, SelectButtonModule, FormsModule],
     providers: [DatePipe],
     template: `
         <div class="card p-4">
             <!-- Header Toolbar -->
-            <div class="flex justify-between items-center mb-6">
+            <div class="flex flex-col md:flex-row justify-between items-center mb-6 gap-4">
                 <div class="flex items-center gap-4">
-                    <button pButton icon="pi pi-chevron-left" class="p-button-rounded p-button-text p-button-secondary" (click)="previousMonth()"></button>
-                    <h2 class="text-2xl font-bold m-0 capitalize text-primary" style="min-width: 250px; text-align: center;">
-                        {{ getFormattedMonth() }}
+                    <button pButton icon="pi pi-chevron-left" class="p-button-rounded p-button-text p-button-secondary" (click)="previousPeriod()"></button>
+                    <h2 class="text-2xl font-bold m-0 capitalize text-primary text-center" style="min-width: 250px;">
+                        {{ getFormattedHeader() }}
                     </h2>
-                    <button pButton icon="pi pi-chevron-right" class="p-button-rounded p-button-text p-button-secondary" (click)="nextMonth()"></button>
+                    <button pButton icon="pi pi-chevron-right" class="p-button-rounded p-button-text p-button-secondary" (click)="nextPeriod()"></button>
                 </div>
 
-                <div class="flex gap-2">
+                <div class="flex gap-2 items-center">
+                    <p-selectButton [options]="viewOptions" [(ngModel)]="viewMode" optionLabel="label" optionValue="value" (onChange)="generateCalendar()"></p-selectButton>
                     <button pButton label="Hoy" icon="pi pi-calendar" class="p-button-outlined" (click)="goToToday()"></button>
                 </div>
             </div>
 
             <!-- Calendar Grid -->
-            <div class="calendar-container">
-                <!-- Day Headers -->
-                <div class="grid grid-cols-7 gap-2 mb-2">
-                    <div *ngFor="let day of weekDays" class="text-center font-semibold text-color-secondary p-2 uppercase text-sm">
-                        {{ day }}
+            <div class="calendar-container overflow-x-auto w-full pb-2">
+                <div class="min-w-[800px]">
+                    <!-- Day Headers -->
+                    <div class="grid grid-cols-7 gap-2 mb-2">
+                        <div *ngFor="let day of weekDays" class="text-center font-semibold text-color-secondary p-2 uppercase text-sm">
+                            {{ day }}
+                        </div>
                     </div>
-                </div>
 
-                <!-- Calendar Days Grid -->
-                <div class="grid grid-cols-7 gap-2 auto-rows-fr">
-                    <div *ngFor="let day of calendarDays"
+                    <!-- Calendar Days Grid -->
+                    <div class="grid grid-cols-7 gap-2 auto-rows-fr">
+                        <div *ngFor="let day of calendarDays"
                          class="calendar-cell min-h-[140px] p-2 border rounded-lg transition-colors flex flex-col gap-1 overflow-hidden relative group"
                          [ngClass]="{
                             'bg-surface-50 opacity-60': !day.isCurrentMonth,
@@ -53,10 +57,19 @@ interface CalendarDay {
                             'border-primary bg-primary-50': day.isToday
                          }">
 
-                        <!-- Date Number -->
-                        <div class="text-right font-medium text-sm mb-1"
-                             [ngClass]="{ 'text-primary font-bold': day.isToday, 'text-color-secondary': !day.isCurrentMonth }">
-                            {{ day.date.getDate() }}
+                        <!-- Date Number & Add Action -->
+                        <div class="flex justify-between items-center mb-1">
+                            <!-- Add Button (visible on group hover) -->
+                            <button pButton icon="pi pi-plus"
+                                    class="p-button-rounded p-button-text p-button-sm w-6 h-6 p-0 opacity-0 group-hover:opacity-100 transition-opacity"
+                                    (click)="onAddClick($event, day.date)"
+                                    pTooltip="Nuevo servicio este día"
+                                    tooltipPosition="top"></button>
+
+                            <div class="font-medium text-sm"
+                                 [ngClass]="{ 'text-primary font-bold': day.isToday, 'text-color-secondary': !day.isCurrentMonth }">
+                                {{ day.date.getDate() }}
+                            </div>
                         </div>
 
                         <!-- Services List within the Cell -->
@@ -111,16 +124,24 @@ interface CalendarDay {
         .pill-purple { background-color: #e9d5ff; color: #581c87; }
         .pill-indigo { background-color: #c7d2fe; color: #312e81; }
         .pill-green { background-color: #bbf7d0; color: #14532d; }
+        .pill-red { background-color: #fecaca; color: #7f1d1d; border: 1px solid #f87171; }
     `]
 })
 export class ServiceCalendar implements OnInit, OnChanges {
     @Input() allServices: Service[] = [];
     @Output() editService = new EventEmitter<Service>();
+    @Output() addServiceDate = new EventEmitter<Date>();
 
     currentDate: Date = new Date();
-    weekDays: string[] = ['Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb', 'Dom'];
+    weekDays: string[] = ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'];
     months: string[] = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'];
     calendarDays: CalendarDay[] = [];
+
+    viewMode: 'month' | 'week' = 'month';
+    viewOptions = [
+        { label: 'Mes', value: 'month' },
+        { label: 'Semana', value: 'week' }
+    ];
 
     constructor(private datePipe: DatePipe) {}
 
@@ -134,10 +155,31 @@ export class ServiceCalendar implements OnInit, OnChanges {
         }
     }
 
-    getFormattedMonth(): string {
-        const monthName = this.months[this.currentDate.getMonth()];
-        const year = this.currentDate.getFullYear();
-        return `${monthName} ${year}`;
+    getFormattedHeader(): string {
+        if (this.viewMode === 'month') {
+            const monthName = this.months[this.currentDate.getMonth()];
+            const year = this.currentDate.getFullYear();
+            return `${monthName} ${year}`;
+        } else {
+            const currentDayOfWeek = this.currentDate.getDay();
+            const startOfWeek = new Date(this.currentDate);
+            startOfWeek.setDate(this.currentDate.getDate() - currentDayOfWeek);
+
+            const endOfWeek = new Date(startOfWeek);
+            endOfWeek.setDate(startOfWeek.getDate() + 6);
+
+            const startMonthName = this.months[startOfWeek.getMonth()].slice(0, 3);
+            const endMonthName = this.months[endOfWeek.getMonth()].slice(0, 3);
+
+            if (startOfWeek.getMonth() === endOfWeek.getMonth()) {
+                if (startOfWeek.getFullYear() !== endOfWeek.getFullYear()) {
+                    return `Del ${startOfWeek.getDate()} al ${endOfWeek.getDate()} de ${this.months[startOfWeek.getMonth()]} ${startOfWeek.getFullYear()} - ${endOfWeek.getFullYear()}`;
+                }
+                return `Del ${startOfWeek.getDate()} al ${endOfWeek.getDate()} de ${this.months[startOfWeek.getMonth()]} ${startOfWeek.getFullYear()}`;
+            } else {
+                return `Del ${startOfWeek.getDate()} ${startMonthName} al ${endOfWeek.getDate()} ${endMonthName} ${endOfWeek.getFullYear()}`;
+            }
+        }
     }
 
     generateCalendar() {
@@ -146,28 +188,41 @@ export class ServiceCalendar implements OnInit, OnChanges {
         const month = this.currentDate.getMonth();
         const today = new Date();
 
-        const firstDayOfMonth = new Date(year, month, 1);
-        const startDayOfWeek = firstDayOfMonth.getDay() === 0 ? 6 : firstDayOfMonth.getDay() - 1;
+        if (this.viewMode === 'month') {
+            const firstDayOfMonth = new Date(year, month, 1);
+            const startDayOfWeek = firstDayOfMonth.getDay(); // 0 is Sunday
 
-        // Add days from previous month
-        for (let i = startDayOfWeek - 1; i >= 0; i--) {
-            const d = new Date(year, month, 0 - i);
-            this.addDayToCalendar(d, false, this.isSameDay(d, today));
-        }
+            // Add days from previous month
+            for (let i = startDayOfWeek - 1; i >= 0; i--) {
+                const d = new Date(year, month, 0 - i);
+                this.addDayToCalendar(d, false, this.isSameDay(d, today));
+            }
 
-        // Add days of current month
-        const daysInMonth = new Date(year, month + 1, 0).getDate();
-        for (let i = 1; i <= daysInMonth; i++) {
-            const d = new Date(year, month, i);
-            this.addDayToCalendar(d, true, this.isSameDay(d, today));
-        }
+            // Add days of current month
+            const daysInMonth = new Date(year, month + 1, 0).getDate();
+            for (let i = 1; i <= daysInMonth; i++) {
+                const d = new Date(year, month, i);
+                this.addDayToCalendar(d, true, this.isSameDay(d, today));
+            }
 
-        // Add days from next month to complete the last row
-        const totalDaysAdded = this.calendarDays.length;
-        const daysToFill = Math.ceil(totalDaysAdded / 7) * 7 - totalDaysAdded;
-        for (let i = 1; i <= daysToFill; i++) {
-            const d = new Date(year, month + 1, i);
-            this.addDayToCalendar(d, false, this.isSameDay(d, today));
+            // Add days from next month to complete the last row
+            const totalDaysAdded = this.calendarDays.length;
+            const daysToFill = Math.ceil(totalDaysAdded / 7) * 7 - totalDaysAdded;
+            for (let i = 1; i <= daysToFill; i++) {
+                const d = new Date(year, month + 1, i);
+                this.addDayToCalendar(d, false, this.isSameDay(d, today));
+            }
+        } else {
+            // Week View: Sunday to Saturday
+            const currentDayOfWeek = this.currentDate.getDay();
+            const startOfWeek = new Date(this.currentDate);
+            startOfWeek.setDate(this.currentDate.getDate() - currentDayOfWeek);
+
+            for (let i = 0; i < 7; i++) {
+                const d = new Date(startOfWeek);
+                d.setDate(startOfWeek.getDate() + i);
+                this.addDayToCalendar(d, d.getMonth() === month, this.isSameDay(d, today));
+            }
         }
     }
 
@@ -192,19 +247,32 @@ export class ServiceCalendar implements OnInit, OnChanges {
                d1.getDate() === d2.getDate();
     }
 
-    previousMonth() {
-        this.currentDate = new Date(this.currentDate.getFullYear(), this.currentDate.getMonth() - 1, 1);
+    previousPeriod() {
+        if (this.viewMode === 'month') {
+            this.currentDate = new Date(this.currentDate.getFullYear(), this.currentDate.getMonth() - 1, 1);
+        } else {
+            this.currentDate = new Date(this.currentDate.getFullYear(), this.currentDate.getMonth(), this.currentDate.getDate() - 7);
+        }
         this.generateCalendar();
     }
 
-    nextMonth() {
-        this.currentDate = new Date(this.currentDate.getFullYear(), this.currentDate.getMonth() + 1, 1);
+    nextPeriod() {
+        if (this.viewMode === 'month') {
+            this.currentDate = new Date(this.currentDate.getFullYear(), this.currentDate.getMonth() + 1, 1);
+        } else {
+            this.currentDate = new Date(this.currentDate.getFullYear(), this.currentDate.getMonth(), this.currentDate.getDate() + 7);
+        }
         this.generateCalendar();
     }
 
     goToToday() {
         this.currentDate = new Date();
         this.generateCalendar();
+    }
+
+    onAddClick(event: Event, date: Date) {
+        event.stopPropagation();
+        this.addServiceDate.emit(date);
     }
 
     onServiceClick(event: Event, service: Service) {
@@ -218,7 +286,7 @@ export class ServiceCalendar implements OnInit, OnChanges {
             case 'PENDING': return 'pill-yellow';
             case 'PENDING_DETAILS': return 'pill-blue';
             case 'PENDING_INVOICE': return 'pill-purple';
-            case 'PAYMENT_PENDING': return 'pill-indigo';
+            case 'PAYMENT_PENDING': return 'pill-red';
             case 'PAID': return 'pill-green';
             case 'CANCELLED': return 'bg-red-200 text-red-900 line-through';
             default: return 'pill-gray';
