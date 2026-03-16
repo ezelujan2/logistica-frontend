@@ -38,7 +38,7 @@ import { ServiceCalendar } from '../service-calendar/service-calendar';
             <p-toast></p-toast>
 
             <div *ngIf="isCalendarView">
-                <app-service-calendar [allServices]="services" (editService)="editService($event)" (addServiceDate)="openNewWithDate($event)"></app-service-calendar>
+                <app-service-calendar [allServices]="services" (editService)="editService($event)" (duplicateService)="duplicateService($event)" (addServiceDate)="openNewWithDate($event)"></app-service-calendar>
             </div>
 
             <div *ngIf="!isCalendarView" class="font-semibold text-xl mb-4">Servicios (Viajes)</div>
@@ -241,6 +241,7 @@ import { ServiceCalendar } from '../service-calendar/service-calendar';
                                       [pTooltip]="'Avanzar a ' + getMmStatusLabel(getNextStatus(service) || '')"
                                       tooltipPosition="left">
                             </p-button>
+                            <p-button icon="pi pi-copy" [rounded]="true" [text]="true" (click)="duplicateService(service)" pTooltip="Duplicar" tooltipPosition="left" />
                             <p-button icon="pi pi-pencil" [rounded]="true" [text]="true" (click)="editService(service)" />
                             <p-button icon="pi pi-trash" [rounded]="true" [text]="true" severity="danger" (click)="deleteService(service)" />
                         </td>
@@ -353,6 +354,32 @@ import { ServiceCalendar } from '../service-calendar/service-calendar';
                                                 </div>
                                             </ng-template>
                                         </p-multiSelect>
+                                    </div>
+                                </div>
+                            </p-panel>
+
+                            <p-panel header="Alertas de WhatsApp" styleClass="mb-3">
+                                <div class="flex flex-col gap-4">
+                                    <div class="flex items-center gap-2">
+                                        <p-checkbox [(ngModel)]="service.whatsappEnabled" [binary]="true" inputId="whatsappEnabled"></p-checkbox>
+                                        <label for="whatsappEnabled" class="cursor-pointer font-bold">Habilitar Alertas de WhatsApp (Para Mi)</label>
+                                    </div>
+                                    
+                                    <div *ngIf="service.whatsappEnabled" class="flex flex-col gap-3 p-3 bg-green-50 dark:bg-green-900/20 rounded-lg border border-green-100 dark:border-green-800 animate-fadein">
+                                        <span class="text-xs font-semibold text-green-700 dark:text-green-300 uppercase tracking-wider">Recordatorios programados</span>
+                                        
+                                        <div *ngFor="let reminder of service.whatsappReminders; let ri = index" class="flex items-center gap-2">
+                                            <div class="flex flex-1 gap-2 items-center">
+                                                <p-inputNumber [(ngModel)]="reminder.amount" [min]="1" styleClass="w-20" placeholder="Ej: 24"></p-inputNumber>
+                                                <p-select [options]="reminderUnits" [(ngModel)]="reminder.unit" optionLabel="label" optionValue="value" styleClass="flex-1"></p-select>
+                                                <span class="text-sm text-gray-500">antes</span>
+                                            </div>
+                                            <p-button icon="pi pi-trash" [text]="true" severity="danger" (click)="removeReminder(ri)"></p-button>
+                                        </div>
+                                        
+                                        <p-button label="Agregar Recordatorio" icon="pi pi-plus" [text]="true" size="small" (click)="addReminder()"></p-button>
+                                        
+                                        <small class="text-gray-500 italic"><i class="pi pi-info-circle mr-1"></i>Se enviará un mensaje de WhatsApp a tu número configurado.</small>
                                     </div>
                                 </div>
                             </p-panel>
@@ -1317,7 +1344,9 @@ export class ServiceList implements OnInit {
             driverIds: [],
             vehicleIds: [],
             expenses: [],
-            clientReimbursables: []
+            clientReimbursables: [],
+            whatsappEnabled: false,
+            whatsappReminders: []
         };
     }
 
@@ -1342,7 +1371,41 @@ export class ServiceList implements OnInit {
             driverIds: service.drivers ? service.drivers.map((d: any) => d.id) : [],
             vehicleIds: service.vehicles ? service.vehicles.map((v: any) => v.id) : [],
             expenses: service.expenses || [],
-            clientReimbursables: service.clientReimbursables || []
+            clientReimbursables: service.clientReimbursables || [],
+            whatsappEnabled: service.whatsappEnabled || false,
+            whatsappReminders: this.mapRemindersFromMinutes(service.whatsappReminders || [])
+        };
+        this.serviceDialog = true;
+    }
+
+    duplicateService(service: any) {
+        this.selectedConfig = null;
+        this.service = {
+            ...service,
+            id: undefined, // IMPORTANT: Clear ID for new record
+            startDate: new Date(), // Reset to today
+            endDate: new Date(new Date().getTime() + 3 * 60 * 60 * 1000), // Default 3h duration
+            serviceType: service.serviceType || 'SERVICE',
+            kmTraveled: service.km_traveled || 0,
+            waitingHours: service.waiting_hours || 0,
+            billingType: service.billing_type || 'INFORMAL',
+            status: 'CREATED', // Reset status
+
+            kmPriceOverride: service.km_price_snapshot,
+            hourPriceOverride: service.hour_price_snapshot,
+            driverKmPriceOverride: service.driver_km_price_snapshot,
+            driverHourPriceOverride: service.driver_hour_price_snapshot,
+
+            discountPercentage: service.discount_percentage,
+            clientIds: service.clients ? service.clients.map((c: any) => c.id) : [],
+            driverIds: service.drivers ? service.drivers.map((d: any) => d.id) : [],
+            vehicleIds: service.vehicles ? service.vehicles.map((v: any) => v.id) : [],
+
+            // Do not copy expenses or reimbursables from old trip usually,
+            // but let's copy them if user wants to "duplicate" completely.
+            // Actually, usually expenses vary. Let's keep them empty for safety.
+            expenses: [],
+            clientReimbursables: []
         };
         this.serviceDialog = true;
     }
@@ -1407,6 +1470,37 @@ export class ServiceList implements OnInit {
         return hasKm && hasDriver && hasVehicle && total > 0;
     }
 
+    reminderUnits = [
+        { label: 'Horas', value: 'hours' },
+        { label: 'Días', value: 'days' }
+    ];
+
+    addReminder() {
+        if (!this.service.whatsappReminders) this.service.whatsappReminders = [];
+        this.service.whatsappReminders.push({ amount: 24, unit: 'hours' });
+    }
+
+    removeReminder(index: number) {
+        this.service.whatsappReminders.splice(index, 1);
+    }
+
+    private mapRemindersToMinutes(reminders: any[]): any[] {
+        return reminders.map(r => ({
+            minutesBefore: r.unit === 'days' ? r.amount * 24 * 60 : r.amount * 60
+        }));
+    }
+
+    private mapRemindersFromMinutes(reminders: any[]): any[] {
+        return reminders.map(r => {
+            const mins = r.minutesBefore;
+            if (mins % (24 * 60) === 0) {
+                return { amount: mins / (24 * 60), unit: 'days' };
+            } else {
+                return { amount: mins / 60, unit: 'hours' };
+            }
+        });
+    }
+
     async saveService() {
         this.submitted = true;
 
@@ -1452,8 +1546,13 @@ export class ServiceList implements OnInit {
                 }
             }
 
+            const serviceToSave = {
+                ...this.service,
+                whatsappReminders: this.mapRemindersToMinutes(this.service.whatsappReminders || [])
+            };
+
             if (this.service.id) {
-                await this.serviceService.updateService(this.service.id, this.service);
+                await this.serviceService.updateService(this.service.id, serviceToSave);
                 this.messageService.add({ severity: 'success', summary: 'Éxito', detail: 'Servicio actualizado', life: 3000 });
             } else {
                 if (this.createRecurringTrip && this.recurringDates && this.recurringDates.length > 0) {
@@ -1462,7 +1561,7 @@ export class ServiceList implements OnInit {
                      const startSecs = this.service.startDate.getSeconds();
                      const baseDuration = this.service.endDate ? (new Date(this.service.endDate).getTime() - this.service.startDate.getTime()) : 0;
 
-                     const servicesToCreate = [this.service];
+                     const servicesToCreate = [serviceToSave];
 
                      for (let d of this.recurringDates) {
                           const newStart = new Date(d);
@@ -1474,7 +1573,7 @@ export class ServiceList implements OnInit {
                           }
 
                           servicesToCreate.push({
-                              ...this.service,
+                              ...serviceToSave,
                               startDate: newStart,
                               endDate: newEnd
                           });
@@ -1484,7 +1583,7 @@ export class ServiceList implements OnInit {
                      this.messageService.add({ severity: 'success', summary: 'Éxito', detail: `${servicesToCreate.length} servicios generados correctamente`, life: 3000 });
                 } else if (this.createReturnTrip && this.returnStartDate && this.returnEndDate) {
                      const returnService = {
-                         ...this.service,
+                         ...serviceToSave,
                          startDate: this.returnStartDate,
                          endDate: this.returnEndDate,
                          origin: this.service.destination,
@@ -1492,10 +1591,10 @@ export class ServiceList implements OnInit {
                          expenses: [],
                          clientReimbursables: []
                      };
-                     await this.serviceService.createBulkServices([this.service, returnService]);
+                     await this.serviceService.createBulkServices([serviceToSave, returnService]);
                      this.messageService.add({ severity: 'success', summary: 'Éxito', detail: 'Servicio y viaje de vuelta creados', life: 3000 });
                 } else {
-                    await this.serviceService.createService(this.service);
+                    await this.serviceService.createService(serviceToSave);
                     this.messageService.add({ severity: 'success', summary: 'Éxito', detail: 'Servicio creado', life: 3000 });
                 }
             }

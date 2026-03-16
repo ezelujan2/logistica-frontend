@@ -65,6 +65,10 @@ export interface Service {
 
   clientNames?: string;
   driverNames?: string;
+
+  // WhatsApp Notifications
+  whatsappEnabled?: boolean;
+  whatsappReminders?: { minutesBefore: number }[];
 }
 
 @Injectable({
