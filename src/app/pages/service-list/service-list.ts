@@ -383,6 +383,10 @@ import { ServiceCalendar } from '../service-calendar/service-calendar';
                                         <label>Descuento (%)</label>
                                         <p-inputNumber [(ngModel)]="service.discountPercentage" suffix="%" styleClass="w-full"></p-inputNumber>
                                     </div>
+                                    <div class="flex items-center gap-2 pt-2">
+                                        <p-checkbox [(ngModel)]="service.isVatExempt" [binary]="true" inputId="isVatExempt"></p-checkbox>
+                                        <label for="isVatExempt" class="cursor-pointer font-bold text-blue-700 dark:text-blue-300">¿Es IVA Exento?</label>
+                                    </div>
                                 </div>
                             </p-panel>
 
@@ -1098,6 +1102,7 @@ export class ServiceList implements OnInit {
                 kmTraveled: s.km_traveled,
                 waitingHours: s.waiting_hours,
                 billingType: s.billing_type,
+                isVatExempt: s.is_vat_exempt,
                 startDate: new Date(s.startDate),
                 endDate: s.endDate ? new Date(s.endDate) : null,
                 clientNames: s.clients ? s.clients.map((c: any) => c.name).join(', ') : '',
@@ -1313,6 +1318,7 @@ export class ServiceList implements OnInit {
             destination: '',
             status: 'CREATED',
             billingType: 'INFORMAL',
+            isVatExempt: false,
             clientIds: [],
             driverIds: [],
             vehicleIds: [],
@@ -1328,6 +1334,7 @@ export class ServiceList implements OnInit {
             startDate: new Date(service.startDate),
             endDate: service.endDate ? new Date(service.endDate) : null,
             serviceType: service.serviceType || 'SERVICE',
+            isVatExempt: service.isVatExempt ?? false,
             kmTraveled: service.km_traveled,
             waitingHours: service.waiting_hours,
             billingType: service.billing_type,
@@ -1725,8 +1732,8 @@ export class ServiceList implements OnInit {
 
         let total = netAfterDiscount;
 
-        if (this.service.billingType === 'OFFICIAL_A' || this.service.billingType === 'OFFICIAL_B') {
-            total = total * 1.21;
+        if (!this.service.isVatExempt && (this.service.billingType === 'OFFICIAL_A' || this.service.billingType === 'MONOTRIBUTO')) {
+             total = total * 1.21;
         }
         return total;
     }
@@ -1741,7 +1748,7 @@ export class ServiceList implements OnInit {
         const netBase = this.getServiceNetBase(this.service);
         const netAfterDiscount = netBase - this.getDiscountValue(this.service);
 
-        if (this.service.billingType === 'OFFICIAL_A' || this.service.billingType === 'OFFICIAL_B') {
+        if (!this.service.isVatExempt && (this.service.billingType === 'OFFICIAL_A' || this.service.billingType === 'MONOTRIBUTO')) {
             return netAfterDiscount * 0.21;
         }
         return 0;

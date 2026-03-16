@@ -65,6 +65,7 @@ export interface Service {
 
   clientNames?: string;
   driverNames?: string;
+  isVatExempt?: boolean;
 }
 
 @Injectable({
