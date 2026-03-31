@@ -1,6 +1,7 @@
 import { Component, OnInit, ViewChild } from '@angular/core';
 import { InvoiceService } from '../../service/invoice.service';
 import { CommonModule } from '@angular/common';
+import { firstValueFrom } from 'rxjs';
 import { Table, TableModule } from 'primeng/table';
 import { ButtonModule } from 'primeng/button';
 import { InputTextModule } from 'primeng/inputtext';
@@ -830,6 +831,8 @@ import { ServiceCalendar } from '../service-calendar/service-calendar';
 })
 export class ServiceList implements OnInit {
     services: Service[] = [];
+    isStaticDataLoaded: boolean = false;
+    currentLoadId: number = 0;
     service: any = this.getEmptyService();
 
     // Lists for dropdowns
@@ -1043,6 +1046,7 @@ export class ServiceList implements OnInit {
 
     // In handleStatusChange
     handleStatusChange(status: string | null) {
+        console.log(`[ServiceList] Status change detected: ${status}`);
         if (status === 'calendar') {
             this.isCalendarView = true;
             this.activeStatusFilter = undefined;
@@ -1062,6 +1066,7 @@ export class ServiceList implements OnInit {
         }
 
         this.selectedServices = []; // Clear selection
+        
         this.loadAllData();
     }
 
@@ -1079,6 +1084,10 @@ export class ServiceList implements OnInit {
     }
 
     async loadAllData() {
+        this.currentLoadId++;
+        const loadId = this.currentLoadId;
+        console.log(`[ServiceList] Starting loadAllData (Load ID: ${loadId})`);
+        
         this.loading = true;
         try {
             const filters: any = {};
@@ -1086,15 +1095,50 @@ export class ServiceList implements OnInit {
                 filters.status = this.activeStatusFilter;
             }
 
-            const [services, clients, drivers, vehicles, configs] = await Promise.all([
-                this.serviceService.getServices(filters),
-                this.clientService.getClients(),
-                this.driverService.getDrivers(),
-                this.vehicleService.getVehicles(),
-                this.configService.getConfigs().toPromise()
-            ]);
+            const promises: any[] = [
+                this.serviceService.getServices(filters)
+            ];
 
-            this.configs = configs || [];
+            // Only fetch static data once
+            if (!this.isStaticDataLoaded) {
+                console.log(`[ServiceList] Fetching static data for the first time...`);
+                promises.push(this.clientService.getClients());
+                promises.push(this.driverService.getDrivers());
+                promises.push(this.vehicleService.getVehicles());
+                promises.push(firstValueFrom(this.configService.getConfigs()));
+            }
+
+            const results = await Promise.all(promises);
+            
+            // Race condition check: Only proceed if this is still the latest request
+            if (loadId !== this.currentLoadId) {
+                console.warn(`[ServiceList] Load ID ${loadId} outpaced by ${this.currentLoadId}. Ignoring results.`);
+                return;
+            }
+
+            const services = results[0];
+            if (!this.isStaticDataLoaded) {
+                // Populate static lists from results
+                const rawClients = results[1] || [];
+                const rawDrivers = results[2] || [];
+                const rawVehicles = results[3] || [];
+                this.configs = results[4] || [];
+
+                // Deduplicate lists by ID just in case
+                this.clientsList = [...new Map(rawClients.map((item: any) => [item.id, item])).values()] as Client[];
+                this.driversList = [...new Map(rawDrivers.map((item: any) => [item.id, item])).values()] as Driver[];
+                this.vehiclesList = [...new Map(rawVehicles.map((item: any) => [item.id, item])).values()] as Vehicle[];
+
+                this.isStaticDataLoaded = true;
+                
+                // Initialize filters based on loaded data (de-duplicated by name for the UI filters)
+                const uniqueClientNames = [...new Set(this.clientsList.map(c => c.name))].sort();
+                this.clientFilterOptions = uniqueClientNames.map(name => ({ name: name, value: name }));
+
+                const uniqueDriverNames = [...new Set(this.driversList.map(d => d.name))].sort();
+                this.driverFilterOptions = uniqueDriverNames.map(name => ({ name: name, value: name }));
+                console.log(`[ServiceList] Static data loaded successfully.`);
+            }
 
             this.services = services.map((s: any) => ({
                 ...s,
@@ -1111,21 +1155,11 @@ export class ServiceList implements OnInit {
                 invoiceNumber: s.invoice?.invoiceNumber || ''
             }));
 
-            // Deduplicate lists by ID
-            this.clientsList = [...new Map(clients.map((item: any) => [item.id, item])).values()];
-            this.driversList = [...new Map(drivers.map((item: any) => [item.id, item])).values()];
-            this.vehiclesList = [...new Map(vehicles.map((item: any) => [item.id, item])).values()];
-
-            // Deduplicate for Filters (by Name)
-            const uniqueClientNames = [...new Set(clients.map(c => c.name))].sort();
-            this.clientFilterOptions = uniqueClientNames.map(name => ({ name: name, value: name }));
-
-            const uniqueDriverNames = [...new Set(drivers.map(d => d.name))].sort();
-            this.driverFilterOptions = uniqueDriverNames.map(name => ({ name: name, value: name }));
+            console.log(`[ServiceList] Services loaded: ${this.services.length} services.`);
 
         } catch (error) {
-            console.error(error);
-            this.messageService.add({ severity: 'error', summary: 'Error', detail: 'Error cargando datos iniciales' });
+            console.error('[ServiceList] Error loading data:', error);
+            this.messageService.add({ severity: 'error', summary: 'Error', detail: 'Error cargando datos de la tabla' });
         } finally {
             this.loading = false;
 
