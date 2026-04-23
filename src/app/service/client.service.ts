@@ -17,6 +17,7 @@ export interface Client {
     notes?: string;
     default_km_price?: number;
     default_waiting_hour_price?: number;
+    default_extra_km_price?: number;
     createdAt?: Date;
     updatedAt?: Date;
 }

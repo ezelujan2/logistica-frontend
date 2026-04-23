@@ -297,13 +297,17 @@ import { ServiceCalendar } from '../service-calendar/service-calendar';
                                         <input type="text" pInputText id="destination" [(ngModel)]="service.destination" class="w-full" />
                                     </div>
                                     <div class="grid grid-cols-12 gap-4" *ngIf="service.serviceType !== 'OTHER'">
-                                        <div class="col-span-12 md:col-span-6 flex flex-col gap-2">
+                                        <div class="col-span-12 md:col-span-4 flex flex-col gap-2">
                                             <label for="kmTraveled">KM Recorridos</label>
-                                            <p-inputNumber [(ngModel)]="service.kmTraveled" mode="decimal" [minFractionDigits]="2" styleClass="w-full"></p-inputNumber>
+                                            <p-inputNumber [(ngModel)]="service.kmTraveled" mode="decimal" [minFractionDigits]="2" styleClass="w-full" inputStyleClass="w-full"></p-inputNumber>
                                         </div>
-                                        <div class="col-span-12 md:col-span-6 flex flex-col gap-2">
+                                        <div class="col-span-12 md:col-span-4 flex flex-col gap-2">
+                                            <label for="extraKmTraveled">KM Extra (Cliente)</label>
+                                            <p-inputNumber [(ngModel)]="service.extraKmTraveled" mode="decimal" [minFractionDigits]="2" styleClass="w-full" inputStyleClass="w-full"></p-inputNumber>
+                                        </div>
+                                        <div class="col-span-12 md:col-span-4 flex flex-col gap-2">
                                             <label for="waitingHours">Horas de Espera</label>
-                                            <p-inputNumber [(ngModel)]="service.waitingHours" mode="decimal" [minFractionDigits]="2" styleClass="w-full"></p-inputNumber>
+                                            <p-inputNumber [(ngModel)]="service.waitingHours" mode="decimal" [minFractionDigits]="2" styleClass="w-full" inputStyleClass="w-full"></p-inputNumber>
                                         </div>
                                     </div>
 
@@ -361,13 +365,17 @@ import { ServiceCalendar } from '../service-calendar/service-calendar';
                             <p-panel header="Precios (Opcional - Sobrescribe defaults)">
                                 <div class="flex flex-col gap-4">
                                     <div class="grid grid-cols-12 gap-4" *ngIf="service.serviceType !== 'OTHER'">
-                                        <div class="col-span-12 md:col-span-6 flex flex-col gap-2">
-                                            <label>Precio KM (Cliente)</label>
-                                            <p-inputNumber [(ngModel)]="service.kmPriceOverride" mode="currency" currency="USD" locale="en-US" styleClass="w-full"></p-inputNumber>
+                                        <div class="col-span-12 md:col-span-4 flex flex-col gap-2">
+                                            <label>Precio KM</label>
+                                            <p-inputNumber [(ngModel)]="service.kmPriceOverride" mode="currency" currency="USD" locale="en-US" styleClass="w-full" inputStyleClass="w-full"></p-inputNumber>
                                         </div>
-                                        <div class="col-span-12 md:col-span-6 flex flex-col gap-2">
-                                            <label>Precio Hora (Cliente)</label>
-                                            <p-inputNumber [(ngModel)]="service.hourPriceOverride" mode="currency" currency="USD" locale="en-US" styleClass="w-full"></p-inputNumber>
+                                        <div class="col-span-12 md:col-span-4 flex flex-col gap-2">
+                                            <label>Precio KM Ex.</label>
+                                            <p-inputNumber [(ngModel)]="service.extraKmPriceOverride" mode="currency" currency="USD" locale="en-US" styleClass="w-full" inputStyleClass="w-full"></p-inputNumber>
+                                        </div>
+                                        <div class="col-span-12 md:col-span-4 flex flex-col gap-2">
+                                            <label>Precio Hora</label>
+                                            <p-inputNumber [(ngModel)]="service.hourPriceOverride" mode="currency" currency="USD" locale="en-US" styleClass="w-full" inputStyleClass="w-full"></p-inputNumber>
                                         </div>
                                     </div>
                                     <div class="grid grid-cols-12 gap-4" *ngIf="service.serviceType !== 'OTHER'">
@@ -379,6 +387,10 @@ import { ServiceCalendar } from '../service-calendar/service-calendar';
                                             <label>Precio Hora (Chofer)</label>
                                             <p-inputNumber [(ngModel)]="service.driverHourPriceOverride" mode="currency" currency="USD" locale="en-US" styleClass="w-full"></p-inputNumber>
                                         </div>
+                                    </div>
+                                    <div class="flex items-center gap-2 pt-2">
+                                        <p-checkbox [(ngModel)]="service.applyWaitingSurcharge" [binary]="true" inputId="applyWaitingSurcharge"></p-checkbox>
+                                        <label for="applyWaitingSurcharge" class="cursor-pointer font-bold text-orange-600 dark:text-orange-400">¿Recargo 5+ Hs? (Vale doble)</label>
                                     </div>
                                     <div class="flex flex-col gap-2">
                                         <label>Descuento (%)</label>
@@ -398,14 +410,20 @@ import { ServiceCalendar } from '../service-calendar/service-calendar';
                                 <div class="bg-blue-50 dark:bg-blue-900/20 p-4 rounded-xl border border-blue-100 dark:border-blue-800 shadow-sm flex flex-col items-center justify-center">
                                     <span class="text-blue-600 dark:text-blue-400 text-sm font-semibold uppercase tracking-wider mb-1">Total Cliente</span>
 
-                                    <div class="flex flex-col items-center">
+                                    <div class="flex flex-col items-center w-full">
+                                        <!-- Cost Breakdown (Hidden if simple) -->
+                                        <div class="flex flex-col w-full text-[10px] text-gray-500 mb-2 border-b border-blue-100 dark:border-blue-800 pb-1">
+                                             <div class="flex justify-between"><span>Base:</span><span>{{ ( (service.kmTraveled || 0) * (service.kmPriceOverride || 0) + (service.waitingHours || 0) * (service.hourPriceOverride || 0) ) | currency }}</span></div>
+                                             <div *ngIf="service.extraKmTraveled" class="flex justify-between text-blue-500"><span>Extra Km:</span><span>+ {{ (service.extraKmTraveled * (service.extraKmPriceOverride || 0)) | currency }}</span></div>
+                                             <div *ngIf="service.applyWaitingSurcharge && (service.waitingHours || 0) > 5" class="flex justify-between text-orange-500"><span>Recargo 5+ Hs:</span><span>+ {{ ( ((service.waitingHours || 0) - 5) * (service.hourPriceOverride || 0) * 1 ) | currency }}</span></div>
+                                        </div>
+
                                         <!-- Net -->
-                                        <span class="text-sm text-gray-600 dark:text-gray-300">Neto: {{ calculateClientNet | currency:'USD' }}</span>
+                                        <span class="text-sm text-gray-600 dark:text-gray-300">Neto Total: {{ calculateClientNet | currency:'USD' }}</span>
 
                                         <!-- Tax -->
                                         <span *ngIf="calculateClientTax > 0" class="text-xs text-blue-600 font-bold">+ IVA (21%): {{ calculateClientTax | currency:'USD' }}</span>
 
-                                        <span class="text-xs text-gray-500 line-through mb-1">{{(calculateClientTotal + getDiscountValue(service)) | currency:'USD'}}</span>
                                         <span class="text-2xl font-bold text-gray-800 dark:text-white mt-1">{{ calculateClientTotal | currency:'USD' }}</span>
                                     </div>
 
@@ -556,6 +574,7 @@ import { ServiceCalendar } from '../service-calendar/service-calendar';
                                 <th>Nombre</th>
                                 <th>Favorita</th>
                                 <th>C. KM</th>
+                                <th>C. KM EX</th>
                                 <th>C. Hora</th>
                                 <th>CH. KM</th>
                                 <th>CH. Hora</th>
@@ -569,6 +588,7 @@ import { ServiceCalendar } from '../service-calendar/service-calendar';
                                     <i class="pi" [ngClass]="{'text-yellow-500 pi-star-fill': c.isFavorite, 'text-gray-400 pi-star': !c.isFavorite}"></i>
                                 </td>
                                 <td>{{ c.kmPrice | currency:'USD' }}</td>
+                                <td>{{ c.extraKmPrice | currency:'USD' }}</td>
                                 <td>{{ c.hourPrice | currency:'USD' }}</td>
                                 <td>{{ c.driverKmPrice | currency:'USD' }}</td>
                                 <td>{{ c.driverHourPrice | currency:'USD' }}</td>
@@ -585,7 +605,7 @@ import { ServiceCalendar } from '../service-calendar/service-calendar';
             </p-dialog>
 
             <!-- Single Config Editor Dialog -->
-            <p-dialog [(visible)]="configEditDialog" [style]="{ width: '450px' }" [header]="config.id ? 'Editar Tarifa' : 'Nueva Tarifa'" [modal]="true" styleClass="p-fluid">
+            <p-dialog [(visible)]="configEditDialog" [style]="{ width: '600px' }" [header]="config.id ? 'Editar Tarifa' : 'Nueva Tarifa'" [modal]="true" styleClass="p-fluid">
                 <ng-template pTemplate="content">
                     <div class="flex flex-col gap-4 mt-2">
                         <div class="flex flex-col gap-2">
@@ -597,33 +617,37 @@ import { ServiceCalendar } from '../service-calendar/service-calendar';
                             <label for="fav">Marcar como Favorita Predeterminada</label>
                         </div>
                         <p-divider></p-divider>
-                        <div class="flex flex-col gap-2">
-                             <label class="font-bold">Precios Cliente</label>
-                             <div class="grid grid-cols-2 gap-4">
-                                <div class="flex flex-col gap-2">
-                                    <label>Precio KM</label>
-                                    <p-inputNumber [(ngModel)]="config.kmPrice" mode="currency" currency="USD" locale="en-US"></p-inputNumber>
-                                </div>
-                                <div class="flex flex-col gap-2">
-                                    <label>Precio Hora</label>
-                                    <p-inputNumber [(ngModel)]="config.hourPrice" mode="currency" currency="USD" locale="en-US"></p-inputNumber>
-                                </div>
-                             </div>
-                        </div>
+                         <div class="flex flex-col gap-2">
+                              <label class="font-bold">Precios Cliente</label>
+                              <div class="grid grid-cols-12 gap-4">
+                                 <div class="col-span-12 md:col-span-4 flex flex-col gap-2">
+                                     <label>Por KM</label>
+                                     <p-inputNumber [(ngModel)]="config.kmPrice" mode="currency" currency="USD" locale="en-US" styleClass="w-full" inputStyleClass="w-full"></p-inputNumber>
+                                 </div>
+                                 <div class="col-span-12 md:col-span-4 flex flex-col gap-2">
+                                     <label>Por KM Ex.</label>
+                                     <p-inputNumber [(ngModel)]="config.extraKmPrice" mode="currency" currency="USD" locale="en-US" styleClass="w-full" inputStyleClass="w-full"></p-inputNumber>
+                                 </div>
+                                 <div class="col-span-12 md:col-span-4 flex flex-col gap-2">
+                                     <label>Por Hora</label>
+                                     <p-inputNumber [(ngModel)]="config.hourPrice" mode="currency" currency="USD" locale="en-US" styleClass="w-full" inputStyleClass="w-full"></p-inputNumber>
+                                 </div>
+                              </div>
+                         </div>
                         <p-divider></p-divider>
-                        <div class="flex flex-col gap-2">
-                             <label class="font-bold">Precios Chofer</label>
-                             <div class="grid grid-cols-2 gap-4">
-                                <div class="flex flex-col gap-2">
-                                    <label>Precio KM</label>
-                                    <p-inputNumber [(ngModel)]="config.driverKmPrice" mode="currency" currency="USD" locale="en-US"></p-inputNumber>
-                                </div>
-                                <div class="flex flex-col gap-2">
-                                    <label>Precio Hora</label>
-                                    <p-inputNumber [(ngModel)]="config.driverHourPrice" mode="currency" currency="USD" locale="en-US"></p-inputNumber>
-                                </div>
-                             </div>
-                        </div>
+                         <div class="flex flex-col gap-2">
+                              <label class="font-bold">Precios Chofer</label>
+                              <div class="grid grid-cols-12 gap-4">
+                                 <div class="col-span-12 md:col-span-6 flex flex-col gap-2">
+                                     <label>Precio KM</label>
+                                     <p-inputNumber [(ngModel)]="config.driverKmPrice" mode="currency" currency="USD" locale="en-US" styleClass="w-full" inputStyleClass="w-full"></p-inputNumber>
+                                 </div>
+                                 <div class="col-span-12 md:col-span-6 flex flex-col gap-2">
+                                     <label>Precio Hora</label>
+                                     <p-inputNumber [(ngModel)]="config.driverHourPrice" mode="currency" currency="USD" locale="en-US" styleClass="w-full" inputStyleClass="w-full"></p-inputNumber>
+                                 </div>
+                              </div>
+                         </div>
                     </div>
                 </ng-template>
                  <ng-template pTemplate="footer">
@@ -633,7 +657,7 @@ import { ServiceCalendar } from '../service-calendar/service-calendar';
             </p-dialog>
 
             <!-- Mass Adjustment Dialog -->
-            <p-dialog [(visible)]="increaseDialog" [style]="{ width: '450px' }" header="Ajuste Masivo de Tarifas" [modal]="true" styleClass="p-fluid">
+            <p-dialog [(visible)]="increaseDialog" [style]="{ width: '600px' }" header="Ajuste Masivo de Tarifas" [modal]="true" styleClass="p-fluid">
                 <ng-template pTemplate="content">
                     <div class="flex flex-col gap-4 mt-2">
                         <!-- Type selector -->
@@ -650,14 +674,18 @@ import { ServiceCalendar } from '../service-calendar/service-calendar';
 
                         <div class="flex flex-col gap-2 bg-blue-50/50 p-4 border border-blue-100 rounded-lg">
                              <label class="font-bold text-blue-800"><i class="pi pi-user mr-2"></i>Porcentajes Clientes</label>
-                             <div class="grid grid-cols-2 gap-4">
+                             <div class="grid grid-cols-3 gap-4">
                                 <div class="flex flex-col gap-1">
-                                    <label class="text-xs font-semibold text-gray-600">Por KM (%)</label>
-                                    <p-inputNumber [(ngModel)]="increaseRates.clientKmInc" suffix="%" [min]="0" styleClass="w-full"></p-inputNumber>
+                                    <label class="text-xs font-semibold text-gray-600">KM (%)</label>
+                                    <p-inputNumber [(ngModel)]="increaseRates.clientKmInc" suffix="%" styleClass="w-full" inputStyleClass="w-full"></p-inputNumber>
                                 </div>
                                 <div class="flex flex-col gap-1">
-                                    <label class="text-xs font-semibold text-gray-600">Por Hora (%)</label>
-                                    <p-inputNumber [(ngModel)]="increaseRates.clientHourInc" suffix="%" [min]="0" styleClass="w-full"></p-inputNumber>
+                                    <label class="text-xs font-semibold text-gray-600">KM Ext. (%)</label>
+                                    <p-inputNumber [(ngModel)]="increaseRates.clientExtraKmInc" suffix="%" styleClass="w-full" inputStyleClass="w-full"></p-inputNumber>
+                                </div>
+                                <div class="flex flex-col gap-1">
+                                    <label class="text-xs font-semibold text-gray-600">Hora (%)</label>
+                                    <p-inputNumber [(ngModel)]="increaseRates.clientHourInc" suffix="%" styleClass="w-full" inputStyleClass="w-full"></p-inputNumber>
                                 </div>
                              </div>
                         </div>
@@ -862,8 +890,8 @@ export class ServiceList implements OnInit {
     increaseType: 'INCREASE' | 'DISCOUNT' = 'INCREASE';
     configs: SystemConfiguration[] = [];
     selectedConfig: SystemConfiguration | null = null;
-    config: SystemConfiguration = { id: 0, name: '', isFavorite: false, kmPrice: 0, hourPrice: 0, driverKmPrice: 0, driverHourPrice: 0 };
-    increaseRates = { clientKmInc: 0, clientHourInc: 0, driverKmInc: 0, driverHourInc: 0 };
+    config: SystemConfiguration = { id: 0, name: '', isFavorite: false, kmPrice: 0, hourPrice: 0, extraKmPrice: 0, driverKmPrice: 0, driverHourPrice: 0 };
+    increaseRates = { clientKmInc: 0, clientExtraKmInc: 0, clientHourInc: 0, driverKmInc: 0, driverHourInc: 0 };
     submitted: boolean = false;
     activeStatusFilter: string | undefined = undefined;
     billingInvoiceNumber: string = '';
@@ -1145,6 +1173,8 @@ export class ServiceList implements OnInit {
                 discountPercentage: s.discount_percentage,
                 kmTraveled: s.km_traveled,
                 waitingHours: s.waiting_hours,
+                extraKmTraveled: s.extra_km_traveled,
+                applyWaitingSurcharge: s.apply_waiting_surcharge,
                 billingType: s.billing_type,
                 isVatExempt: s.is_vat_exempt,
                 startDate: new Date(s.startDate),
@@ -1253,6 +1283,7 @@ export class ServiceList implements OnInit {
     applyConfig(c: SystemConfiguration) {
         this.service.kmPriceOverride = c.kmPrice;
         this.service.hourPriceOverride = c.hourPrice;
+        this.service.extraKmPriceOverride = c.extraKmPrice;
         this.service.driverKmPriceOverride = c.driverKmPrice;
         this.service.driverHourPriceOverride = c.driverHourPrice;
     }
@@ -1276,7 +1307,7 @@ export class ServiceList implements OnInit {
     }
 
     openNewConfig() {
-        this.config = { name: 'Nueva Tarifa', isFavorite: false, kmPrice: 0, hourPrice: 0, driverKmPrice: 0, driverHourPrice: 0 } as SystemConfiguration;
+        this.config = { name: 'Nueva Tarifa', isFavorite: false, kmPrice: 0, hourPrice: 0, extraKmPrice: 0, driverKmPrice: 0, driverHourPrice: 0 } as SystemConfiguration;
         this.configEditDialog = true;
     }
 
@@ -1319,7 +1350,7 @@ export class ServiceList implements OnInit {
     }
 
     openIncreaseDialog() {
-         this.increaseRates = { clientKmInc: 0, clientHourInc: 0, driverKmInc: 0, driverHourInc: 0 };
+         this.increaseRates = { clientKmInc: 0, clientExtraKmInc: 0, clientHourInc: 0, driverKmInc: 0, driverHourInc: 0 };
          this.increaseType = 'INCREASE';
          this.increaseDialog = true;
     }
@@ -1328,6 +1359,7 @@ export class ServiceList implements OnInit {
          const multiplier = this.increaseType === 'DISCOUNT' ? -1 : 1;
          const requestPayload = {
               clientKmInc: (this.increaseRates.clientKmInc || 0) * multiplier,
+              clientExtraKmInc: (this.increaseRates.clientExtraKmInc || 0) * multiplier,
               clientHourInc: (this.increaseRates.clientHourInc || 0) * multiplier,
               driverKmInc: (this.increaseRates.driverKmInc || 0) * multiplier,
               driverHourInc: (this.increaseRates.driverHourInc || 0) * multiplier
@@ -1353,6 +1385,10 @@ export class ServiceList implements OnInit {
             status: 'CREATED',
             billingType: 'INFORMAL',
             isVatExempt: false,
+            kmTraveled: 0,
+            waitingHours: 0,
+            extraKmTraveled: 0,
+            applyWaitingSurcharge: false,
             clientIds: [],
             driverIds: [],
             vehicleIds: [],
@@ -1371,10 +1407,13 @@ export class ServiceList implements OnInit {
             isVatExempt: service.isVatExempt ?? false,
             kmTraveled: service.km_traveled,
             waitingHours: service.waiting_hours,
+            extraKmTraveled: service.extra_km_traveled,
+            applyWaitingSurcharge: service.apply_waiting_surcharge,
             billingType: service.billing_type,
 
             kmPriceOverride: service.km_price_snapshot,
             hourPriceOverride: service.hour_price_snapshot,
+            extraKmPriceOverride: service.extra_km_price_snapshot,
             driverKmPriceOverride: service.driver_km_price_snapshot,
             driverHourPriceOverride: service.driver_hour_price_snapshot,
 
@@ -1733,11 +1772,19 @@ export class ServiceList implements OnInit {
         }
 
         const km = this.service.kmTraveled || 0;
+        const extraKm = this.service.extraKmTraveled || 0;
         const hours = this.service.waitingHours || 0;
+        
         const kmPrice = this.service.kmPriceOverride || 0;
+        const extraKmPrice = this.service.extraKmPriceOverride || 0;
         const hourPrice = this.service.hourPriceOverride || 0;
 
-        const subtotal = (km * kmPrice) + (hours * hourPrice);
+        let subtotal = (km * kmPrice) + (extraKm * extraKmPrice) + (hours * hourPrice);
+        
+        // Surcharge logic (a partir de la 6ta hora vale doble)
+        if (this.service.applyWaitingSurcharge && hours > 5) {
+            subtotal += (hours - 5) * hourPrice * 1; // +100%
+        }
 
         let discount = 0;
         if (this.service.discountPercentage) {
@@ -1750,13 +1797,27 @@ export class ServiceList implements OnInit {
     // Helper to get the base net amount before discount and reimbursables
     private getServiceNetBase(service: any): number {
         if (service.serviceType === 'OTHER') {
-            return service.kmPriceOverride || 0;
+            return service.kmPriceOverride !== undefined ? service.kmPriceOverride : (service.km_price_snapshot || 0);
         }
-        const km = service.kmTraveled || 0;
-        const hours = service.waitingHours || 0;
-        const kmPrice = service.kmPriceOverride || 0;
-        const hourPrice = service.hourPriceOverride || 0;
-        return (km * kmPrice) + (hours * hourPrice);
+        
+        // Prioritize UI bindings (camelCase) over DB raw data (snake_case)
+        const km = service.kmTraveled !== undefined ? service.kmTraveled : (service.km_traveled || 0);
+        const extraKm = service.extraKmTraveled !== undefined ? service.extraKmTraveled : (service.extra_km_traveled || 0);
+        const hours = service.waitingHours !== undefined ? service.waitingHours : (service.waiting_hours || 0);
+        
+        const kmPrice = service.kmPriceOverride !== undefined ? service.kmPriceOverride : (service.km_price_snapshot || 0);
+        const extraKmPrice = service.extraKmPriceOverride !== undefined ? service.extraKmPriceOverride : (service.extra_km_price_snapshot || 0);
+        const hourPrice = service.hourPriceOverride !== undefined ? service.hourPriceOverride : (service.hour_price_snapshot || 0);
+        
+        let base = (km * kmPrice) + (extraKm * extraKmPrice) + (hours * hourPrice);
+        
+        // Surcharge (a partir de la 6ta hora vale doble)
+        const applySurcharge = service.applyWaitingSurcharge !== undefined ? service.applyWaitingSurcharge : service.apply_waiting_surcharge;
+        if (applySurcharge && hours > 5) {
+            base += (hours - 5) * hourPrice * 1; // +100%
+        }
+        
+        return base;
     }
 
     get calculateClientTotal(): number {

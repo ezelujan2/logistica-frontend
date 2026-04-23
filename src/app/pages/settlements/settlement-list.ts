@@ -81,6 +81,10 @@ import { TooltipModule } from 'primeng/tooltip';
                                 <p-datepicker [(ngModel)]="newSettlement.endDate" placeholder="Fin"></p-datepicker>
                            </div>
                       </div>
+                      <div class="flex flex-col gap-2">
+                           <label>Observaciones (Para el reporte)</label>
+                           <textarea pInputText [(ngModel)]="newSettlement.notes" rows="3" placeholder="Agregar observaciones aquí..."></textarea>
+                      </div>
                  </div>
 
                  <!-- STEP 2: Review Items (Create & Details) -->
@@ -222,6 +226,18 @@ import { TooltipModule } from 'primeng/tooltip';
                           </p-table>
                       </p-panel>
 
+                      <!-- Observations Review (Only Details) -->
+                      <p-panel header="Observaciones" *ngIf="viewMode === 'DETAILS' && selectedSettlement?.notes">
+                           <div class="p-3 bg-gray-50 dark:bg-surface-800 rounded-lg border border-gray-200 dark:border-gray-700 italic text-gray-700 dark:text-gray-300">
+                                {{ selectedSettlement.notes }}
+                           </div>
+                      </p-panel>
+
+                      <!-- Observations Edit (When items loaded) -->
+                       <p-panel header="Observaciones (Editables)" *ngIf="pendingItemsLoaded">
+                           <textarea pInputText [(ngModel)]="newSettlement.notes" rows="3" placeholder="Actualizar observaciones..." class="w-full"></textarea>
+                       </p-panel>
+
                       <!-- Summary -->
                       <div class="flex justify-end p-4 bg-gray-50 dark:bg-surface-800 rounded-xl">
                            <div class="text-right">
@@ -327,7 +343,8 @@ export class SettlementList implements OnInit {
         this.newSettlement = {
             driverId: null,
             startDate: new Date(new Date().setDate(new Date().getDate() - 7)), // Last week default
-            endDate: new Date()
+            endDate: new Date(),
+            notes: ''
         };
         this.editingId = null;
         this.pendingItemsLoaded = false;
@@ -345,7 +362,8 @@ export class SettlementList implements OnInit {
             driverId: settlement.driverId,
             startDate: new Date(settlement.startDate),
             endDate: new Date(settlement.endDate),
-            code: settlement.code
+            code: settlement.code,
+            notes: settlement.notes || ''
         };
 
         // Load pending items for this driver
@@ -501,7 +519,8 @@ export class SettlementList implements OnInit {
             advanceIds: this.pendingAdvances.filter(a => a.selected).map(a => a.id),
             expenseIds: this.pendingExpenses.filter(e => e.selected).map(e => e.id),
             expenses: this.addedExpenses,
-            totalAmount: this.finalTotal
+            totalAmount: this.finalTotal,
+            notes: this.newSettlement.notes
         };
 
         if (this.editingId) {

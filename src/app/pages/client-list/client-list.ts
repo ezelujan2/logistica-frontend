@@ -95,6 +95,17 @@ import { MessageService } from 'primeng/api';
                             </div>
                         </div>
 
+                        <div class="grid grid-cols-12 gap-4">
+                             <div class="col-span-12 md:col-span-6 flex flex-col gap-2">
+                                 <label for="default_km_price">Precio KM Default</label>
+                                 <p-inputNumber id="default_km_price" [(ngModel)]="client.default_km_price" mode="currency" currency="USD" locale="en-US"></p-inputNumber>
+                             </div>
+                             <div class="col-span-12 md:col-span-6 flex flex-col gap-2">
+                                 <label for="default_extra_km_price">Precio KM Extra Default</label>
+                                 <p-inputNumber id="default_extra_km_price" [(ngModel)]="client.default_extra_km_price" mode="currency" currency="USD" locale="en-US"></p-inputNumber>
+                             </div>
+                        </div>
+
                         <div class="flex flex-col gap-2">
                              <label for="notes">Notas</label>
                              <textarea id="notes" pTextarea [(ngModel)]="client.notes" rows="3" cols="20"></textarea>

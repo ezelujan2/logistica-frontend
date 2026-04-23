@@ -9,6 +9,7 @@ export interface SystemConfiguration {
     isFavorite?: boolean;
     kmPrice: number;
     hourPrice: number;
+    extraKmPrice: number;
     driverKmPrice: number;
     driverHourPrice: number;
 }
@@ -37,7 +38,7 @@ export class ConfigurationService {
         return this.http.delete(`${this.apiUrl}/${id}`);
     }
 
-    increaseRates(percentages: { clientKmInc: number, clientHourInc: number, driverKmInc: number, driverHourInc: number }): Observable<SystemConfiguration[]> {
+    increaseRates(percentages: { clientKmInc: number, clientExtraKmInc: number, clientHourInc: number, driverKmInc: number, driverHourInc: number }): Observable<SystemConfiguration[]> {
         return this.http.post<SystemConfiguration[]>(`${this.apiUrl}/increase`, percentages);
     }
 }
