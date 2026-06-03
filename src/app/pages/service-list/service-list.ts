@@ -211,8 +211,11 @@ import { ServiceCalendar } from '../service-calendar/service-calendar';
                             <span *ngIf="!service.serviceGroup" class="text-gray-400">-</span>
                         </td>
                         <td>
-                            <span *ngIf="service.invoiceNumber" class="font-semibold text-purple-600 dark:text-purple-400">{{ service.invoiceNumber }}</span>
-                            <span *ngIf="!service.invoiceNumber" class="text-gray-400">-</span>
+                            <div class="flex items-center gap-2">
+                                <span *ngIf="service.invoiceNumber" class="font-semibold text-purple-600 dark:text-purple-400">{{ service.invoiceNumber }}</span>
+                                <span *ngIf="!service.invoiceNumber" class="text-gray-400">-</span>
+                                <p-button *ngIf="service.invoiceId" icon="pi pi-pencil" [rounded]="true" [text]="true" size="small" (click)="openEditInvoice(service)" pTooltip="Editar Nro Factura" tooltipPosition="top" styleClass="p-0 w-8 h-8"></p-button>
+                            </div>
                         </td>
                         <td>
                             {{ service.clientNames }}
@@ -850,6 +853,44 @@ import { ServiceCalendar } from '../service-calendar/service-calendar';
                     <p-button label="Confirmar Factura" icon="pi pi-check" severity="success" (click)="confirmBilling()" [disabled]="!billingClient || selectedBillingGroups.length === 0 || !billingInvoiceNumber.trim()"></p-button>
                 </ng-template>
             </p-dialog>
+
+            <p-dialog [(visible)]="editInvoiceDialog" [style]="{ width: '600px' }" header="Editar Número de Factura" [modal]="true" styleClass="p-fluid">
+                <ng-template pTemplate="content">
+                    <div class="flex flex-col gap-4 mt-4">
+                        <div class="flex flex-col gap-2">
+                            <label for="editInvoiceNum" class="font-bold">Nuevo Número de Factura</label>
+                            <input id="editInvoiceNum" type="text" pInputText [(ngModel)]="editingInvoice.number" placeholder="Ej: FC-0001" autofocus />
+                        </div>
+                        
+                        <div class="flex flex-col gap-2">
+                            <label class="font-bold">Servicios a incluir en esta factura</label>
+                            <p-table [value]="invoiceServices" [(selection)]="selectedInvoiceServices" dataKey="id" responsiveLayout="scroll" styleClass="p-datatable-sm">
+                                <ng-template pTemplate="header">
+                                    <tr>
+                                        <th style="width: 3rem"><p-tableHeaderCheckbox></p-tableHeaderCheckbox></th>
+                                        <th>Fecha</th>
+                                        <th>Ruta</th>
+                                        <th>Total</th>
+                                    </tr>
+                                </ng-template>
+                                <ng-template pTemplate="body" let-s>
+                                    <tr>
+                                        <td><p-tableCheckbox [value]="s"></p-tableCheckbox></td>
+                                        <td>{{ s.startDate | date:'dd/MM/yyyy' }}</td>
+                                        <td>{{ s.route }}</td>
+                                        <td>{{ s.totalAmount | currency:'ARS':'symbol-narrow':'1.0-0' }}</td>
+                                    </tr>
+                                </ng-template>
+                            </p-table>
+                            <small class="text-gray-500">Desmarque los servicios que no deben cambiar de factura.</small>
+                        </div>
+                    </div>
+                </ng-template>
+                <ng-template pTemplate="footer">
+                    <p-button label="Cancelar" icon="pi pi-times" [text]="true" (click)="hideEditInvoiceDialog()"></p-button>
+                    <p-button label="Guardar" icon="pi pi-check" severity="success" (click)="saveInvoiceNumber()" [disabled]="!editingInvoice.number.trim() || selectedInvoiceServices.length === 0"></p-button>
+                </ng-template>
+            </p-dialog>
         </div>
     `,
     standalone: true,
@@ -895,6 +936,10 @@ export class ServiceList implements OnInit {
     submitted: boolean = false;
     activeStatusFilter: string | undefined = undefined;
     billingInvoiceNumber: string = '';
+    editInvoiceDialog: boolean = false;
+    editingInvoice: { id: number, number: string } = { id: 0, number: '' };
+    invoiceServices: any[] = [];
+    selectedInvoiceServices: any[] = [];
 
     statuses = [
         { label: 'Creado', value: 'CREATED' },
@@ -1182,7 +1227,8 @@ export class ServiceList implements OnInit {
                 clientNames: s.clients ? s.clients.map((c: any) => c.name).join(', ') : '',
                 driverNames: s.drivers ? s.drivers.map((d: any) => d.name).join(', ') : '',
                 route: `${s.origin} -> ${s.destination}`,
-                invoiceNumber: s.invoice?.invoiceNumber || ''
+                invoiceNumber: s.invoice?.invoiceNumber || '',
+                invoiceId: s.invoiceId
             }));
 
             console.log(`[ServiceList] Services loaded: ${this.services.length} services.`);
@@ -2243,4 +2289,33 @@ export class ServiceList implements OnInit {
          });
     }
 
+    openEditInvoice(service: any) {
+        this.editingInvoice = { id: service.invoiceId, number: service.invoiceNumber || '' };
+        this.invoiceServices = this.services.filter(s => s.invoiceId === service.invoiceId);
+        this.selectedInvoiceServices = [...this.invoiceServices];
+        this.editInvoiceDialog = true;
+    }
+
+    hideEditInvoiceDialog() {
+        this.editInvoiceDialog = false;
+    }
+
+    async saveInvoiceNumber() {
+        if (!this.editingInvoice.id || !this.editingInvoice.number.trim()) return;
+        if (this.selectedInvoiceServices.length === 0) {
+            this.messageService.add({ severity: 'error', summary: 'Error', detail: 'Debe seleccionar al menos un servicio' });
+            return;
+        }
+
+        try {
+            const serviceIds = this.selectedInvoiceServices.map(s => s.id);
+            await this.invoiceService.updateInvoiceNumber(this.editingInvoice.id, this.editingInvoice.number, serviceIds);
+            this.messageService.add({ severity: 'success', summary: 'Éxito', detail: 'Número de factura actualizado' });
+            this.hideEditInvoiceDialog();
+            this.loadAllData();
+        } catch (error) {
+            console.error(error);
+            this.messageService.add({ severity: 'error', summary: 'Error', detail: 'No se pudo actualizar el número de factura' });
+        }
+    }
 }

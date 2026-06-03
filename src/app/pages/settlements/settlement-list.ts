@@ -95,7 +95,7 @@ import { TooltipModule } from 'primeng/tooltip';
                           <p-table [value]="viewMode === 'CREATE' ? pendingServices : selectedSettlement.services" [scrollable]="true" scrollHeight="300px">
                               <ng-template pTemplate="header">
                                   <tr>
-                                      <th *ngIf="viewMode === 'CREATE'" style="width: 3rem"><p-tableHeaderCheckbox></p-tableHeaderCheckbox></th>
+                                      <th *ngIf="viewMode === 'CREATE'" style="width: 3rem"><p-checkbox [(ngModel)]="selectAllServices" [binary]="true" (onChange)="toggleAllServices()"></p-checkbox></th>
                                       <th>Inicio</th>
                                       <th>Tipo</th>
                                       <th>Origen → Destino</th>
@@ -106,7 +106,7 @@ import { TooltipModule } from 'primeng/tooltip';
                               <ng-template pTemplate="body" let-service>
                                   <tr>
                                       <td *ngIf="viewMode === 'CREATE'">
-                                          <p-checkbox [(ngModel)]="service.selected" [binary]="true" (onChange)="calculateTotal()"></p-checkbox>
+                                          <p-checkbox [(ngModel)]="service.selected" [binary]="true" (onChange)="checkIfAllServicesSelected()"></p-checkbox>
                                       </td>
                                       <td>{{ service.startDate | date:'dd/MM/yy HH:mm' }}</td>
                                       <td><p-tag [value]="getServiceTypeLabel(service.serviceType)" severity="info"></p-tag></td>
@@ -127,7 +127,7 @@ import { TooltipModule } from 'primeng/tooltip';
                           <p-table [value]="viewMode === 'CREATE' ? pendingAdvances : selectedSettlement.advances">
                               <ng-template pTemplate="header">
                                   <tr>
-                                      <th *ngIf="viewMode === 'CREATE'" style="width: 3rem"></th>
+                                      <th *ngIf="viewMode === 'CREATE'" style="width: 3rem"><p-checkbox [(ngModel)]="selectAllAdvances" [binary]="true" (onChange)="toggleAllAdvances()"></p-checkbox></th>
                                       <th>Fecha</th>
                                       <th>Descripción</th>
                                       <th>Monto</th>
@@ -136,7 +136,7 @@ import { TooltipModule } from 'primeng/tooltip';
                               <ng-template pTemplate="body" let-advance>
                                   <tr>
                                       <td *ngIf="viewMode === 'CREATE'">
-                                          <p-checkbox [(ngModel)]="advance.selected" [binary]="true" (onChange)="calculateTotal()"></p-checkbox>
+                                          <p-checkbox [(ngModel)]="advance.selected" [binary]="true" (onChange)="checkIfAllAdvancesSelected()"></p-checkbox>
                                       </td>
                                       <td>{{ advance.date | date:'dd/MM/yy' }}</td>
                                       <td>{{ advance.description }}</td>
@@ -152,7 +152,7 @@ import { TooltipModule } from 'primeng/tooltip';
                            <p-table [value]="getDriverExpenses()">
                               <ng-template pTemplate="header">
                                   <tr>
-                                      <th *ngIf="viewMode === 'CREATE'" style="width: 3rem"><p-tableHeaderCheckbox></p-tableHeaderCheckbox></th>
+                                      <th *ngIf="viewMode === 'CREATE'" style="width: 3rem"><p-checkbox [(ngModel)]="selectAllExpenses" [binary]="true" (onChange)="toggleAllExpenses()"></p-checkbox></th>
                                       <th>Fecha</th>
                                       <th>Tipo</th>
                                       <th>Descripción</th>
@@ -162,7 +162,7 @@ import { TooltipModule } from 'primeng/tooltip';
                               <ng-template pTemplate="body" let-expense>
                                   <tr>
                                       <td *ngIf="viewMode === 'CREATE'">
-                                          <p-checkbox [(ngModel)]="expense.selected" [binary]="true" (onChange)="calculateTotal()"></p-checkbox>
+                                          <p-checkbox [(ngModel)]="expense.selected" [binary]="true" (onChange)="checkIfAllExpensesSelected()"></p-checkbox>
                                       </td>
                                       <td>{{ expense.date | date:'dd/MM/yy' }}</td>
                                       <td><p-tag [value]="expense.type" severity="warn"></p-tag></td>
@@ -283,6 +283,11 @@ export class SettlementList implements OnInit {
     pendingAdvances: any[] = [];
     pendingExpenses: any[] = [];
 
+    // Select All State
+    selectAllServices: boolean = true;
+    selectAllAdvances: boolean = true;
+    selectAllExpenses: boolean = true;
+
     // Ad-Hoc Expenses
     addedExpenses: any[] = [];
     newExpense: any = { description: '', amount: null, type: 'OTHER', isDriverExpense: false };
@@ -353,6 +358,9 @@ export class SettlementList implements OnInit {
         this.pendingExpenses = [];
         this.addedExpenses = [];
         this.newExpense = { description: '', amount: null };
+        this.selectAllServices = true;
+        this.selectAllAdvances = true;
+        this.selectAllExpenses = true;
         this.resetTotals();
     }
 
@@ -393,6 +401,10 @@ export class SettlementList implements OnInit {
 
                 // Ad-hoc Expenses (Reimbursable / Non-Driver)
                 this.addedExpenses = settlement.expenses.filter((e: any) => !e.isDriverExpense).map((e: any) => ({ ...e }));
+
+                this.selectAllServices = this.pendingServices.length > 0 && this.pendingServices.every(s => s.selected);
+                this.selectAllAdvances = this.pendingAdvances.length > 0 && this.pendingAdvances.every(a => a.selected);
+                this.selectAllExpenses = this.pendingExpenses.length > 0 && this.pendingExpenses.every(e => e.selected);
 
                 this.pendingItemsLoaded = true;
                 this.viewMode = 'CREATE';
@@ -448,6 +460,11 @@ export class SettlementList implements OnInit {
                 this.pendingServices = data.services.map((s: any) => ({ ...s, selected: true })); // Auto-select all
                 this.pendingAdvances = data.advances.map((a: any) => ({ ...a, selected: true }));
                 this.pendingExpenses = data.expenses.map((e: any) => ({ ...e, selected: true }));
+                
+                this.selectAllServices = true;
+                this.selectAllAdvances = true;
+                this.selectAllExpenses = true;
+                
                 this.pendingItemsLoaded = true;
                 this.calculateTotal();
                 this.loading = false;
@@ -487,6 +504,36 @@ export class SettlementList implements OnInit {
             .reduce((sum, e) => sum + Number(e.amount || 0), 0);
 
         this.finalTotal = this.totalServices + this.totalExpenses + this.totalDriverExpenses - this.totalAdvances;
+    }
+
+    toggleAllServices() {
+        this.pendingServices.forEach(s => s.selected = this.selectAllServices);
+        this.calculateTotal();
+    }
+
+    toggleAllAdvances() {
+        this.pendingAdvances.forEach(a => a.selected = this.selectAllAdvances);
+        this.calculateTotal();
+    }
+
+    toggleAllExpenses() {
+        this.pendingExpenses.forEach(e => e.selected = this.selectAllExpenses);
+        this.calculateTotal();
+    }
+
+    checkIfAllServicesSelected() {
+        this.selectAllServices = this.pendingServices.length > 0 && this.pendingServices.every(s => s.selected);
+        this.calculateTotal();
+    }
+
+    checkIfAllAdvancesSelected() {
+        this.selectAllAdvances = this.pendingAdvances.length > 0 && this.pendingAdvances.every(a => a.selected);
+        this.calculateTotal();
+    }
+
+    checkIfAllExpensesSelected() {
+        this.selectAllExpenses = this.pendingExpenses.length > 0 && this.pendingExpenses.every(e => e.selected);
+        this.calculateTotal();
     }
 
     resetTotals() {

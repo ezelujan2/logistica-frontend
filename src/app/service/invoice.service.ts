@@ -18,4 +18,8 @@ export class InvoiceService {
   getInvoices() {
     return firstValueFrom(this.http.get<any[]>(this.apiUrl));
   }
+
+  updateInvoiceNumber(invoiceId: number, invoiceNumber: string, serviceIds?: number[]) {
+    return firstValueFrom(this.http.put<any>(`${this.apiUrl}/${invoiceId}`, { invoiceNumber, serviceIds }));
+  }
 }
