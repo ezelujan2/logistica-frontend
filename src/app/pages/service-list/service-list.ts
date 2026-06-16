@@ -861,7 +861,7 @@ import { ServiceCalendar } from '../service-calendar/service-calendar';
                             <label for="editInvoiceNum" class="font-bold">Nuevo Número de Factura</label>
                             <input id="editInvoiceNum" type="text" pInputText [(ngModel)]="editingInvoice.number" placeholder="Ej: FC-0001" autofocus />
                         </div>
-                        
+
                         <div class="flex flex-col gap-2">
                             <label class="font-bold">Servicios a incluir en esta factura</label>
                             <p-table [value]="invoiceServices" [(selection)]="selectedInvoiceServices" dataKey="id" responsiveLayout="scroll" styleClass="p-datatable-sm">
@@ -1139,7 +1139,7 @@ export class ServiceList implements OnInit {
         }
 
         this.selectedServices = []; // Clear selection
-        
+
         this.loadAllData();
     }
 
@@ -1160,7 +1160,7 @@ export class ServiceList implements OnInit {
         this.currentLoadId++;
         const loadId = this.currentLoadId;
         console.log(`[ServiceList] Starting loadAllData (Load ID: ${loadId})`);
-        
+
         this.loading = true;
         try {
             const filters: any = {};
@@ -1182,7 +1182,7 @@ export class ServiceList implements OnInit {
             }
 
             const results = await Promise.all(promises);
-            
+
             // Race condition check: Only proceed if this is still the latest request
             if (loadId !== this.currentLoadId) {
                 console.warn(`[ServiceList] Load ID ${loadId} outpaced by ${this.currentLoadId}. Ignoring results.`);
@@ -1203,7 +1203,7 @@ export class ServiceList implements OnInit {
                 this.vehiclesList = [...new Map(rawVehicles.map((item: any) => [item.id, item])).values()] as Vehicle[];
 
                 this.isStaticDataLoaded = true;
-                
+
                 // Initialize filters based on loaded data (de-duplicated by name for the UI filters)
                 const uniqueClientNames = [...new Set(this.clientsList.map(c => c.name))].sort();
                 this.clientFilterOptions = uniqueClientNames.map(name => ({ name: name, value: name }));
@@ -1820,13 +1820,13 @@ export class ServiceList implements OnInit {
         const km = this.service.kmTraveled || 0;
         const extraKm = this.service.extraKmTraveled || 0;
         const hours = this.service.waitingHours || 0;
-        
+
         const kmPrice = this.service.kmPriceOverride || 0;
         const extraKmPrice = this.service.extraKmPriceOverride || 0;
         const hourPrice = this.service.hourPriceOverride || 0;
 
         let subtotal = (km * kmPrice) + (extraKm * extraKmPrice) + (hours * hourPrice);
-        
+
         // Surcharge logic (a partir de la 6ta hora vale doble)
         if (this.service.applyWaitingSurcharge && hours > 5) {
             subtotal += (hours - 5) * hourPrice * 1; // +100%
@@ -1845,33 +1845,29 @@ export class ServiceList implements OnInit {
         if (service.serviceType === 'OTHER') {
             return service.kmPriceOverride !== undefined ? service.kmPriceOverride : (service.km_price_snapshot || 0);
         }
-        
+
         // Prioritize UI bindings (camelCase) over DB raw data (snake_case)
         const km = service.kmTraveled !== undefined ? service.kmTraveled : (service.km_traveled || 0);
         const extraKm = service.extraKmTraveled !== undefined ? service.extraKmTraveled : (service.extra_km_traveled || 0);
         const hours = service.waitingHours !== undefined ? service.waitingHours : (service.waiting_hours || 0);
-        
+
         const kmPrice = service.kmPriceOverride !== undefined ? service.kmPriceOverride : (service.km_price_snapshot || 0);
         const extraKmPrice = service.extraKmPriceOverride !== undefined ? service.extraKmPriceOverride : (service.extra_km_price_snapshot || 0);
         const hourPrice = service.hourPriceOverride !== undefined ? service.hourPriceOverride : (service.hour_price_snapshot || 0);
-        
+
         let base = (km * kmPrice) + (extraKm * extraKmPrice) + (hours * hourPrice);
-        
+
         // Surcharge (a partir de la 6ta hora vale doble)
         const applySurcharge = service.applyWaitingSurcharge !== undefined ? service.applyWaitingSurcharge : service.apply_waiting_surcharge;
         if (applySurcharge && hours > 5) {
             base += (hours - 5) * hourPrice * 1; // +100%
         }
-        
+
         return base;
     }
 
     get calculateClientTotal(): number {
-        const netBase = this.getServiceNetBase(this.service);
-        // Descuento se hace sobre el neto *base*
-        const netAfterDiscount = netBase - this.getDiscountValue(this.service);
-
-        let total = netAfterDiscount;
+        let total = this.calculateClientNet;
 
         if (!this.service.isVatExempt && (this.service.billingType === 'OFFICIAL_A' || this.service.billingType === 'MONOTRIBUTO')) {
              total = total * 1.21;
@@ -1885,12 +1881,8 @@ export class ServiceList implements OnInit {
     }
 
     get calculateClientTax(): number {
-        // This method calculates the tax component of the service base net.
-        const netBase = this.getServiceNetBase(this.service);
-        const netAfterDiscount = netBase - this.getDiscountValue(this.service);
-
         if (!this.service.isVatExempt && (this.service.billingType === 'OFFICIAL_A' || this.service.billingType === 'MONOTRIBUTO')) {
-            return netAfterDiscount * 0.21;
+            return this.calculateClientNet * 0.21;
         }
         return 0;
     }

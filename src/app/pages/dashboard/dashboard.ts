@@ -403,7 +403,7 @@ export class Dashboard implements OnInit {
     }
 
     goToServices() {
-        this.router.navigate(['/services/all']);
+        this.router.navigate(['/app/services/all']);
     }
 
     goToServiceDetail(service: Service) {

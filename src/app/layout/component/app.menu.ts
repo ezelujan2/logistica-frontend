@@ -23,34 +23,34 @@ export class AppMenu {
             {
                 label: 'Home',
                 items: [
-                     { label: 'Inicio', icon: 'pi pi-fw pi-home', routerLink: ['/'] },
+                     { label: 'Inicio', icon: 'pi pi-fw pi-home', routerLink: ['/app'] },
                      {
                         label: 'Servicios',
                         icon: 'pi pi-fw pi-briefcase',
                         items: [
-                            { label: 'Creados', icon: 'pi pi-fw pi-plus-circle', routerLink: ['/services/created'] },
-                            { label: 'Pendientes', icon: 'pi pi-fw pi-clock', routerLink: ['/services/pending'] },
-                            { label: 'Env. Detalles', icon: 'pi pi-fw pi-send', routerLink: ['/services/pending_details'] },
-                            { label: 'A Facturar', icon: 'pi pi-fw pi-file', routerLink: ['/services/pending_invoice'] },
-                            { label: 'Pendiente Pago', icon: 'pi pi-fw pi-dollar', routerLink: ['/services/payment_pending'] },
-                            { label: 'Pagados', icon: 'pi pi-fw pi-wallet', routerLink: ['/services/paid'] },
-                            { label: 'Cancelados', icon: 'pi pi-fw pi-times-circle', routerLink: ['/services/cancelled'] },
-                            { label: 'General', icon: 'pi pi-fw pi-list', routerLink: ['/services/all'] }
+                            { label: 'Creados', icon: 'pi pi-fw pi-plus-circle', routerLink: ['/app/services/created'] },
+                            { label: 'Pendientes', icon: 'pi pi-fw pi-clock', routerLink: ['/app/services/pending'] },
+                            { label: 'Env. Detalles', icon: 'pi pi-fw pi-send', routerLink: ['/app/services/pending_details'] },
+                            { label: 'A Facturar', icon: 'pi pi-fw pi-file', routerLink: ['/app/services/pending_invoice'] },
+                            { label: 'Pendiente Pago', icon: 'pi pi-fw pi-dollar', routerLink: ['/app/services/payment_pending'] },
+                            { label: 'Pagados', icon: 'pi pi-fw pi-wallet', routerLink: ['/app/services/paid'] },
+                            { label: 'Cancelados', icon: 'pi pi-fw pi-times-circle', routerLink: ['/app/services/cancelled'] },
+                            { label: 'General', icon: 'pi pi-fw pi-list', routerLink: ['/app/services/all'] }
                         ]
                      },
-                     { label: 'Gastos', icon: 'pi pi-fw pi-money-bill', routerLink: ['/expenses'] },
-                     { label: 'Clientes', icon: 'pi pi-fw pi-users', routerLink: ['/clients'] },
+                     { label: 'Gastos', icon: 'pi pi-fw pi-money-bill', routerLink: ['/app/expenses'] },
+                     { label: 'Clientes', icon: 'pi pi-fw pi-users', routerLink: ['/app/clients'] },
                      {
                          label: 'Choferes',
                          icon: 'pi pi-fw pi-user',
                          items: [
-                             { label: 'Listado/Config', icon: 'pi pi-fw pi-users', routerLink: ['/drivers'] },
-                             { label: 'Adelantos', icon: 'pi pi-fw pi-money-bill', routerLink: ['/advances'] },
-                             { label: 'Liquidaciones', icon: 'pi pi-fw pi-file-excel', routerLink: ['/settlements'] }
+                             { label: 'Listado/Config', icon: 'pi pi-fw pi-users', routerLink: ['/app/drivers'] },
+                             { label: 'Adelantos', icon: 'pi pi-fw pi-money-bill', routerLink: ['/app/advances'] },
+                             { label: 'Liquidaciones', icon: 'pi pi-fw pi-file-excel', routerLink: ['/app/settlements'] }
                          ]
                      },
-                     { label: 'Autos', icon: 'pi pi-fw pi-car', routerLink: ['/vehicles'] },
-                     { label: 'Estadísticas', icon: 'pi pi-fw pi-chart-bar', routerLink: ['/statistics'] },
+                     { label: 'Autos', icon: 'pi pi-fw pi-car', routerLink: ['/app/vehicles'] },
+                     { label: 'Estadísticas', icon: 'pi pi-fw pi-chart-bar', routerLink: ['/app/statistics'] },
                     //  { label: 'Dashboard', icon: 'pi pi-fw pi-home', routerLink: ['/'] }
                 ]
             },

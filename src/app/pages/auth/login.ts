@@ -95,7 +95,7 @@ export class Login {
         this.authService.login(this.email, this.password).subscribe({
             next: (response) => {
                 localStorage.setItem('token', response.token);
-                this.router.navigate(['/']);
+                this.router.navigate(['/app']);
             },
             error: (error) => {
                 this.loading = false;

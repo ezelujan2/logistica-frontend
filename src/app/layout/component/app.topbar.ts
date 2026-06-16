@@ -17,7 +17,7 @@ import { Router } from '@angular/router';
             <button class="layout-menu-button layout-topbar-action" (click)="layoutService.onMenuToggle()">
                 <i class="pi pi-bars"></i>
             </button>
-            <a class="layout-topbar-logo" routerLink="/">
+            <a class="layout-topbar-logo layout-topbar-logo-full" routerLink="/app">
                 <!-- <svg viewBox="0 0 54 40" fill="none" xmlns="http://www.w3.org/2000/svg">
                     <path
                         fill-rule="evenodd"
@@ -94,7 +94,7 @@ import { Router } from '@angular/router';
 
             <div class="layout-topbar-menu hidden lg:block">
                 <div class="layout-topbar-menu-content">
-                    <a routerLink="/services/calendar" class="layout-topbar-action" style="text-decoration: none;">
+                    <a routerLink="/app/services/calendar" class="layout-topbar-action" style="text-decoration: none;">
                         <i class="pi pi-calendar"></i>
                         <span>Calendar</span>
                     </a>

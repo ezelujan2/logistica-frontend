@@ -37,11 +37,11 @@ import { AppFloatingConfigurator } from '../../layout/component/app.floatingconf
                                 <i class="pi pi-fw pi-table text-2xl!"></i>
                             </span>
                             <span class="ml-6 flex flex-col">
-                                <span class="text-surface-900 dark:text-surface-0 lg:text-xl font-medium mb-0 block">Frequently Asked Questions</span>
+                                <span class="text-surface-900 dark:text-surface-0 lg:text-xl font-medium mb-0 block">Volver al Inicio</span>
                                 <span class="text-surface-600 dark:text-surface-200 lg:text-xl">Ultricies mi quis hendrerit dolor.</span>
                             </span>
                         </a>
-                        <a routerLink="/" class="w-full flex items-center py-8 border-surface-300 dark:border-surface-500 border-b">
+                        <a routerLink="/app" class="w-full flex items-center py-8 border-surface-300 dark:border-surface-500 border-b">
                             <span class="flex justify-center items-center border-2 border-primary text-primary rounded-border" style="height: 3.5rem; width: 3.5rem">
                                 <i class="pi pi-fw pi-question-circle text-2xl!"></i>
                             </span>
@@ -50,7 +50,7 @@ import { AppFloatingConfigurator } from '../../layout/component/app.floatingconf
                                 <span class="text-surface-600 dark:text-surface-200 lg:text-xl">Phasellus faucibus scelerisque eleifend.</span>
                             </span>
                         </a>
-                        <a routerLink="/" class="w-full flex items-center mb-8 py-8 border-surface-300 dark:border-surface-500 border-b">
+                        <a routerLink="/app" class="w-full flex items-center mb-8 py-8 border-surface-300 dark:border-surface-500 border-b">
                             <span class="flex justify-center items-center border-2 border-primary text-primary rounded-border" style="height: 3.5rem; width: 3.5rem">
                                 <i class="pi pi-fw pi-unlock text-2xl!"></i>
                             </span>
@@ -59,7 +59,7 @@ import { AppFloatingConfigurator } from '../../layout/component/app.floatingconf
                                 <span class="text-surface-600 dark:text-surface-200 lg:text-xl">Accumsan in nisl nisi scelerisque</span>
                             </span>
                         </a>
-                        <p-button label="Go to Dashboard" routerLink="/" />
+                        <p-button label="Go to Dashboard" routerLink="/app" />
                     </div>
                 </div>
             </div>

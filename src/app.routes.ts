@@ -2,13 +2,16 @@ import { Routes } from '@angular/router';
 import { AppLayout } from './app/layout/component/app.layout';
 import { Dashboard } from './app/pages/dashboard/dashboard';
 import { Documentation } from './app/pages/documentation/documentation';
-import { Landing } from './app/pages/landing/landing';
+import { LecmaLanding } from './app/pages/landing/lecma-landing';
 import { Notfound } from './app/pages/notfound/notfound';
+import { Login } from './app/pages/auth/login';
 import { AuthGuard } from './app/service/auth.guard';
 
 export const appRoutes: Routes = [
+    { path: '', component: LecmaLanding },
+    { path: 'login', component: Login },
     {
-        path: '',
+        path: 'app',
         component: AppLayout,
         canActivate: [AuthGuard],
         children: [
@@ -27,7 +30,6 @@ export const appRoutes: Routes = [
             { path: 'expenses', loadComponent: () => import('./app/pages/expense-list/expense-list').then(m => m.ExpenseList) }
         ]
     },
-    { path: 'landing', component: Landing },
     { path: 'notfound', component: Notfound },
     { path: 'auth', loadChildren: () => import('./app/pages/auth/auth.routes') },
     { path: '**', redirectTo: '/notfound' }
