@@ -4,6 +4,10 @@ server {
     root /usr/share/nginx/html;
     index index.html;
 
+    # Security
+    server_tokens off;
+    add_header X-Frame-Options "SAMEORIGIN";
+    add_header X-Content-Type-Options "nosniff";
     # Gzip compression
     gzip on;
     gzip_types text/plain text/css application/json application/javascript text/xml application/xml application/xml+rss text/javascript;
