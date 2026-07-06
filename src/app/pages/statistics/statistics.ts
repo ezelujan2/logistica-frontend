@@ -11,15 +11,16 @@ import { StatisticsService } from '../../service/statistics.service';
 import { MultiSelectModule } from 'primeng/multiselect';
 import { TooltipModule } from 'primeng/tooltip';
 import { TagModule } from 'primeng/tag';
+import { HelpButtonComponent } from '../../shared/help-button.component';
 
 @Component({
   selector: 'app-statistics',
   standalone: true,
-  imports: [CommonModule, FormsModule, ChartModule, TableModule, CardModule, DividerModule, SelectButtonModule, SelectModule, MultiSelectModule, TooltipModule, TagModule],
+  imports: [CommonModule, FormsModule, ChartModule, TableModule, CardModule, DividerModule, SelectButtonModule, SelectModule, MultiSelectModule, TooltipModule, TagModule, HelpButtonComponent],
   template: `
     <div class="p-4 flex flex-col gap-6 animate-fadein">
         <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
-            <div class="font-bold text-3xl text-gray-800 dark:text-white">Dashboard & Estadísticas</div>
+            <div class="flex items-center gap-2 font-bold text-3xl text-gray-800 dark:text-white">Dashboard & Estadísticas <app-help-button pageKey="statistics" /></div>
 
             <!-- Filters -->
             <div class="flex flex-col sm:flex-row gap-3">

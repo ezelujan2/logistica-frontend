@@ -28,9 +28,10 @@ import { TooltipModule } from 'primeng/tooltip';
 import { PanelModule } from 'primeng/panel';
 import { DividerModule } from 'primeng/divider';
 import { ToggleButtonModule } from 'primeng/togglebutton';
-import { ActivatedRoute } from '@angular/router';
+import { ActivatedRoute, Router } from '@angular/router';
 import { environment } from '../../../environments/environment';
 import { ServiceCalendar } from '../service-calendar/service-calendar';
+import { HelpButtonComponent } from '../../shared/help-button.component';
 
 @Component({
     selector: 'app-service-list',
@@ -42,7 +43,7 @@ import { ServiceCalendar } from '../service-calendar/service-calendar';
                 <app-service-calendar [allServices]="services" (editService)="editService($event)" (addServiceDate)="openNewWithDate($event)"></app-service-calendar>
             </div>
 
-            <div *ngIf="!isCalendarView" class="font-semibold text-xl mb-4">Servicios (Viajes)</div>
+            <div *ngIf="!isCalendarView" class="flex items-center gap-2 font-semibold text-xl mb-4">Servicios (Viajes) <app-help-button pageKey="services" /></div>
 
             <!-- Acciones Masivas -->
             <!-- Acciones Masivas -->
@@ -208,7 +209,8 @@ import { ServiceCalendar } from '../service-calendar/service-calendar';
                                 <p-tag [value]="service.serviceGroup.code" severity="warn" styleClass="cursor-pointer hover:bg-orange-600 transition-colors" (click)="openReport(service)" pTooltip="Ver Reporte (PDF)" tooltipPosition="top"></p-tag>
                                 <p-button icon="pi pi-pencil" [rounded]="true" [text]="true" size="small" (click)="openEditGroupNotes(service.serviceGroup)" pTooltip="Editar Notas del Reporte" tooltipPosition="top" styleClass="p-0 w-8 h-8"></p-button>
                             </div>
-                            <span *ngIf="!service.serviceGroup" class="text-gray-400">-</span>
+                            <p-tag *ngIf="service.quote" [value]="service.quote.code" severity="contrast" [style]="{'font-size':'11px','cursor':'pointer'}" pTooltip="Cotización origen" tooltipPosition="top" (click)="goToQuote(service.quote.id)"></p-tag>
+                            <span *ngIf="!service.serviceGroup && !service.quote" class="text-gray-400">-</span>
                         </td>
                         <td>
                             <div class="flex items-center gap-2">
@@ -894,7 +896,7 @@ import { ServiceCalendar } from '../service-calendar/service-calendar';
         </div>
     `,
     standalone: true,
-    imports: [CommonModule, TableModule, ButtonModule, InputTextModule, IconFieldModule, InputIconModule, TagModule, DialogModule, FormsModule, SelectModule, MultiSelectModule, InputNumberModule, TextareaModule, DatePickerModule, ToastModule, PanelModule, DividerModule, CheckboxModule, TooltipModule, ToggleButtonModule, ServiceCalendar],
+    imports: [CommonModule, TableModule, ButtonModule, InputTextModule, IconFieldModule, InputIconModule, TagModule, DialogModule, FormsModule, SelectModule, MultiSelectModule, InputNumberModule, TextareaModule, DatePickerModule, ToastModule, PanelModule, DividerModule, CheckboxModule, TooltipModule, ToggleButtonModule, ServiceCalendar, HelpButtonComponent],
 
     providers: [MessageService, ServiceService, ClientService, DriverService, VehicleService, ConfigurationService]
 })
@@ -998,8 +1000,9 @@ export class ServiceList implements OnInit {
         private configService: ConfigurationService,
         private messageService: MessageService,
         private route: ActivatedRoute,
-        private invoiceService: InvoiceService, // Injected
-        private primeng: PrimeNG
+        private invoiceService: InvoiceService,
+        private primeng: PrimeNG,
+        private router: Router
     ) {}
 
 
@@ -2309,5 +2312,9 @@ export class ServiceList implements OnInit {
             console.error(error);
             this.messageService.add({ severity: 'error', summary: 'Error', detail: 'No se pudo actualizar el número de factura' });
         }
+    }
+
+    goToQuote(quoteId: number) {
+        this.router.navigate(['/app/quotes'], { queryParams: { highlight: quoteId } });
     }
 }

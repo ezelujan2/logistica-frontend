@@ -27,9 +27,12 @@ export const appRoutes: Routes = [
             { path: 'documentation', component: Documentation },
             { path: 'pages', loadChildren: () => import('./app/pages/pages.routes') },
             { path: 'statistics', loadComponent: () => import('./app/pages/statistics/statistics').then(m => m.StatisticsComponent) },
-            { path: 'expenses', loadComponent: () => import('./app/pages/expense-list/expense-list').then(m => m.ExpenseList) }
+            { path: 'expenses', loadComponent: () => import('./app/pages/expense-list/expense-list').then(m => m.ExpenseList) },
+            { path: 'quotes', loadComponent: () => import('./app/pages/quotes/quote-list').then(m => m.QuoteList) },
+            { path: 'documents', loadComponent: () => import('./app/pages/documents/document-dashboard').then(m => m.DocumentDashboard) }
         ]
     },
+    { path: 'quote/:token', loadComponent: () => import('./app/pages/quotes/quote-public').then(m => m.QuotePublicComponent) },
     { path: 'notfound', component: Notfound },
     { path: 'auth', loadChildren: () => import('./app/pages/auth/auth.routes') },
     { path: '**', redirectTo: '/notfound' }

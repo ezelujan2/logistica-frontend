@@ -12,13 +12,14 @@ import { CheckboxModule } from 'primeng/checkbox';
 import { Client, ClientService } from '../../service/client.service';
 import { ToastModule } from 'primeng/toast';
 import { MessageService } from 'primeng/api';
+import { HelpButtonComponent } from '../../shared/help-button.component';
 
 @Component({
     selector: 'app-client-list',
     template: `
         <div class="card">
             <p-toast></p-toast>
-            <div class="font-semibold text-xl mb-4">Clientes</div>
+            <div class="flex items-center gap-2 font-semibold text-xl mb-4">Clientes <app-help-button pageKey="clients" /></div>
             <p-table #dt1 [value]="clients" dataKey="id" [rows]="10" [rowsPerPageOptions]="[10, 25, 50]" [loading]="loading" [paginator]="true" [globalFilterFields]="['name', 'cuit', 'email']">
                 <ng-template pTemplate="caption">
                     <div class="flex justify-between items-center">
@@ -121,7 +122,7 @@ import { MessageService } from 'primeng/api';
         </div>
     `,
     standalone: true,
-    imports: [CommonModule, TableModule, ButtonModule, InputTextModule, IconFieldModule, InputIconModule, DialogModule, FormsModule, TextareaModule, CheckboxModule, ToastModule],
+    imports: [CommonModule, TableModule, ButtonModule, InputTextModule, IconFieldModule, InputIconModule, DialogModule, FormsModule, TextareaModule, CheckboxModule, ToastModule, HelpButtonComponent],
     providers: [MessageService]
 })
 export class ClientList implements OnInit {

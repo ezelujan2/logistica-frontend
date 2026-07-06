@@ -38,6 +38,7 @@ export class AppMenu {
                             { label: 'General', icon: 'pi pi-fw pi-list', routerLink: ['/app/services/all'] }
                         ]
                      },
+                     { label: 'Cotizaciones', icon: 'pi pi-fw pi-calculator', routerLink: ['/app/quotes'] },
                      { label: 'Gastos', icon: 'pi pi-fw pi-money-bill', routerLink: ['/app/expenses'] },
                      { label: 'Clientes', icon: 'pi pi-fw pi-users', routerLink: ['/app/clients'] },
                      {
@@ -50,6 +51,7 @@ export class AppMenu {
                          ]
                      },
                      { label: 'Autos', icon: 'pi pi-fw pi-car', routerLink: ['/app/vehicles'] },
+                     { label: 'Vencimientos', icon: 'pi pi-fw pi-calendar-times', routerLink: ['/app/documents'] },
                      { label: 'Estadísticas', icon: 'pi pi-fw pi-chart-bar', routerLink: ['/app/statistics'] },
                     //  { label: 'Dashboard', icon: 'pi pi-fw pi-home', routerLink: ['/'] }
                 ]

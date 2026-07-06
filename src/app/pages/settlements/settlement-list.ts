@@ -16,6 +16,7 @@ import { DividerModule } from 'primeng/divider';
 import { CheckboxModule } from 'primeng/checkbox';
 import { InputTextModule } from 'primeng/inputtext';
 import { TooltipModule } from 'primeng/tooltip';
+import { HelpButtonComponent } from '../../shared/help-button.component';
 
 @Component({
     selector: 'app-settlement-list',
@@ -24,7 +25,7 @@ import { TooltipModule } from 'primeng/tooltip';
             <p-toast></p-toast>
 
             <div *ngIf="viewMode === 'LIST'">
-                <div class="font-semibold text-xl mb-4">Liquidaciones a Choferes</div>
+                <div class="flex items-center gap-2 font-semibold text-xl mb-4">Liquidaciones a Choferes <app-help-button pageKey="settlements" /></div>
                 <p-table [value]="settlements" [loading]="loading" [paginator]="true" [rows]="10" responsiveLayout="stack">
                     <ng-template pTemplate="caption">
                          <p-button label="Nueva Liquidación" icon="pi pi-plus" (click)="viewMode = 'CREATE'; openCreate()" />
@@ -266,7 +267,7 @@ import { TooltipModule } from 'primeng/tooltip';
         </div>
     `,
     standalone: true,
-    imports: [CommonModule, TableModule, ButtonModule, DialogModule, FormsModule, SelectModule, DatePickerModule, ToastModule, TagModule, PanelModule, DividerModule, CheckboxModule, InputTextModule, TooltipModule],
+    imports: [CommonModule, TableModule, ButtonModule, DialogModule, FormsModule, SelectModule, DatePickerModule, ToastModule, TagModule, PanelModule, DividerModule, CheckboxModule, InputTextModule, TooltipModule, HelpButtonComponent],
     providers: [MessageService, SettlementService, DriverService]
 })
 export class SettlementList implements OnInit {

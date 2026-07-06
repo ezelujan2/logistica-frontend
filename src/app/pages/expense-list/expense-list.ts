@@ -19,6 +19,7 @@ import { CheckboxModule } from 'primeng/checkbox';
 import { ExpenseService } from '../../service/expense.service';
 import { DriverService } from '../../service/driver.service';
 import { VehicleService } from '../../service/vehicle.service';
+import { HelpButtonComponent } from '../../shared/help-button.component';
 
 @Component({
     selector: 'app-expense-list',
@@ -40,7 +41,8 @@ import { VehicleService } from '../../service/vehicle.service';
         DatePickerModule,
         TagModule,
         ConfirmDialogModule,
-        CheckboxModule
+        CheckboxModule,
+        HelpButtonComponent
     ],
     providers: [MessageService, ConfirmationService, DatePipe]
 })

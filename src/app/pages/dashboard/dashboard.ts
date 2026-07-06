@@ -15,13 +15,21 @@ import { DialogModule } from 'primeng/dialog';
 import { InputTextModule } from 'primeng/inputtext';
 import { SelectModule } from 'primeng/select';
 import { FormsModule } from '@angular/forms';
+import { HelpButtonComponent } from '../../shared/help-button.component';
+import { QuoteService } from '../../service/quote.service';
+import { DocumentService } from '../../service/document.service';
 
 @Component({
     selector: 'app-dashboard',
     standalone: true,
-    imports: [CommonModule, TableModule, ButtonModule, StyleClassModule, PanelMenuModule, TagModule, CardModule, DividerModule, SkeletonModule, DialogModule, InputTextModule, SelectModule, FormsModule],
+    imports: [CommonModule, TableModule, ButtonModule, StyleClassModule, PanelMenuModule, TagModule, CardModule, DividerModule, SkeletonModule, DialogModule, InputTextModule, SelectModule, FormsModule, HelpButtonComponent],
     template: `
         <div class="grid grid-cols-12 gap-6">
+
+            <div class="col-span-12 flex items-center gap-2">
+                <span class="font-semibold text-xl">Inicio</span>
+                <app-help-button pageKey="dashboard" />
+            </div>
 
             <!-- Quick Stats -->
             <div class="col-span-12 md:col-span-6 lg:col-span-3">
@@ -73,9 +81,31 @@ import { FormsModule } from '@angular/forms';
                 </div>
                 </div>
 
-            <!-- Upcoming Services -->
+            <!-- Quotes Pending -->
+            <div class="col-span-12 md:col-span-6 lg:col-span-3">
+                <div class="bg-white dark:bg-gray-900 shadow rounded-xl p-4 border border-gray-100 dark:border-gray-800 flex items-center justify-between cursor-pointer hover:shadow-md transition-shadow" (click)="router.navigate(['/app/quotes'])">
+                    <div>
+                        <span class="block text-gray-500 font-medium mb-1">Cotizaciones Pend.</span>
+                        <div class="text-2xl font-bold text-gray-900 dark:text-white">{{ pendingQuotesCount }}</div>
+                    </div>
+                    <div class="w-10 h-10 flex items-center justify-center bg-indigo-100 dark:bg-indigo-900/30 rounded-full">
+                        <i class="pi pi-calculator text-indigo-500 text-xl"></i>
+                    </div>
+                </div>
+            </div>
 
-
+            <!-- Docs Expiring -->
+            <div class="col-span-12 md:col-span-6 lg:col-span-3">
+                <div class="bg-white dark:bg-gray-900 shadow rounded-xl p-4 border border-gray-100 dark:border-gray-800 flex items-center justify-between cursor-pointer hover:shadow-md transition-shadow" (click)="router.navigate(['/app/documents'])">
+                    <div>
+                        <span class="block text-gray-500 font-medium mb-1">Docs por Vencer</span>
+                        <div class="text-2xl font-bold" [ngClass]="expiringDocsCount > 0 ? 'text-red-600' : 'text-gray-900 dark:text-white'">{{ expiringDocsCount }}</div>
+                    </div>
+                    <div class="w-10 h-10 flex items-center justify-center" [ngClass]="expiringDocsCount > 0 ? 'bg-red-100 dark:bg-red-900/30' : 'bg-green-100 dark:bg-green-900/30'" class="rounded-full">
+                        <i class="pi pi-calendar-times text-xl" [ngClass]="expiringDocsCount > 0 ? 'text-red-500' : 'text-green-500'"></i>
+                    </div>
+                </div>
+            </div>
 
             <!-- Upcoming Services -->
             <div class="col-span-12 xl:col-span-7">
@@ -324,13 +354,16 @@ export class Dashboard implements OnInit {
     paymentPendingCount: number = 0;
     upcomingCount: number = 0;
 
+    pendingQuotesCount: number = 0;
+    expiringDocsCount: number = 0;
+
     displayAuditDialog: boolean = false;
     selectedAudit: AuditLog | null = null;
     auditModules: any[] = [];
     auditDiffs: { key: string, oldValue: any, newValue: any }[] = [];
     showRawJson: boolean = false;
 
-    constructor(private serviceService: ServiceService, private auditService: AuditService, private router: Router) {}
+    constructor(private serviceService: ServiceService, private auditService: AuditService, public router: Router, private quoteService: QuoteService, private documentService: DocumentService) {}
 
     async ngOnInit() {
         await this.loadDashboardData();
@@ -382,7 +415,18 @@ export class Dashboard implements OnInit {
              // Sort pending by date asc
             this.pendingServices.sort((a, b) => new Date(a.startDate).getTime() - new Date(b.startDate).getTime());
 
-            // 3. Audit Logs
+            // 3. Quotes & Documents counts
+            try {
+                const quotes = await this.quoteService.getQuotes({ status: 'SENT' });
+                this.pendingQuotesCount = quotes.length;
+            } catch { this.pendingQuotesCount = 0; }
+
+            try {
+                const docs = await this.documentService.getExpiringDocuments(30);
+                this.expiringDocsCount = docs.length;
+            } catch { this.expiringDocsCount = 0; }
+
+            // 4. Audit Logs
             try {
                 const fetchedAudits = await this.auditService.getAudits();
                 this.audits = fetchedAudits || [];

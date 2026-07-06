@@ -13,13 +13,14 @@ import { MessageService } from 'primeng/api';
 import { Advance, AdvanceService } from '../../service/advance.service';
 import { Driver, DriverService } from '../../service/driver.service';
 import { TagModule } from 'primeng/tag';
+import { HelpButtonComponent } from '../../shared/help-button.component';
 
 @Component({
     selector: 'app-advance-list',
     template: `
         <div class="card">
             <p-toast></p-toast>
-            <div class="font-semibold text-xl mb-4">Adelantos a Choferes</div>
+            <div class="flex items-center gap-2 font-semibold text-xl mb-4">Adelantos a Choferes <app-help-button pageKey="advances" /></div>
 
             <p-table #dt [value]="advances" [rows]="10" [paginator]="true" [loading]="loading" responsiveLayout="stack" breakpoint="960px">
                 <ng-template pTemplate="caption">
@@ -84,7 +85,7 @@ import { TagModule } from 'primeng/tag';
         </div>
     `,
     standalone: true,
-    imports: [CommonModule, TableModule, ButtonModule, InputTextModule, DialogModule, FormsModule, SelectModule, InputNumberModule, DatePickerModule, ToastModule, TagModule],
+    imports: [CommonModule, TableModule, ButtonModule, InputTextModule, DialogModule, FormsModule, SelectModule, InputNumberModule, DatePickerModule, ToastModule, TagModule, HelpButtonComponent],
     providers: [MessageService, AdvanceService, DriverService]
 })
 export class AdvanceList implements OnInit {
