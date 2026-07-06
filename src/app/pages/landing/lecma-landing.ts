@@ -1,7 +1,9 @@
 import { Component, AfterViewInit, OnDestroy, inject, NgZone, ChangeDetectorRef } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { HttpClient } from '@angular/common/http';
+import { Router } from '@angular/router';
 import { environment } from '../../../environments/environment';
+import { AuthService } from '../../service/auth.service';
 
 @Component({
     selector: 'app-lecma-landing',
@@ -1558,6 +1560,14 @@ export class LecmaLanding implements AfterViewInit, OnDestroy {
     private apiUrl = environment.apiUrl;
     private zone = inject(NgZone);
     private cdr = inject(ChangeDetectorRef);
+    private router = inject(Router);
+    private auth = inject(AuthService);
+
+    constructor() {
+        if (this.auth.isLoggedIn()) {
+            this.router.navigate(['/app']);
+        }
+    }
 
     menuOpen = false;
     private observer: IntersectionObserver | null = null;
