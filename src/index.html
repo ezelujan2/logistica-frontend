@@ -18,5 +18,12 @@
 
     <body>
         <app-root></app-root>
+        <script>
+            if ('serviceWorker' in navigator && location.hostname !== 'localhost') {
+                window.addEventListener('load', () => {
+                    navigator.serviceWorker.register('/ngsw-worker.js');
+                });
+            }
+        </script>
     </body>
 </html>

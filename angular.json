@@ -34,11 +34,11 @@
                         "styles": [
                             "src/assets/styles.scss"
                         ],
-                        "scripts": [],
-                    "serviceWorker": "ngsw-config.json"
+                        "scripts": []
                     },
                     "configurations": {
                         "production": {
+                            "serviceWorker": "ngsw-config.json",
                             "fileReplacements": [
                                 {
                                     "replace": "src/environments/environment.ts",

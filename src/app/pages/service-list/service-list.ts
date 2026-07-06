@@ -1,4 +1,4 @@
-import { Component, OnInit, ViewChild } from '@angular/core';
+import { Component, HostListener, OnInit, ViewChild } from '@angular/core';
 import { InvoiceService } from '../../service/invoice.service';
 import { CommonModule } from '@angular/common';
 import { firstValueFrom } from 'rxjs';
@@ -65,7 +65,132 @@ import { ServiceCalendar } from '../service-calendar/service-calendar';
                 </div>
             }
 
-            <p-table *ngIf="!isCalendarView" #dt1 [value]="services" [(selection)]="selectedServices" dataKey="id" [rows]="50" [rowsPerPageOptions]="[10, 25, 50]" [loading]="loading" [paginator]="true"
+            <!-- Vista mobile: cards -->
+            <div *ngIf="!isCalendarView && isMobile">
+                <!-- Barra de búsqueda y acciones -->
+                <div class="flex flex-col gap-3 mb-4">
+                    <div class="flex gap-2">
+                        <p-iconfield styleClass="flex-1">
+                            <p-inputicon styleClass="pi pi-search" />
+                            <input pInputText type="text" [(ngModel)]="mobileSearchTerm" (ngModelChange)="mobilePageSize = 20" placeholder="Buscar servicios..." class="w-full" />
+                        </p-iconfield>
+                        <p-button icon="pi pi-plus" (click)="openNew()" />
+                    </div>
+                </div>
+
+                <!-- Conteo -->
+                <div *ngIf="!loading && filteredMobileServices.length > 0" class="text-xs text-gray-400 mb-2 px-1">
+                    Mostrando {{ pagedMobileServices.length }} de {{ filteredMobileServices.length }} servicios
+                </div>
+
+                <!-- Sin resultados -->
+                <div *ngIf="filteredMobileServices.length === 0 && !loading" class="flex flex-col items-center justify-center py-16 text-gray-400">
+                    <i class="pi pi-inbox text-5xl mb-3"></i>
+                    <span>No hay servicios para mostrar</span>
+                </div>
+
+                <!-- Loading skeleton -->
+                <div *ngIf="loading" class="flex flex-col gap-3">
+                    <div *ngFor="let i of [1,2,3]" class="bg-white dark:bg-surface-800 rounded-2xl p-4 border border-gray-100 dark:border-gray-700 animate-pulse">
+                        <div class="h-4 bg-gray-200 dark:bg-gray-700 rounded w-1/2 mb-3"></div>
+                        <div class="h-5 bg-gray-200 dark:bg-gray-700 rounded w-3/4 mb-2"></div>
+                        <div class="h-3 bg-gray-200 dark:bg-gray-700 rounded w-2/3"></div>
+                    </div>
+                </div>
+
+                <!-- Cards -->
+                <div *ngIf="!loading" class="flex flex-col gap-3">
+                    <div *ngFor="let s of pagedMobileServices"
+                         class="rounded-2xl border shadow-sm overflow-hidden transition-all"
+                         [ngClass]="isMobileSelected(s)
+                             ? 'bg-blue-50 dark:bg-blue-900/20 border-blue-400 dark:border-blue-500'
+                             : 'bg-white dark:bg-surface-800 border-gray-100 dark:border-gray-700'">
+
+                        <!-- Header: fecha + estado (toca para seleccionar en modo bulk) -->
+                        <div class="flex items-center gap-3 px-4 pt-4 pb-2 cursor-pointer"
+                             (click)="(activeStatusFilter === 'PENDING_DETAILS' || activeStatusFilter === 'PENDING_INVOICE') ? toggleMobileSelection(s) : null">
+                            <!-- Checkbox visual (solo en modo selección) -->
+                            <div *ngIf="activeStatusFilter === 'PENDING_DETAILS' || activeStatusFilter === 'PENDING_INVOICE'"
+                                 class="flex-shrink-0 w-5 h-5 rounded-full border-2 flex items-center justify-center transition-colors"
+                                 [ngClass]="isMobileSelected(s) ? 'bg-blue-600 border-blue-600' : 'border-gray-300 dark:border-gray-600'">
+                                <i *ngIf="isMobileSelected(s)" class="pi pi-check text-white" style="font-size: 10px;"></i>
+                            </div>
+                            <span class="text-xs text-gray-500 font-medium flex-1">{{ s.startDate | date:'dd/MM/yyyy · HH:mm' }}</span>
+                            <p-tag [value]="getMmStatusLabel(s.status)" [severity]="getSeverity(s.status)" styleClass="text-xs" />
+                        </div>
+
+                        <!-- Ruta principal -->
+                        <div class="px-4 pb-3">
+                            <div class="flex items-center gap-2 text-gray-800 dark:text-white font-semibold text-base">
+                                <i class="pi pi-map-marker text-blue-500 text-sm flex-shrink-0"></i>
+                                <span class="truncate">{{ s.origin }} → {{ s.destination }}</span>
+                            </div>
+                        </div>
+
+                        <!-- Info secundaria: tipo, chofer, cliente -->
+                        <div class="px-4 pb-3 flex flex-wrap gap-x-4 gap-y-1 text-xs text-gray-500 dark:text-gray-400">
+                            <span *ngIf="s.serviceType" class="flex items-center gap-1">
+                                <i class="pi pi-tag"></i>{{ getServiceTypeLabel(s.serviceType) }}
+                            </span>
+                            <span *ngIf="s.driverNames" class="flex items-center gap-1">
+                                <i class="pi pi-user"></i>{{ s.driverNames }}
+                            </span>
+                            <span *ngIf="s.clientNames" class="flex items-center gap-1">
+                                <i class="pi pi-building"></i>{{ s.clientNames }}
+                            </span>
+                            <span *ngIf="s.invoiceNumber" class="flex items-center gap-1 text-purple-600 dark:text-purple-400 font-medium">
+                                <i class="pi pi-receipt"></i>{{ s.invoiceNumber }}
+                            </span>
+                        </div>
+
+                        <!-- Footer: grupo + acciones -->
+                        <div class="flex items-center justify-between px-3 pb-3 pt-1 border-t border-gray-50 dark:border-gray-700/50">
+                            <div class="flex items-center gap-1">
+                                <p-tag *ngIf="s.serviceGroup"
+                                       [value]="s.serviceGroup.code"
+                                       severity="warn"
+                                       styleClass="cursor-pointer text-xs"
+                                       (click)="openReport(s)">
+                                </p-tag>
+                            </div>
+                            <div class="flex gap-1">
+                                <p-button *ngIf="s.serviceGroup"
+                                          icon="pi pi-file-pdf"
+                                          [rounded]="true" [text]="true"
+                                          severity="info" size="small"
+                                          (click)="openReport(s)">
+                                </p-button>
+                                <p-button *ngIf="getNextStatus(s)"
+                                          icon="pi pi-arrow-right"
+                                          [rounded]="true" [text]="true"
+                                          severity="success" size="small"
+                                          (click)="advanceStatus(s)">
+                                </p-button>
+                                <p-button icon="pi pi-pencil"
+                                          [rounded]="true" [text]="true"
+                                          size="small"
+                                          (click)="editService(s)">
+                                </p-button>
+                                <p-button icon="pi pi-trash"
+                                          [rounded]="true" [text]="true"
+                                          severity="danger" size="small"
+                                          (click)="deleteService(s)">
+                                </p-button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Botón cargar más -->
+                    <div *ngIf="filteredMobileServices.length > mobilePageSize"
+                         class="flex flex-col items-center gap-1 py-4">
+                        <p-button label="Ver más" icon="pi pi-chevron-down" [outlined]="true" size="small"
+                                  (click)="mobilePageSize = mobilePageSize + 20"></p-button>
+                        <span class="text-xs text-gray-400">{{ filteredMobileServices.length - mobilePageSize }} más</span>
+                    </div>
+                </div>
+            </div>
+
+            <p-table *ngIf="!isCalendarView && !isMobile" #dt1 [value]="services" [(selection)]="selectedServices" dataKey="id" [rows]="50" [rowsPerPageOptions]="[10, 25, 50]" [loading]="loading" [paginator]="true"
                 [globalFilterFields]="['route', 'status', 'clientNames', 'serviceGroup.code', 'invoiceNumber']" styleClass="p-datatable-sm" responsiveLayout="stack" breakpoint="960px"
                 [rowGroupMode]="isGroupedView ? 'subheader' : undefined"
                 [groupRowsBy]="isGroupedView ? 'serviceGroup.code' : ''">
@@ -899,6 +1024,34 @@ import { ServiceCalendar } from '../service-calendar/service-calendar';
     providers: [MessageService, ServiceService, ClientService, DriverService, VehicleService, ConfigurationService]
 })
 export class ServiceList implements OnInit {
+    isMobile: boolean = window.innerWidth < 768;
+    mobileSearchTerm: string = '';
+
+    @HostListener('window:resize')
+    onResize() {
+        this.isMobile = window.innerWidth < 768;
+    }
+
+    mobilePageSize = 20;
+
+    get filteredMobileServices(): Service[] {
+        if (!this.mobileSearchTerm.trim()) return this.services;
+        const term = this.mobileSearchTerm.toLowerCase();
+        return this.services.filter(s =>
+            s.origin?.toLowerCase().includes(term) ||
+            s.destination?.toLowerCase().includes(term) ||
+            s.clientNames?.toLowerCase().includes(term) ||
+            s.driverNames?.toLowerCase().includes(term) ||
+            s.status?.toLowerCase().includes(term) ||
+            s.serviceGroup?.code?.toLowerCase().includes(term) ||
+            s.invoiceNumber?.toLowerCase().includes(term)
+        );
+    }
+
+    get pagedMobileServices(): Service[] {
+        return this.filteredMobileServices.slice(0, this.mobilePageSize);
+    }
+
     services: Service[] = [];
     isStaticDataLoaded: boolean = false;
     currentLoadId: number = 0;
@@ -914,7 +1067,7 @@ export class ServiceList implements OnInit {
 
     loading: boolean = true;
     serviceDialog: boolean = false;
-    @ViewChild('dt1') dt1!: Table;
+    @ViewChild('dt1') dt1?: Table;
 
     // Return Trip Features
     createReturnTrip: boolean = false;
@@ -1139,6 +1292,7 @@ export class ServiceList implements OnInit {
         }
 
         this.selectedServices = []; // Clear selection
+        this.mobilePageSize = 20;
 
         this.loadAllData();
     }
@@ -1902,6 +2056,16 @@ export class ServiceList implements OnInit {
 
     // Summary View State
     selectedServices: Service[] = [];
+
+    isMobileSelected(s: Service): boolean {
+        return this.selectedServices.some(sel => sel.id === s.id);
+    }
+
+    toggleMobileSelection(s: Service) {
+        const idx = this.selectedServices.findIndex(sel => sel.id === s.id);
+        if (idx === -1) this.selectedServices.push(s);
+        else this.selectedServices.splice(idx, 1);
+    }
     summaryDialog: boolean = false;
     summaryConfig: any = { subtotal: 0, tax: 0, total: 0 };
     reportNotes: string = '';

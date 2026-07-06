@@ -7,11 +7,12 @@ import { AppSidebar } from './app.sidebar';
 import { AppFooter } from './app.footer';
 import { LayoutService } from '../service/layout.service';
 import { AppReauthModal } from './app.reauth';
+import { AppBottomNav } from './app.bottomnav';
 
 @Component({
     selector: 'app-layout',
     standalone: true,
-    imports: [CommonModule, AppTopbar, AppSidebar, RouterModule, AppFooter, AppReauthModal],
+    imports: [CommonModule, AppTopbar, AppSidebar, RouterModule, AppFooter, AppReauthModal, AppBottomNav],
     template: `<div class="layout-wrapper" [ngClass]="containerClass">
         <app-topbar></app-topbar>
         <app-sidebar></app-sidebar>
@@ -23,6 +24,7 @@ import { AppReauthModal } from './app.reauth';
         </div>
         <div class="layout-mask animate-fadein"></div>
         <app-reauth-modal></app-reauth-modal>
+        <app-bottom-nav></app-bottom-nav>
     </div> `
 })
 export class AppLayout {
