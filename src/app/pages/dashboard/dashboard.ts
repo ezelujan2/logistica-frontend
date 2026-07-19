@@ -210,6 +210,7 @@ import { FormsModule } from '@angular/forms';
                                     </p-columnFilter>
                                 </th>
                                 <th>Registro ID</th>
+                                <th>Qué cambió</th>
                                 <th>Detalles</th>
                             </tr>
                         </ng-template>
@@ -218,10 +219,24 @@ import { FormsModule } from '@angular/forms';
                                 <td>{{ audit.createdAt | date:'dd/MM/yyyy HH:mm:ss' }}</td>
                                 <td>{{ audit.user?.name || 'Sistema' }}</td>
                                 <td>
-                                    <p-tag [value]="audit.action" [severity]="getAuditActionSeverity(audit.action)"></p-tag>
+                                    <p-tag [value]="getAuditActionLabel(audit.action)" [severity]="getAuditActionSeverity(audit.action)"></p-tag>
                                 </td>
-                                <td>{{ audit.entity }}</td>
+                                <td>{{ getEntityLabel(audit.entity) }}</td>
                                 <td>#{{ audit.entityId }}</td>
+                                <td>
+                                    <!-- Cambio de estado: muestra old → new con badges -->
+                                    <ng-container *ngIf="getStatusChange(audit) as sc">
+                                        <div class="flex items-center gap-1 flex-wrap">
+                                            <p-tag [value]="translateStatus(sc.from)" [severity]="getStatusSeverity(sc.from)" styleClass="text-xs"></p-tag>
+                                            <i class="pi pi-arrow-right text-xs text-color-secondary"></i>
+                                            <p-tag [value]="translateStatus(sc.to)" [severity]="getStatusSeverity(sc.to)" styleClass="text-xs"></p-tag>
+                                        </div>
+                                    </ng-container>
+                                    <!-- Si no hay cambio de estado, mostrar resumen de otros campos clave -->
+                                    <ng-container *ngIf="!getStatusChange(audit)">
+                                        <span class="text-xs text-color-secondary">{{ getAuditSummary(audit) }}</span>
+                                    </ng-container>
+                                </td>
                                 <td>
                                     <p-button icon="pi pi-eye" [text]="true" [rounded]="true" (click)="viewAuditDetails(audit)"></p-button>
                                 </td>
@@ -229,7 +244,7 @@ import { FormsModule } from '@angular/forms';
                         </ng-template>
                         <ng-template pTemplate="emptymessage">
                             <tr>
-                                <td colspan="6" class="text-center p-4">No hay registros de auditoría.</td>
+                                <td colspan="7" class="text-center p-4">No hay registros de auditoría.</td>
                             </tr>
                         </ng-template>
                     </p-table>
@@ -257,30 +272,54 @@ import { FormsModule } from '@angular/forms';
 
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div class="col-span-1 md:col-span-2" *ngIf="selectedAudit.oldData || selectedAudit.newData">
-                        <span class="font-bold text-gray-700 block mb-2">Diferencias (Campos alterados)</span>
-                        <div class="bg-gray-100 rounded p-3 overflow-x-auto">
+                        <span class="font-bold text-gray-700 dark:text-gray-300 block mb-2">Campos alterados</span>
+                        <div class="bg-surface-100 dark:bg-surface-800 rounded p-3 overflow-x-auto">
                             <table class="w-full text-sm text-left">
                                 <thead>
-                                    <tr class="border-b border-gray-300">
-                                        <th class="py-2 px-3 font-semibold text-gray-600">Campo</th>
-                                        <th class="py-2 px-3 font-semibold text-gray-600 w-2/5">Antes</th>
-                                        <th class="py-2 px-3 font-semibold text-gray-600 w-2/5">Después</th>
+                                    <tr class="border-b border-surface-300 dark:border-surface-600">
+                                        <th class="py-2 px-3 font-semibold text-color-secondary">Campo</th>
+                                        <th class="py-2 px-3 font-semibold text-color-secondary w-2/5">Antes</th>
+                                        <th class="py-2 px-3 font-semibold text-color-secondary w-2/5">Después</th>
                                     </tr>
                                 </thead>
                                 <tbody>
-                                    <tr *ngFor="let diff of auditDiffs" class="border-b border-gray-200 last:border-0 hover:bg-gray-50">
-                                        <td class="py-2 px-3 font-mono text-xs">{{ diff.key }}</td>
+                                    <tr *ngFor="let diff of auditDiffs" class="border-b border-surface-200 dark:border-surface-700">
+                                        <td class="py-2 px-3 font-medium text-sm">{{ getFieldLabel(diff.key) }}</td>
                                         <td class="py-2 px-3">
-                                            <span *ngIf="diff.oldValue !== undefined" class="bg-red-100 text-red-800 px-1 py-0.5 rounded break-all">{{ diff.oldValue | json }}</span>
-                                            <span *ngIf="diff.oldValue === undefined" class="text-gray-400 italic">--</span>
+                                            <ng-container *ngIf="isRelationArray(diff.oldValue) || isRelationArray(diff.newValue); else scalarOld">
+                                                <div class="flex flex-wrap gap-1">
+                                                    <span *ngFor="let item of getRelationDiff(diff.oldValue, diff.newValue).removed"
+                                                          class="bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-300 px-2 py-0.5 rounded text-xs line-through">{{ item }}</span>
+                                                    <span *ngIf="getRelationDiff(diff.oldValue, diff.newValue).removed.length === 0" class="text-color-secondary italic text-xs">—</span>
+                                                </div>
+                                            </ng-container>
+                                            <ng-template #scalarOld>
+                                                <ng-container *ngIf="diff.oldValue !== undefined && diff.oldValue !== null; else oldEmpty">
+                                                    <p-tag *ngIf="diff.key === 'status'" [value]="translateStatus(diff.oldValue)" [severity]="getStatusSeverity(diff.oldValue)" styleClass="text-xs"></p-tag>
+                                                    <span *ngIf="diff.key !== 'status'" class="bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-300 px-2 py-0.5 rounded text-xs break-all">{{ formatDiffValue(diff.key, diff.oldValue) }}</span>
+                                                </ng-container>
+                                                <ng-template #oldEmpty><span class="text-color-secondary italic text-xs">—</span></ng-template>
+                                            </ng-template>
                                         </td>
                                         <td class="py-2 px-3">
-                                            <span *ngIf="diff.newValue !== undefined" class="bg-green-100 text-green-800 px-1 py-0.5 rounded break-all">{{ diff.newValue | json }}</span>
-                                            <span *ngIf="diff.newValue === undefined" class="text-gray-400 italic">--</span>
+                                            <ng-container *ngIf="isRelationArray(diff.oldValue) || isRelationArray(diff.newValue); else scalarNew">
+                                                <div class="flex flex-wrap gap-1">
+                                                    <span *ngFor="let item of getRelationDiff(diff.oldValue, diff.newValue).added"
+                                                          class="bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300 px-2 py-0.5 rounded text-xs">{{ item }}</span>
+                                                    <span *ngIf="getRelationDiff(diff.oldValue, diff.newValue).added.length === 0" class="text-color-secondary italic text-xs">—</span>
+                                                </div>
+                                            </ng-container>
+                                            <ng-template #scalarNew>
+                                                <ng-container *ngIf="diff.newValue !== undefined && diff.newValue !== null; else newEmpty">
+                                                    <p-tag *ngIf="diff.key === 'status'" [value]="translateStatus(diff.newValue)" [severity]="getStatusSeverity(diff.newValue)" styleClass="text-xs"></p-tag>
+                                                    <span *ngIf="diff.key !== 'status'" class="bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300 px-2 py-0.5 rounded text-xs break-all">{{ formatDiffValue(diff.key, diff.newValue) }}</span>
+                                                </ng-container>
+                                                <ng-template #newEmpty><span class="text-color-secondary italic text-xs">—</span></ng-template>
+                                            </ng-template>
                                         </td>
                                     </tr>
                                     <tr *ngIf="auditDiffs.length === 0">
-                                        <td colspan="3" class="py-4 text-center text-gray-500 italic">No se detectaron diferencias visibles (o es un registro nuevo/eliminado completo).</td>
+                                        <td colspan="3" class="py-4 text-center text-color-secondary italic">Sin cambios detectables.</td>
                                     </tr>
                                 </tbody>
                             </table>
@@ -477,43 +516,155 @@ export class Dashboard implements OnInit {
         this.displayAuditDialog = true;
     }
 
+    private readonly STATUS_MAP: Record<string, string> = {
+        CREATED: 'Creado', PENDING: 'Pendiente', PENDING_DETAILS: 'Env. Detalles',
+        PENDING_INVOICE: 'A Facturar', PAYMENT_PENDING: 'Pend. Pago', PAID: 'Pagado',
+        CANCELLED: 'Cancelado', ISSUED: 'Emitida', PROCESSED: 'Procesada',
+        DRAFT: 'Borrador', ACTIVE: 'Activo', INACTIVE: 'Inactivo',
+    };
+
+    private readonly STATUS_SEVERITY: Record<string, string> = {
+        CREATED: 'secondary', PENDING: 'warn', PENDING_DETAILS: 'info',
+        PENDING_INVOICE: 'contrast', PAYMENT_PENDING: 'danger', PAID: 'success',
+        CANCELLED: 'danger', ISSUED: 'info', PROCESSED: 'info',
+        DRAFT: 'secondary', ACTIVE: 'success', INACTIVE: 'secondary',
+    };
+
+    private readonly ENTITY_LABELS: Record<string, string> = {
+        Service: 'Servicio', Invoice: 'Factura', ServiceGroup: 'Grupo',
+        Settlement: 'Liquidación', Driver: 'Chofer', Client: 'Cliente',
+        Vehicle: 'Vehículo', Advance: 'Adelanto', Expense: 'Gasto',
+        User: 'Usuario', ServiceDetail: 'Detalle',
+    };
+
+    private readonly FIELD_LABELS: Record<string, string> = {
+        status: 'Estado', invoiceNumber: 'Nro. Factura',
+        total_amount: 'Total', net_amount: 'Neto', tax_amount: 'IVA',
+        driver_amount: 'Monto Chofer', discount_percentage: 'Descuento %',
+        startDate: 'Fecha Inicio', endDate: 'Fecha Fin',
+        origin: 'Origen', destination: 'Destino',
+        details: 'Detalles', notes: 'Notas',
+        serviceType: 'Tipo', billing_type: 'Tipo Facturación',
+        km_traveled: 'KM Recorridos', waiting_hours: 'Horas Espera',
+        name: 'Nombre', email: 'Email', code: 'Código',
+        paymentDate: 'Fecha de Pago',
+    };
+
+    private readonly SKIP_FIELDS = new Set([
+        'updatedAt', 'createdAt', 'id', 'userId', 'driverId', 'clientId', 'vehicleId',
+        'km_price_snapshot', 'hour_price_snapshot', 'extra_km_price_snapshot',
+        'driver_km_price_snapshot', 'driver_hour_price_snapshot',
+        'waiting_surcharge_amount', 'extra_km_traveled', 'google_event_id',
+        'apply_waiting_surcharge', 'is_vat_exempt',
+    ]);
+
+    getEntityLabel(entity: string): string {
+        return this.ENTITY_LABELS[entity] || entity;
+    }
+
+    getAuditActionLabel(action: string): string {
+        return { CREATE: 'Alta', UPDATE: 'Modificación', DELETE: 'Eliminación' }[action] || action;
+    }
+
+    translateStatus(status: string): string {
+        return this.STATUS_MAP[status] || status;
+    }
+
+    getStatusSeverity(status: string): any {
+        return this.STATUS_SEVERITY[status] || 'secondary';
+    }
+
+    getStatusChange(audit: AuditLog): { from: string; to: string } | null {
+        if (audit.action !== 'UPDATE' || !audit.oldData || !audit.newData) return null;
+        if (audit.oldData.status !== audit.newData.status &&
+            audit.oldData.status !== undefined && audit.newData.status !== undefined) {
+            return { from: audit.oldData.status, to: audit.newData.status };
+        }
+        return null;
+    }
+
+    getAuditSummary(audit: AuditLog): string {
+        if (audit.action === 'CREATE') return `Alta de ${this.getEntityLabel(audit.entity).toLowerCase()}`;
+        if (audit.action === 'DELETE') return `Eliminación de ${this.getEntityLabel(audit.entity).toLowerCase()}`;
+        if (audit.action === 'UPDATE' && audit.oldData && audit.newData) {
+            const changed = Object.keys(audit.newData)
+                .filter(k => !this.SKIP_FIELDS.has(k) && JSON.stringify(audit.oldData[k]) !== JSON.stringify(audit.newData[k]))
+                .map(k => this.FIELD_LABELS[k] || k);
+            return changed.length > 0 ? changed.slice(0, 3).join(', ') : 'Sin cambios visibles';
+        }
+        return '—';
+    }
+
+    getFieldLabel(key: string): string {
+        return this.FIELD_LABELS[key] || key;
+    }
+
+    shouldShowField(key: string): boolean {
+        return !this.SKIP_FIELDS.has(key);
+    }
+
+    isRelationArray(value: any): boolean {
+        return Array.isArray(value);
+    }
+
+    getRelationDiff(oldArr: any[], newArr: any[]): { added: string[]; removed: string[] } {
+        const label = (item: any) =>
+            item.name ?? item.code ?? item.invoiceNumber ?? item.email ?? `#${item.id}`;
+        const oldMap = new Map((oldArr ?? []).map((x: any) => [x.id, label(x)]));
+        const newMap = new Map((newArr ?? []).map((x: any) => [x.id, label(x)]));
+        const removed = [...oldMap.entries()].filter(([id]) => !newMap.has(id)).map(([, n]) => n);
+        const added   = [...newMap.entries()].filter(([id]) => !oldMap.has(id)).map(([, n]) => n);
+        return { added, removed };
+    }
+
+    formatDiffValue(key: string, value: any): string {
+        if (value === null || value === undefined) return '—';
+        if (['total_amount','net_amount','tax_amount','driver_amount'].includes(key)) {
+            return `$${Number(value).toLocaleString('es-AR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+        }
+        if (key.toLowerCase().includes('date') || key.toLowerCase().includes('Date')) {
+            try { return new Date(value).toLocaleString('es-AR'); } catch { return String(value); }
+        }
+        if (typeof value === 'boolean') return value ? 'Sí' : 'No';
+        if (typeof value === 'object') return JSON.stringify(value);
+        return String(value);
+    }
+
     computeAuditDiff(oldData: any, newData: any, action: string): { key: string, oldValue: any, newValue: any }[] {
         const diffs: { key: string, oldValue: any, newValue: any }[] = [];
 
         if (action === 'CREATE' && newData) {
-            Object.keys(newData).forEach(key => {
-                if(key !== 'createdAt' && key !== 'updatedAt' && newData[key] !== null) {
-                   diffs.push({ key, oldValue: undefined, newValue: newData[key] });
-                }
+            Object.keys(newData).filter(k => this.shouldShowField(k) && newData[k] !== null).forEach(key => {
+                diffs.push({ key, oldValue: undefined, newValue: newData[key] });
             });
             return diffs;
         }
 
         if (action === 'DELETE' && oldData) {
-            Object.keys(oldData).forEach(key => {
-                if(key !== 'createdAt' && key !== 'updatedAt' && oldData[key] !== null) {
-                    diffs.push({ key, oldValue: oldData[key], newValue: undefined });
-                }
+            Object.keys(oldData).filter(k => this.shouldShowField(k) && oldData[k] !== null).forEach(key => {
+                diffs.push({ key, oldValue: oldData[key], newValue: undefined });
             });
             return diffs;
         }
 
         if (action === 'UPDATE' && oldData && newData) {
             const allKeys = Array.from(new Set([...Object.keys(oldData), ...Object.keys(newData)]));
-
-            allKeys.forEach(key => {
-                if (key === 'updatedAt' || key === 'createdAt') return; // Ignore timestamps usually
-
+            allKeys.filter(k => this.shouldShowField(k)).forEach(key => {
                 const oldVal = oldData[key];
                 const newVal = newData[key];
-
-                // Simple equality check (this might fail for nested objects, but Prisma flat responses usually work fine)
+                // Ignorar campos relacionales (arrays) — oldData no los trae, newData sí
+                if (Array.isArray(oldVal) || Array.isArray(newVal)) {
+                    // Comparar relaciones por conjunto de IDs
+                    const oldIds = new Set((oldVal ?? []).map((x: any) => x.id));
+                    const newIds = new Set((newVal ?? []).map((x: any) => x.id));
+                    const changed = oldIds.size !== newIds.size ||
+                        [...oldIds].some(id => !newIds.has(id));
+                    if (changed) diffs.push({ key, oldValue: oldVal ?? [], newValue: newVal ?? [] });
+                    return;
+                }
                 if (JSON.stringify(oldVal) !== JSON.stringify(newVal)) {
-                    diffs.push({
-                        key,
-                        oldValue: oldVal,
-                        newValue: newVal
-                    });
+                    if (key === 'status') diffs.unshift({ key, oldValue: oldVal, newValue: newVal });
+                    else diffs.push({ key, oldValue: oldVal, newValue: newVal });
                 }
             });
             return diffs;
