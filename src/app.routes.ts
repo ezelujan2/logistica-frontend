@@ -6,10 +6,16 @@ import { LecmaLanding } from './app/pages/landing/lecma-landing';
 import { Notfound } from './app/pages/notfound/notfound';
 import { Login } from './app/pages/auth/login';
 import { AuthGuard } from './app/service/auth.guard';
+import { DriverGuard } from './app/service/role.guards';
+import { ClientGuard } from './app/service/role.guards';
+import { DriverPortal } from './app/pages/driver-portal/driver-portal';
+import { ClientPortal } from './app/pages/client-portal/client-portal';
 
 export const appRoutes: Routes = [
     { path: '', component: LecmaLanding },
     { path: 'login', component: Login },
+    { path: 'driver', component: DriverPortal, canActivate: [DriverGuard] },
+    { path: 'client', component: ClientPortal, canActivate: [ClientGuard] },
     {
         path: 'app',
         component: AppLayout,
@@ -27,7 +33,11 @@ export const appRoutes: Routes = [
             { path: 'documentation', component: Documentation },
             { path: 'pages', loadChildren: () => import('./app/pages/pages.routes') },
             { path: 'statistics', loadComponent: () => import('./app/pages/statistics/statistics').then(m => m.StatisticsComponent) },
-            { path: 'expenses', loadComponent: () => import('./app/pages/expense-list/expense-list').then(m => m.ExpenseList) }
+            { path: 'expenses', loadComponent: () => import('./app/pages/expense-list/expense-list').then(m => m.ExpenseList) },
+            { path: 'service-requests', loadComponent: () => import('./app/pages/admin/service-requests/admin-requests').then(m => m.AdminRequests) },
+            { path: 'users', loadComponent: () => import('./app/pages/admin/users/admin-users').then(m => m.AdminUsers) },
+            { path: 'passengers', loadComponent: () => import('./app/pages/admin/passengers/admin-passengers').then(m => m.AdminPassengers) },
+            { path: 'service-templates', loadComponent: () => import('./app/pages/admin/service-templates/admin-templates').then(m => m.AdminTemplates) },
         ]
     },
     { path: 'notfound', component: Notfound },

@@ -1565,7 +1565,9 @@ export class LecmaLanding implements AfterViewInit, OnDestroy {
 
     constructor() {
         if (this.auth.isLoggedIn()) {
-            this.router.navigate(['/app']);
+            if (this.auth.isDriver())       this.router.navigate(['/driver']);
+            else if (this.auth.isClient())  this.router.navigate(['/client']);
+            else                            this.router.navigate(['/app']);
         }
     }
 

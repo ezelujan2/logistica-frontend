@@ -95,7 +95,13 @@ export class Login {
         this.authService.login(this.email, this.password).subscribe({
             next: (response) => {
                 localStorage.setItem('token', response.token);
-                this.router.navigate(['/app']);
+                if (this.authService.isDriver()) {
+                    this.router.navigate(['/driver']);
+                } else if (this.authService.isClient()) {
+                    this.router.navigate(['/client']);
+                } else {
+                    this.router.navigate(['/app']);
+                }
             },
             error: (error) => {
                 this.loading = false;

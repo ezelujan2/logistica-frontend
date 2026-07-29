@@ -51,8 +51,21 @@ export class AppMenu {
                      },
                      { label: 'Autos', icon: 'pi pi-fw pi-car', routerLink: ['/app/vehicles'] },
                      { label: 'Estadísticas', icon: 'pi pi-fw pi-chart-bar', routerLink: ['/app/statistics'] },
-                    //  { label: 'Dashboard', icon: 'pi pi-fw pi-home', routerLink: ['/'] }
-                ]
+                ],
+            },
+            {
+                label: 'Solicitudes y clientes',
+                items: [
+                    { label: 'Solicitudes', icon: 'pi pi-fw pi-inbox', routerLink: ['/app/service-requests'] },
+                    { label: 'Pasajeros', icon: 'pi pi-fw pi-id-card', routerLink: ['/app/passengers'] },
+                    { label: 'Templates', icon: 'pi pi-fw pi-file-edit', routerLink: ['/app/service-templates'] },
+                ],
+            },
+            {
+                label: 'Administración',
+                items: [
+                    { label: 'Usuarios', icon: 'pi pi-fw pi-users', routerLink: ['/app/users'] },
+                ],
             },
 
             // {

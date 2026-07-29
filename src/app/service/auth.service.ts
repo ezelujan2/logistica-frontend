@@ -32,16 +32,23 @@ export class AuthService {
     return localStorage.getItem('token');
   }
 
-  getUserEmail(): string | null {
+  private decodeToken(): any {
     const token = this.getToken();
     if (!token) return null;
-    try {
-      const payload = JSON.parse(atob(token.split('.')[1]));
-      return payload.email || null;
-    } catch (e) {
-      return null;
-    }
+    try { return JSON.parse(atob(token.split('.')[1])); } catch { return null; }
   }
+
+  getUserEmail(): string | null { return this.decodeToken()?.email ?? null; }
+  getUserName(): string | null  { return this.decodeToken()?.name ?? null; }
+  getRole(): string | null      { return this.decodeToken()?.role ?? null; }
+  getDriverId(): number | null  { return this.decodeToken()?.driverId ?? null; }
+  getClientId(): number | null  { return this.decodeToken()?.clientId ?? null; }
+
+  isAdmin(): boolean     { const r = this.getRole(); return r === 'ADMIN'; }
+  isDirector(): boolean  { const r = this.getRole(); return r === 'ADMIN' || r === 'DIRECTOR' || r === 'USER'; }
+  isDriver(): boolean    { return this.getRole() === 'DRIVER'; }
+  isClient(): boolean    { return this.getRole() === 'CLIENT'; }
+  isOperational(): boolean { const r = this.getRole(); return ['USER','ADMIN','DIRECTOR'].includes(r ?? ''); }
 
   promptReAuth(): Observable<any> {
     return new Observable(observer => {
