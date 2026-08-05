@@ -6,6 +6,7 @@ import { StyleClassModule } from 'primeng/styleclass';
 import { PanelMenuModule } from 'primeng/panelmenu';
 import { Service, ServiceService } from '../../service/service.service';
 import { AuditService, AuditLog } from '../../service/audit.service';
+import { AuthService } from '../../service/auth.service';
 import { Router } from '@angular/router';
 import { TagModule } from 'primeng/tag';
 import { CardModule } from 'primeng/card';
@@ -164,7 +165,7 @@ import { FormsModule } from '@angular/forms';
             </div>
 
             <!-- Audit Logs Table -->
-            <div class="col-span-12">
+            <div class="col-span-12" *ngIf="authService.hasPermission('viewAudits')">
                 <div class="card bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 shadow rounded-xl">
                     <div class="flex justify-between items-center mb-4 px-4 pt-4">
                         <h5 class="text-lg font-bold m-0">Registro de Auditoría</h5>
@@ -253,7 +254,7 @@ import { FormsModule } from '@angular/forms';
 
         </div>
 
-        <p-dialog [(visible)]="displayAuditDialog" [header]="'Detalles de Auditoría - ' + selectedAudit?.entity + ' #' + selectedAudit?.entityId" [modal]="true" [style]="{width: '50vw'}" [breakpoints]="{'960px': '75vw', '640px': '100vw'}" [draggable]="false" [resizable]="false">
+        <p-dialog *ngIf="authService.hasPermission('viewAudits')" [(visible)]="displayAuditDialog" [header]="'Detalles de Auditoría - ' + selectedAudit?.entity + ' #' + selectedAudit?.entityId" [modal]="true" [style]="{width: '50vw'}" [breakpoints]="{'960px': '75vw', '640px': '100vw'}" [draggable]="false" [resizable]="false">
             <div *ngIf="selectedAudit">
                 <div class="grid grid-cols-2 gap-4 mb-4">
                     <div>
@@ -369,7 +370,7 @@ export class Dashboard implements OnInit {
     auditDiffs: { key: string, oldValue: any, newValue: any }[] = [];
     showRawJson: boolean = false;
 
-    constructor(private serviceService: ServiceService, private auditService: AuditService, private router: Router) {}
+    constructor(private serviceService: ServiceService, private auditService: AuditService, private router: Router, public authService: AuthService) {}
 
     async ngOnInit() {
         await this.loadDashboardData();
@@ -421,17 +422,19 @@ export class Dashboard implements OnInit {
              // Sort pending by date asc
             this.pendingServices.sort((a, b) => new Date(a.startDate).getTime() - new Date(b.startDate).getTime());
 
-            // 3. Audit Logs
-            try {
-                const fetchedAudits = await this.auditService.getAudits();
-                this.audits = fetchedAudits || [];
+            // 3. Audit Logs (solo si el rol tiene permiso de verlas)
+            if (this.authService.hasPermission('viewAudits')) {
+                try {
+                    const fetchedAudits = await this.auditService.getAudits();
+                    this.audits = fetchedAudits || [];
 
-                // Extract unique modules for the dropdown filter
-                const uniqueModules = Array.from(new Set(this.audits.map(a => a.entity)));
-                this.auditModules = uniqueModules.map(m => ({ label: m, value: m }));
-            } catch (auditError) {
-                console.error("Error loading audits", auditError);
-                this.audits = [];
+                    // Extract unique modules for the dropdown filter
+                    const uniqueModules = Array.from(new Set(this.audits.map(a => a.entity)));
+                    this.auditModules = uniqueModules.map(m => ({ label: m, value: m }));
+                } catch (auditError) {
+                    console.error("Error loading audits", auditError);
+                    this.audits = [];
+                }
             }
 
         } catch (error) {

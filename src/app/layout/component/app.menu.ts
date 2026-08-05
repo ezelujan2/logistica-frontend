@@ -3,6 +3,7 @@ import { CommonModule } from '@angular/common';
 import { RouterModule } from '@angular/router';
 import { MenuItem } from 'primeng/api';
 import { AppMenuitem } from './app.menuitem';
+import { AuthService } from '../../service/auth.service';
 
 @Component({
     selector: 'app-menu',
@@ -18,41 +19,50 @@ import { AppMenuitem } from './app.menuitem';
 export class AppMenu {
     model: MenuItem[] = [];
 
+    constructor(private authService: AuthService) {}
+
     ngOnInit() {
+        const homeItems: MenuItem[] = [
+            { label: 'Inicio', icon: 'pi pi-fw pi-home', routerLink: ['/app'] },
+            {
+               label: 'Servicios',
+               icon: 'pi pi-fw pi-briefcase',
+               items: [
+                   { label: 'Creados', icon: 'pi pi-fw pi-plus-circle', routerLink: ['/app/services/created'] },
+                   { label: 'Pendientes', icon: 'pi pi-fw pi-clock', routerLink: ['/app/services/pending'] },
+                   { label: 'Env. Detalles', icon: 'pi pi-fw pi-send', routerLink: ['/app/services/pending_details'] },
+                   { label: 'A Facturar', icon: 'pi pi-fw pi-file', routerLink: ['/app/services/pending_invoice'] },
+                   { label: 'Pendiente Pago', icon: 'pi pi-fw pi-dollar', routerLink: ['/app/services/payment_pending'] },
+                   { label: 'Pagados', icon: 'pi pi-fw pi-wallet', routerLink: ['/app/services/paid'] },
+                   { label: 'Cancelados', icon: 'pi pi-fw pi-times-circle', routerLink: ['/app/services/cancelled'] },
+                   { label: 'General', icon: 'pi pi-fw pi-list', routerLink: ['/app/services/all'] }
+               ]
+            },
+            { label: 'Gastos', icon: 'pi pi-fw pi-money-bill', routerLink: ['/app/expenses'] },
+            { label: 'Clientes', icon: 'pi pi-fw pi-users', routerLink: ['/app/clients'] },
+            {
+                label: 'Choferes',
+                icon: 'pi pi-fw pi-user',
+                items: [
+                    { label: 'Listado/Config', icon: 'pi pi-fw pi-users', routerLink: ['/app/drivers'] },
+                    { label: 'Adelantos', icon: 'pi pi-fw pi-money-bill', routerLink: ['/app/advances'] },
+                    { label: 'Liquidaciones', icon: 'pi pi-fw pi-file-excel', routerLink: ['/app/settlements'] }
+                ]
+            },
+            { label: 'Autos', icon: 'pi pi-fw pi-car', routerLink: ['/app/vehicles'] }
+        ];
+
+        if (this.authService.hasPermission('viewStatistics')) {
+            homeItems.push({ label: 'Estadísticas', icon: 'pi pi-fw pi-chart-bar', routerLink: ['/app/statistics'] });
+        }
+        if (this.authService.hasPermission('manageUsers')) {
+            homeItems.push({ label: 'Usuarios', icon: 'pi pi-fw pi-shield', routerLink: ['/app/users'] });
+        }
+
         this.model = [
             {
                 label: 'Home',
-                items: [
-                     { label: 'Inicio', icon: 'pi pi-fw pi-home', routerLink: ['/app'] },
-                     {
-                        label: 'Servicios',
-                        icon: 'pi pi-fw pi-briefcase',
-                        items: [
-                            { label: 'Creados', icon: 'pi pi-fw pi-plus-circle', routerLink: ['/app/services/created'] },
-                            { label: 'Pendientes', icon: 'pi pi-fw pi-clock', routerLink: ['/app/services/pending'] },
-                            { label: 'Env. Detalles', icon: 'pi pi-fw pi-send', routerLink: ['/app/services/pending_details'] },
-                            { label: 'A Facturar', icon: 'pi pi-fw pi-file', routerLink: ['/app/services/pending_invoice'] },
-                            { label: 'Pendiente Pago', icon: 'pi pi-fw pi-dollar', routerLink: ['/app/services/payment_pending'] },
-                            { label: 'Pagados', icon: 'pi pi-fw pi-wallet', routerLink: ['/app/services/paid'] },
-                            { label: 'Cancelados', icon: 'pi pi-fw pi-times-circle', routerLink: ['/app/services/cancelled'] },
-                            { label: 'General', icon: 'pi pi-fw pi-list', routerLink: ['/app/services/all'] }
-                        ]
-                     },
-                     { label: 'Gastos', icon: 'pi pi-fw pi-money-bill', routerLink: ['/app/expenses'] },
-                     { label: 'Clientes', icon: 'pi pi-fw pi-users', routerLink: ['/app/clients'] },
-                     {
-                         label: 'Choferes',
-                         icon: 'pi pi-fw pi-user',
-                         items: [
-                             { label: 'Listado/Config', icon: 'pi pi-fw pi-users', routerLink: ['/app/drivers'] },
-                             { label: 'Adelantos', icon: 'pi pi-fw pi-money-bill', routerLink: ['/app/advances'] },
-                             { label: 'Liquidaciones', icon: 'pi pi-fw pi-file-excel', routerLink: ['/app/settlements'] }
-                         ]
-                     },
-                     { label: 'Autos', icon: 'pi pi-fw pi-car', routerLink: ['/app/vehicles'] },
-                     { label: 'Estadísticas', icon: 'pi pi-fw pi-chart-bar', routerLink: ['/app/statistics'] },
-                    //  { label: 'Dashboard', icon: 'pi pi-fw pi-home', routerLink: ['/'] }
-                ]
+                items: homeItems
             },
 
             // {

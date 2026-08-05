@@ -22,7 +22,8 @@ import { Client, ClientService } from '../../service/client.service';
 import { Driver, DriverService } from '../../service/driver.service';
 import { Vehicle, VehicleService } from '../../service/vehicle.service';
 import { ToastModule } from 'primeng/toast';
-import { MessageService } from 'primeng/api';
+import { MessageService, ConfirmationService } from 'primeng/api';
+import { ConfirmDialogModule } from 'primeng/confirmdialog';
 import { PrimeNG } from 'primeng/config';
 import { TooltipModule } from 'primeng/tooltip';
 import { PanelModule } from 'primeng/panel';
@@ -31,12 +32,14 @@ import { ToggleButtonModule } from 'primeng/togglebutton';
 import { ActivatedRoute } from '@angular/router';
 import { environment } from '../../../environments/environment';
 import { ServiceCalendar } from '../service-calendar/service-calendar';
+import { AuthService } from '../../service/auth.service';
 
 @Component({
     selector: 'app-service-list',
     template: `
         <div class="card">
             <p-toast></p-toast>
+            <p-confirmDialog></p-confirmDialog>
 
             <div *ngIf="isCalendarView">
                 <app-service-calendar [allServices]="services" (editService)="editService($event)" (addServiceDate)="openNewWithDate($event)"></app-service-calendar>
@@ -401,7 +404,7 @@ import { ServiceCalendar } from '../service-calendar/service-calendar';
                                     </div>
                                     <div class="flex flex-col gap-2">
                                         <label for="status">Estado</label>
-                                        <p-select [options]="statuses" [(ngModel)]="service.status" optionLabel="label" optionValue="value" appendTo="body" styleClass="w-full" [disabled]="true"></p-select>
+                                        <p-select [options]="statuses" [(ngModel)]="service.status" optionLabel="label" optionValue="value" appendTo="body" styleClass="w-full" [disabled]="!authService.hasPermission('forceServiceStatus')"></p-select>
                                     </div>
                                     <div class="flex flex-col gap-2">
                                         <label for="billingType">Tipo de Facturación</label>
@@ -1019,9 +1022,9 @@ import { ServiceCalendar } from '../service-calendar/service-calendar';
         </div>
     `,
     standalone: true,
-    imports: [CommonModule, TableModule, ButtonModule, InputTextModule, IconFieldModule, InputIconModule, TagModule, DialogModule, FormsModule, SelectModule, MultiSelectModule, InputNumberModule, TextareaModule, DatePickerModule, ToastModule, PanelModule, DividerModule, CheckboxModule, TooltipModule, ToggleButtonModule, ServiceCalendar],
+    imports: [CommonModule, TableModule, ButtonModule, InputTextModule, IconFieldModule, InputIconModule, TagModule, DialogModule, FormsModule, SelectModule, MultiSelectModule, InputNumberModule, TextareaModule, DatePickerModule, ToastModule, PanelModule, DividerModule, CheckboxModule, TooltipModule, ToggleButtonModule, ConfirmDialogModule, ServiceCalendar],
 
-    providers: [MessageService, ServiceService, ClientService, DriverService, VehicleService, ConfigurationService]
+    providers: [MessageService, ConfirmationService, ServiceService, ClientService, DriverService, VehicleService, ConfigurationService]
 })
 export class ServiceList implements OnInit {
     isMobile: boolean = window.innerWidth < 768;
@@ -1150,9 +1153,11 @@ export class ServiceList implements OnInit {
         private vehicleService: VehicleService,
         private configService: ConfigurationService,
         private messageService: MessageService,
+        private confirmationService: ConfirmationService,
         private route: ActivatedRoute,
         private invoiceService: InvoiceService, // Injected
-        private primeng: PrimeNG
+        private primeng: PrimeNG,
+        public authService: AuthService
     ) {}
 
 
@@ -2288,9 +2293,31 @@ export class ServiceList implements OnInit {
              return;
         }
 
+        // 2. Aviso si se mezclan servicios informales con servicios a facturar (suele ser un error de selección)
+        const informalCount = this.selectedServices.filter(s => ((s as any).billing_type || (s as any).billingType) === 'INFORMAL').length;
+        const invoiceableCount = this.selectedServices.length - informalCount;
+
+        if (informalCount > 0 && invoiceableCount > 0) {
+             this.confirmationService.confirm({
+                 header: 'Tipos de facturación mezclados',
+                 message: `Estás por generar un reporte con <b>${invoiceableCount}</b> servicio(s) a facturar y <b>${informalCount}</b> servicio(s) informal(es) mezclados.<br>Esto suele ser un error de selección.<br><br>¿Confirmás que es correcto?`,
+                 icon: 'pi pi-exclamation-triangle',
+                 acceptLabel: 'Sí, continuar',
+                 rejectLabel: 'Cancelar',
+                 acceptButtonProps: { severity: 'warn' },
+                 rejectButtonProps: { severity: 'secondary', outlined: true },
+                 accept: () => this.executeGenerateReport(currentClientId as number)
+             });
+             return;
+        }
+
+        await this.executeGenerateReport(currentClientId as number);
+    }
+
+    private async executeGenerateReport(currentClientId: number) {
         try {
             this.loading = true;
-            await this.serviceService.createGroup(this.selectedServices.map(s => s.id!), currentClientId as number, this.reportNotes);
+            await this.serviceService.createGroup(this.selectedServices.map(s => s.id!), currentClientId, this.reportNotes);
 
             this.messageService.add({ severity: 'success', summary: 'Éxito', detail: 'Reporte generado y servicios agrupados.' });
             this.summaryDialog = false;

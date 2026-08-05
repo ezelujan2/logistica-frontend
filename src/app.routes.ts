@@ -26,8 +26,9 @@ export const appRoutes: Routes = [
             { path: 'uikit', loadChildren: () => import('./app/pages/uikit/uikit.routes') },
             { path: 'documentation', component: Documentation },
             { path: 'pages', loadChildren: () => import('./app/pages/pages.routes') },
-            { path: 'statistics', loadComponent: () => import('./app/pages/statistics/statistics').then(m => m.StatisticsComponent) },
-            { path: 'expenses', loadComponent: () => import('./app/pages/expense-list/expense-list').then(m => m.ExpenseList) }
+            { path: 'statistics', loadComponent: () => import('./app/pages/statistics/statistics').then(m => m.StatisticsComponent), canActivate: [AuthGuard], data: { permission: 'viewStatistics' } },
+            { path: 'expenses', loadComponent: () => import('./app/pages/expense-list/expense-list').then(m => m.ExpenseList) },
+            { path: 'users', loadComponent: () => import('./app/pages/admin/users/admin-users').then(m => m.AdminUsers), canActivate: [AuthGuard], data: { permission: 'manageUsers' } }
         ]
     },
     { path: 'notfound', component: Notfound },
