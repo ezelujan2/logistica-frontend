@@ -1,4 +1,5 @@
 import { Component, OnInit } from '@angular/core';
+import { ActivatedRoute } from '@angular/router';
 import { CommonModule } from '@angular/common';
 import { TableModule } from 'primeng/table';
 import { ButtonModule } from 'primeng/button';
@@ -8,6 +9,8 @@ import { InputIconModule } from 'primeng/inputicon';
 import { DialogModule } from 'primeng/dialog';
 import { FormsModule } from '@angular/forms';
 import { SelectModule } from 'primeng/select';
+import { DatePickerModule } from 'primeng/datepicker';
+import { TagModule } from 'primeng/tag';
 import { Vehicle, VehicleOwnership, VehicleService } from '../../service/vehicle.service';
 import { ToastModule } from 'primeng/toast';
 import { MessageService } from 'primeng/api';
@@ -36,6 +39,7 @@ import { MessageService } from 'primeng/api';
                         <th pSortableColumn="plate">Patente <p-sortIcon field="plate" /></th>
                         <th pSortableColumn="model">Modelo <p-sortIcon field="model" /></th>
                         <th>Propiedad</th>
+                        <th>Vencimientos</th>
                         <th>Acciones</th>
                     </tr>
                 </ng-template>
@@ -45,6 +49,9 @@ import { MessageService } from 'primeng/api';
                         <td>{{ vehicle.model }}</td>
                         <td>{{ getOwnershipLabel(vehicle.ownership) }}</td>
                         <td>
+                            <p-tag *ngIf="vencimientoStatus(vehicle) as st" [value]="st.label" [severity]="st.severity"></p-tag>
+                        </td>
+                        <td>
                             <p-button icon="pi pi-pencil" [rounded]="true" [text]="true" (click)="editVehicle(vehicle)" />
                             <p-button icon="pi pi-trash" [rounded]="true" [text]="true" severity="danger" (click)="deleteVehicle(vehicle)" />
                         </td>
@@ -52,7 +59,7 @@ import { MessageService } from 'primeng/api';
                 </ng-template>
             </p-table>
 
-            <p-dialog [(visible)]="vehicleDialog" [style]="{ width: '450px' }" header="Detalles del Auto" [modal]="true" styleClass="p-fluid">
+            <p-dialog [(visible)]="vehicleDialog" [style]="{ width: '560px' }" header="Detalles del Auto" [modal]="true" styleClass="p-fluid">
                 <ng-template pTemplate="content">
                     <div class="flex flex-col gap-4">
                         <div class="grid grid-cols-12 gap-4">
@@ -72,6 +79,24 @@ import { MessageService } from 'primeng/api';
                             <label for="ownership">Propiedad</label>
                             <p-select [(ngModel)]="vehicle.ownership" inputId="ownership" [options]="ownershipOptions" placeholder="Seleccionar" optionLabel="label" optionValue="value" appendTo="body" styleClass="w-full"></p-select>
                         </div>
+
+                        <div class="pt-2 mt-2 border-t border-surface-200 dark:border-surface-700">
+                            <div class="text-sm font-semibold text-muted-color mb-3">Vencimientos</div>
+                            <div class="grid grid-cols-12 gap-x-4 gap-y-4">
+                                <div class="col-span-12 md:col-span-6 flex flex-col gap-2">
+                                    <label for="seguro">Seguro</label>
+                                    <p-datepicker inputId="seguro" [(ngModel)]="vehicle.seguroVencimiento" dateFormat="dd/mm/yy" [showIcon]="true" [showButtonBar]="true" appendTo="body" styleClass="w-full"></p-datepicker>
+                                </div>
+                                <div class="col-span-12 md:col-span-6 flex flex-col gap-2">
+                                    <label for="vtv">VTV</label>
+                                    <p-datepicker inputId="vtv" [(ngModel)]="vehicle.vtvVencimiento" dateFormat="dd/mm/yy" [showIcon]="true" [showButtonBar]="true" appendTo="body" styleClass="w-full"></p-datepicker>
+                                </div>
+                                <div class="col-span-12 flex flex-col gap-2">
+                                    <label for="ruta">Ruta / Habilitación</label>
+                                    <p-datepicker inputId="ruta" [(ngModel)]="vehicle.rutaVencimiento" dateFormat="dd/mm/yy" [showIcon]="true" [showButtonBar]="true" appendTo="body" styleClass="w-full"></p-datepicker>
+                                </div>
+                            </div>
+                        </div>
                     </div>
                 </ng-template>
 
@@ -83,7 +108,7 @@ import { MessageService } from 'primeng/api';
         </div>
     `,
     standalone: true,
-    imports: [CommonModule, TableModule, ButtonModule, InputTextModule, IconFieldModule, InputIconModule, DialogModule, FormsModule, SelectModule, ToastModule],
+    imports: [CommonModule, TableModule, ButtonModule, InputTextModule, IconFieldModule, InputIconModule, DialogModule, FormsModule, SelectModule, DatePickerModule, TagModule, ToastModule],
     providers: [MessageService]
 })
 export class VehicleList implements OnInit {
@@ -98,10 +123,19 @@ export class VehicleList implements OnInit {
         { label: 'Tercero', value: VehicleOwnership.THIRD_PARTY }
     ];
 
-    constructor(private vehicleService: VehicleService, private messageService: MessageService) {}
+    constructor(private vehicleService: VehicleService, private messageService: MessageService, private route: ActivatedRoute) {}
 
-    ngOnInit() {
-        this.loadVehicles();
+    async ngOnInit() {
+        await this.loadVehicles();
+        this.route.queryParams.subscribe(params => {
+            if (params['action'] === 'edit' && params['id']) {
+                const id = Number(params['id']);
+                const vehicle = this.vehicles.find(v => v.id === id);
+                if (vehicle) {
+                    this.editVehicle(vehicle);
+                }
+            }
+        });
     }
 
     async loadVehicles() {
@@ -123,7 +157,12 @@ export class VehicleList implements OnInit {
     }
 
     editVehicle(vehicle: Vehicle) {
-        this.vehicle = { ...vehicle };
+        this.vehicle = {
+            ...vehicle,
+            seguroVencimiento: vehicle.seguroVencimiento ? new Date(vehicle.seguroVencimiento) : null,
+            vtvVencimiento: vehicle.vtvVencimiento ? new Date(vehicle.vtvVencimiento) : null,
+            rutaVencimiento: vehicle.rutaVencimiento ? new Date(vehicle.rutaVencimiento) : null
+        };
         this.vehicleDialog = true;
     }
 
@@ -164,6 +203,21 @@ export class VehicleList implements OnInit {
                 this.messageService.add({ severity: 'error', summary: 'Error', detail: 'No se pudo guardar el auto' });
             }
         }
+    }
+
+    vencimientoStatus(vehicle: Vehicle): { label: string; severity: 'success' | 'warn' | 'danger' } | null {
+        const dates = [vehicle.seguroVencimiento, vehicle.vtvVencimiento, vehicle.rutaVencimiento]
+            .filter((d): d is string | Date => !!d)
+            .map((d) => new Date(d));
+        if (dates.length === 0) return null;
+
+        const now = Date.now();
+        const daysLeftList = dates.map((d) => Math.ceil((d.getTime() - now) / 86_400_000));
+        const minDays = Math.min(...daysLeftList);
+
+        if (minDays < 0) return { label: `Vencido hace ${Math.abs(minDays)}d`, severity: 'danger' };
+        if (minDays <= 30) return { label: `Vence en ${minDays}d`, severity: 'warn' };
+        return { label: 'Al día', severity: 'success' };
     }
 
     getOwnershipLabel(value: string) {

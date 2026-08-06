@@ -1,4 +1,5 @@
 import { Component, OnInit } from '@angular/core';
+import { ActivatedRoute } from '@angular/router';
 import { CommonModule } from '@angular/common';
 import { TableModule } from 'primeng/table';
 import { ButtonModule } from 'primeng/button';
@@ -7,6 +8,8 @@ import { IconFieldModule } from 'primeng/iconfield';
 import { InputIconModule } from 'primeng/inputicon';
 import { DialogModule } from 'primeng/dialog';
 import { FormsModule } from '@angular/forms';
+import { DatePickerModule } from 'primeng/datepicker';
+import { TagModule } from 'primeng/tag';
 import { Driver, DriverService } from '../../service/driver.service';
 import { ToastModule } from 'primeng/toast';
 import { MessageService } from 'primeng/api';
@@ -36,6 +39,7 @@ import { MessageService } from 'primeng/api';
                         <th>Teléfono</th>
                         <th>Email</th>
                         <th>Licencia</th>
+                        <th>Carnet</th>
                         <th>Acciones</th>
                     </tr>
                 </ng-template>
@@ -46,6 +50,9 @@ import { MessageService } from 'primeng/api';
                         <td>{{ driver.email }}</td>
                         <td>{{ driver.license_number }}</td>
                         <td>
+                            <p-tag *ngIf="vencimientoStatus(driver) as st" [value]="st.label" [severity]="st.severity"></p-tag>
+                        </td>
+                        <td>
                             <p-button icon="pi pi-pencil" [rounded]="true" [text]="true" (click)="editDriver(driver)" />
                             <p-button icon="pi pi-trash" [rounded]="true" [text]="true" severity="danger" (click)="deleteDriver(driver)" />
                         </td>
@@ -53,7 +60,7 @@ import { MessageService } from 'primeng/api';
                 </ng-template>
             </p-table>
 
-            <p-dialog [(visible)]="driverDialog" [style]="{ width: '450px' }" header="Detalles del Chofer" [modal]="true" styleClass="p-fluid">
+            <p-dialog [(visible)]="driverDialog" [style]="{ width: '480px' }" header="Detalles del Chofer" [modal]="true" styleClass="p-fluid">
                 <ng-template pTemplate="content">
                     <div class="flex flex-col gap-4">
                         <div class="flex flex-col gap-2">
@@ -81,6 +88,14 @@ import { MessageService } from 'primeng/api';
                                 <input type="text" pInputText id="cuit" [(ngModel)]="driver.cuit" />
                             </div>
                         </div>
+
+                        <div class="pt-2 mt-2 border-t border-surface-200 dark:border-surface-700">
+                            <div class="text-sm font-semibold text-muted-color mb-3">Vencimientos</div>
+                            <div class="flex flex-col gap-2">
+                                <label for="carnet">Carnet de conducir</label>
+                                <p-datepicker inputId="carnet" [(ngModel)]="driver.carnetVencimiento" dateFormat="dd/mm/yy" [showIcon]="true" [showButtonBar]="true" appendTo="body" styleClass="w-full"></p-datepicker>
+                            </div>
+                        </div>
                     </div>
                 </ng-template>
 
@@ -92,7 +107,7 @@ import { MessageService } from 'primeng/api';
         </div>
     `,
     standalone: true,
-    imports: [CommonModule, TableModule, ButtonModule, InputTextModule, IconFieldModule, InputIconModule, DialogModule, FormsModule, ToastModule],
+    imports: [CommonModule, TableModule, ButtonModule, InputTextModule, IconFieldModule, InputIconModule, DialogModule, FormsModule, DatePickerModule, TagModule, ToastModule],
     providers: [MessageService]
 })
 export class DriverList implements OnInit {
@@ -102,10 +117,19 @@ export class DriverList implements OnInit {
     driverDialog: boolean = false;
     submitted: boolean = false;
 
-    constructor(private driverService: DriverService, private messageService: MessageService) {}
+    constructor(private driverService: DriverService, private messageService: MessageService, private route: ActivatedRoute) {}
 
-    ngOnInit() {
-        this.loadDrivers();
+    async ngOnInit() {
+        await this.loadDrivers();
+        this.route.queryParams.subscribe(params => {
+            if (params['action'] === 'edit' && params['id']) {
+                const id = Number(params['id']);
+                const driver = this.drivers.find(d => d.id === id);
+                if (driver) {
+                    this.editDriver(driver);
+                }
+            }
+        });
     }
 
     async loadDrivers() {
@@ -127,7 +151,10 @@ export class DriverList implements OnInit {
     }
 
     editDriver(driver: Driver) {
-        this.driver = { ...driver };
+        this.driver = {
+            ...driver,
+            carnetVencimiento: driver.carnetVencimiento ? new Date(driver.carnetVencimiento) : null
+        };
         this.driverDialog = true;
     }
 
@@ -142,6 +169,14 @@ export class DriverList implements OnInit {
                 this.messageService.add({ severity: 'error', summary: 'Error', detail: 'No se pudo eliminar el chofer' });
             }
         }
+    }
+
+    vencimientoStatus(driver: Driver): { label: string; severity: 'success' | 'warn' | 'danger' } | null {
+        if (!driver.carnetVencimiento) return null;
+        const days = Math.ceil((new Date(driver.carnetVencimiento).getTime() - Date.now()) / 86_400_000);
+        if (days < 0) return { label: `Vencido hace ${Math.abs(days)}d`, severity: 'danger' };
+        if (days <= 30) return { label: `Vence en ${days}d`, severity: 'warn' };
+        return { label: 'Al día', severity: 'success' };
     }
 
     hideDialog() {

@@ -52,11 +52,28 @@ export class AppMenu {
             { label: 'Autos', icon: 'pi pi-fw pi-car', routerLink: ['/app/vehicles'] }
         ];
 
+        if (this.authService.hasPermission('manageOperations')) {
+            homeItems.push({ label: 'Vencimientos', icon: 'pi pi-fw pi-calendar-times', routerLink: ['/app/reminders'] });
+        }
         if (this.authService.hasPermission('viewStatistics')) {
             homeItems.push({ label: 'Estadísticas', icon: 'pi pi-fw pi-chart-bar', routerLink: ['/app/statistics'] });
         }
         if (this.authService.hasPermission('manageUsers')) {
             homeItems.push({ label: 'Usuarios', icon: 'pi pi-fw pi-shield', routerLink: ['/app/users'] });
+        }
+
+        const iaItems: MenuItem[] = [];
+        if (this.authService.hasPermission('useAssistant')) {
+            iaItems.push({ label: 'Asistente', icon: 'pi pi-fw pi-comments', routerLink: ['/app/assistant'] });
+        }
+        if (this.authService.hasPermission('useAnalyst')) {
+            iaItems.push({ label: 'Analista', icon: 'pi pi-fw pi-chart-line', routerLink: ['/app/analyst'] });
+        }
+        if (this.authService.hasPermission('manageUsers')) {
+            iaItems.push({ label: 'Preguntas sin resolver', icon: 'pi pi-fw pi-question-circle', routerLink: ['/app/assistant/unanswered'] });
+        }
+        if (iaItems.length) {
+            homeItems.push({ label: 'Inteligencia Artificial', icon: 'pi pi-fw pi-sparkles', items: iaItems });
         }
 
         this.model = [

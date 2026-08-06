@@ -22,6 +22,13 @@ interface MenuChangeEvent {
     routeEvent?: boolean;
 }
 
+const DARK_THEME_STORAGE_KEY = 'lecma-dark-theme';
+
+function readSavedDarkTheme(): boolean {
+    if (typeof localStorage === 'undefined') return false;
+    return localStorage.getItem(DARK_THEME_STORAGE_KEY) === 'true';
+}
+
 @Injectable({
     providedIn: 'root'
 })
@@ -30,7 +37,7 @@ export class LayoutService {
         preset: 'Aura',
         primary: 'emerald',
         surface: null,
-        darkTheme: false,
+        darkTheme: readSavedDarkTheme(),
         menuMode: 'static'
     };
 
@@ -96,6 +103,9 @@ export class LayoutService {
 
             this.handleDarkModeTransition(config);
         });
+
+        // Aplica el tema guardado al cargar, sin esperar a la transición animada.
+        this.toggleDarkMode(this._config);
     }
 
     private handleDarkModeTransition(config: layoutConfig): void {
@@ -166,6 +176,9 @@ export class LayoutService {
     onConfigUpdate() {
         this._config = { ...this.layoutConfig() };
         this.configUpdate.next(this.layoutConfig());
+        if (typeof localStorage !== 'undefined') {
+            localStorage.setItem(DARK_THEME_STORAGE_KEY, String(!!this._config.darkTheme));
+        }
     }
 
     onMenuStateChange(event: MenuChangeEvent) {

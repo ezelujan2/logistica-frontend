@@ -7,6 +7,8 @@ import { PanelMenuModule } from 'primeng/panelmenu';
 import { Service, ServiceService } from '../../service/service.service';
 import { AuditService, AuditLog } from '../../service/audit.service';
 import { AuthService } from '../../service/auth.service';
+import { StuckServicesService, StuckService } from '../../service/stuck-services.service';
+import { StatisticsService } from '../../service/statistics.service';
 import { Router } from '@angular/router';
 import { TagModule } from 'primeng/tag';
 import { CardModule } from 'primeng/card';
@@ -74,9 +76,33 @@ import { FormsModule } from '@angular/forms';
                 </div>
                 </div>
 
-            <!-- Upcoming Services -->
+            <div class="col-span-12 md:col-span-6 lg:col-span-3">
+                <div
+                    class="bg-white dark:bg-gray-900 shadow rounded-xl p-4 border border-gray-100 dark:border-gray-800 flex items-center justify-between"
+                    [ngClass]="{ 'cursor-pointer hover:border-amber-300 dark:hover:border-amber-700': stuckServices.length > 0 }"
+                    (click)="scrollToStuckServices()"
+                >
+                    <div>
+                        <span class="block text-gray-500 font-medium mb-1">Estancados</span>
+                        <div class="text-2xl font-bold text-gray-900 dark:text-white">{{ stuckServices.length }}</div>
+                    </div>
+                    <div class="w-10 h-10 flex items-center justify-center bg-amber-100 dark:bg-amber-900/30 rounded-full">
+                        <i class="pi pi-clock text-amber-500 text-xl"></i>
+                    </div>
+                </div>
+            </div>
 
-
+            <div class="col-span-12 md:col-span-6 lg:col-span-3">
+                <div class="bg-white dark:bg-gray-900 shadow rounded-xl p-4 border border-gray-100 dark:border-gray-800 flex items-center justify-between">
+                    <div>
+                        <span class="block text-gray-500 font-medium mb-1">Por Cobrar Vencido</span>
+                        <div class="text-2xl font-bold text-gray-900 dark:text-white">{{ receivables?.overdueCount ?? 0 }}</div>
+                    </div>
+                    <div class="w-10 h-10 flex items-center justify-center bg-rose-100 dark:bg-rose-900/30 rounded-full">
+                        <i class="pi pi-exclamation-triangle text-rose-500 text-xl"></i>
+                    </div>
+                </div>
+            </div>
 
             <!-- Upcoming Services -->
             <div class="col-span-12 xl:col-span-7">
@@ -162,6 +188,40 @@ import { FormsModule } from '@angular/forms';
                          </div>
                      </div>
                  </div>
+            </div>
+
+            <!-- Servicios Estancados -->
+            <div class="col-span-12" id="stuck-services-section" *ngIf="stuckServices.length > 0">
+                <div class="card bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 shadow rounded-xl">
+                    <div class="flex justify-between items-center mb-4 px-4 pt-4">
+                        <h5 class="text-lg font-bold m-0">Servicios Estancados</h5>
+                        <span class="text-xs text-gray-500 bg-amber-100 dark:bg-amber-900/30 px-2 py-1 rounded-full">{{ stuckServices.length }} fuera de su ciclo normal</span>
+                    </div>
+                    <p-table [value]="stuckServices" [rows]="10" [paginator]="stuckServices.length > 10" styleClass="p-datatable-sm" responsiveLayout="scroll">
+                        <ng-template pTemplate="header">
+                            <tr>
+                                <th>Cliente</th>
+                                <th>Trayecto</th>
+                                <th>Estado</th>
+                                <th>Fase</th>
+                                <th class="text-right">Días estancado</th>
+                                <th></th>
+                            </tr>
+                        </ng-template>
+                        <ng-template pTemplate="body" let-s>
+                            <tr>
+                                <td class="text-sm">{{ s.clientName || 'Sin cliente' }}</td>
+                                <td class="text-sm">{{ s.origin }} → {{ s.destination }}</td>
+                                <td><p-tag [value]="getMmStatusLabel(s.status)" [severity]="getSeverity(s.status)"></p-tag></td>
+                                <td class="text-sm">{{ s.phase === 'facturacion' ? 'Sin facturar' : 'Sin cobrar' }}</td>
+                                <td class="text-right font-semibold text-amber-600">{{ s.daysStuck }}d <span class="text-xs text-gray-400 font-normal">(normal: {{ s.thresholdDays }}d)</span></td>
+                                <td>
+                                    <p-button icon="pi pi-search" [rounded]="true" [text]="true" (click)="goToServiceDetail(s)"></p-button>
+                                </td>
+                            </tr>
+                        </ng-template>
+                    </p-table>
+                </div>
             </div>
 
             <!-- Audit Logs Table -->
@@ -364,13 +424,23 @@ export class Dashboard implements OnInit {
     paymentPendingCount: number = 0;
     upcomingCount: number = 0;
 
+    stuckServices: StuckService[] = [];
+    receivables: { totalPendingAmount: number; pendingCount: number; overdueCount: number } | null = null;
+
     displayAuditDialog: boolean = false;
     selectedAudit: AuditLog | null = null;
     auditModules: any[] = [];
     auditDiffs: { key: string, oldValue: any, newValue: any }[] = [];
     showRawJson: boolean = false;
 
-    constructor(private serviceService: ServiceService, private auditService: AuditService, private router: Router, public authService: AuthService) {}
+    constructor(
+        private serviceService: ServiceService,
+        private auditService: AuditService,
+        private stuckServicesService: StuckServicesService,
+        private statisticsService: StatisticsService,
+        private router: Router,
+        public authService: AuthService
+    ) {}
 
     async ngOnInit() {
         await this.loadDashboardData();
@@ -422,7 +492,25 @@ export class Dashboard implements OnInit {
              // Sort pending by date asc
             this.pendingServices.sort((a, b) => new Date(a.startDate).getTime() - new Date(b.startDate).getTime());
 
-            // 3. Audit Logs (solo si el rol tiene permiso de verlas)
+            // 3. Servicios estancados y cuentas por cobrar (solo si tiene permisos operativos)
+            if (this.authService.hasPermission('manageOperations')) {
+                try {
+                    this.stuckServices = await this.stuckServicesService.getStuckServices();
+                } catch (stuckError) {
+                    console.error("Error loading stuck services", stuckError);
+                    this.stuckServices = [];
+                }
+            }
+            if (this.authService.hasPermission('viewStatistics')) {
+                try {
+                    this.receivables = await this.statisticsService.getReceivablesStats();
+                } catch (receivablesError) {
+                    console.error("Error loading receivables", receivablesError);
+                    this.receivables = null;
+                }
+            }
+
+            // 4. Audit Logs (solo si el rol tiene permiso de verlas)
             if (this.authService.hasPermission('viewAudits')) {
                 try {
                     const fetchedAudits = await this.auditService.getAudits();
@@ -448,9 +536,14 @@ export class Dashboard implements OnInit {
         this.router.navigate(['/app/services/all']);
     }
 
-    goToServiceDetail(service: Service) {
+    scrollToStuckServices() {
+        if (this.stuckServices.length === 0) return;
+        document.getElementById('stuck-services-section')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+
+    goToServiceDetail(service: Service | StuckService) {
         if (!service.id) return;
-        this.router.navigate(['/services/all'], { queryParams: { id: service.id } });
+        this.router.navigate(['/app/services/all'], { queryParams: { id: service.id } });
     }
 
     getSeverity(status: string): any {

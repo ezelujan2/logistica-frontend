@@ -1,17 +1,55 @@
-import { Component } from '@angular/core';
+import { Component, OnInit, OnDestroy } from '@angular/core';
 import { MenuItem } from 'primeng/api';
 import { RouterModule } from '@angular/router';
 import { CommonModule } from '@angular/common';
+import { FormsModule } from '@angular/forms';
 import { StyleClassModule } from 'primeng/styleclass';
+import { PopoverModule } from 'primeng/popover';
+import { BadgeModule } from 'primeng/badge';
+import { ButtonModule } from 'primeng/button';
+import { TooltipModule } from 'primeng/tooltip';
+import { InputTextModule } from 'primeng/inputtext';
 import { AppConfigurator } from './app.configurator';
 import { LayoutService } from '../service/layout.service';
 import { AuthService } from '../../service/auth.service';
+import { NotificationService, AppNotification } from '../../service/notification.service';
+import { SearchService, SearchResult } from '../../service/search.service';
 import { Router } from '@angular/router';
+
+const SEARCH_DEBOUNCE_MS = 300;
+const SEARCH_ICONS: Record<SearchResult['type'], string> = {
+    client: 'pi-building',
+    driver: 'pi-user',
+    vehicle: 'pi-car',
+    service: 'pi-briefcase',
+};
+
+const NOTIFICATIONS_POLL_MS = 120_000;
+const DISMISSED_STORAGE_KEY = 'lecma-dismissed-notifications';
+
+function notificationKey(n: AppNotification): string {
+    return `${n.id}|${n.createdAt}`;
+}
+
+function loadDismissedKeys(): Set<string> {
+    if (typeof localStorage === 'undefined') return new Set();
+    try {
+        const raw = localStorage.getItem(DISMISSED_STORAGE_KEY);
+        return raw ? new Set(JSON.parse(raw)) : new Set();
+    } catch {
+        return new Set();
+    }
+}
+
+function saveDismissedKeys(keys: Set<string>) {
+    if (typeof localStorage === 'undefined') return;
+    localStorage.setItem(DISMISSED_STORAGE_KEY, JSON.stringify([...keys]));
+}
 
 @Component({
     selector: 'app-topbar',
     standalone: true,
-    imports: [RouterModule, CommonModule, StyleClassModule, AppConfigurator],
+    imports: [RouterModule, CommonModule, FormsModule, StyleClassModule, PopoverModule, BadgeModule, ButtonModule, TooltipModule, InputTextModule, AppConfigurator],
     template: ` <div class="layout-topbar">
         <div class="layout-topbar-logo-container">
             <button class="layout-menu-button layout-topbar-action" (click)="layoutService.onMenuToggle()">
@@ -69,6 +107,60 @@ import { Router } from '@angular/router';
 
         <div class="layout-topbar-actions">
             <div class="layout-config-menu">
+                <button type="button" class="layout-topbar-action" (click)="searchPanel.toggle($event)">
+                    <i class="pi pi-search"></i>
+                </button>
+                <p-popover #searchPanel [style]="{ width: '380px' }" (onShow)="focusSearchInput(searchInput)">
+                    <div class="flex flex-col gap-2">
+                        <input
+                            #searchInput
+                            type="text"
+                            pInputText
+                            class="w-full"
+                            placeholder="Buscar cliente, chofer, patente, servicio..."
+                            [(ngModel)]="searchQuery"
+                            (ngModelChange)="onSearchInput()"
+                        />
+                        <div *ngIf="searching" class="text-sm text-muted-color py-2 text-center">Buscando...</div>
+                        <div *ngIf="!searching && searchQuery.trim() && !searchResults.length" class="text-sm text-muted-color py-2 text-center">Sin resultados.</div>
+                        <div class="flex flex-col gap-1 max-h-[360px] overflow-y-auto">
+                            <a
+                                *ngFor="let r of searchResults"
+                                [routerLink]="r.link"
+                                [queryParams]="r.queryParams"
+                                (click)="searchPanel.hide()"
+                                class="flex gap-2 p-2 rounded hover:bg-surface-100 dark:hover:bg-surface-800"
+                                style="text-decoration: none; cursor: pointer;"
+                            >
+                                <i class="pi mt-1" [ngClass]="searchIcon(r.type)"></i>
+                                <div class="flex flex-col min-w-0">
+                                    <span class="text-sm font-medium text-color">{{ r.title }}</span>
+                                    <span class="text-xs text-muted-color">{{ r.subtitle }}</span>
+                                </div>
+                            </a>
+                        </div>
+                    </div>
+                </p-popover>
+                <button type="button" class="layout-topbar-action relative" (click)="notificationsPanel.toggle($event)">
+                    <i class="pi pi-bell"></i>
+                    <p-badge *ngIf="notifications.length" [value]="notifications.length.toString()" severity="danger" style="position: absolute; top: 4px; right: 4px;"></p-badge>
+                </button>
+                <p-popover #notificationsPanel [style]="{ width: '360px' }">
+                    <div class="flex flex-col gap-2 max-h-[400px] overflow-y-auto">
+                        <div class="font-semibold text-lg mb-1">Notificaciones</div>
+                        <div *ngIf="!notifications.length" class="text-sm text-muted-color py-3 text-center">No hay notificaciones pendientes.</div>
+                        <div *ngFor="let n of notifications" class="flex items-start gap-2 p-2 rounded hover:bg-surface-100 dark:hover:bg-surface-800">
+                            <a [routerLink]="n.link" (click)="notificationsPanel.hide()" class="flex gap-2 flex-1 min-w-0" style="text-decoration: none; cursor: pointer;">
+                                <i class="pi mt-1" [ngClass]="{ 'pi-calendar-times text-orange-500': n.severity === 'warn', 'pi-exclamation-triangle text-red-500': n.severity === 'danger', 'pi-question-circle text-blue-500': n.severity === 'info' }"></i>
+                                <div class="flex flex-col min-w-0">
+                                    <span class="text-sm font-medium text-color">{{ n.title }}</span>
+                                    <span class="text-xs text-muted-color">{{ n.detail }}</span>
+                                </div>
+                            </a>
+                            <button type="button" class="pi pi-times text-xs text-muted-color opacity-60 hover:opacity-100 mt-1" style="border:none;background:none;cursor:pointer;" pTooltip="Descartar" (click)="dismiss(n, $event)"></button>
+                        </div>
+                    </div>
+                </p-popover>
                 <button type="button" class="layout-topbar-action" (click)="toggleDarkMode()">
                     <i [ngClass]="{ 'pi ': true, 'pi-moon': layoutService.isDarkTheme(), 'pi-sun': !layoutService.isDarkTheme() }"></i>
                 </button>
@@ -111,14 +203,79 @@ import { Router } from '@angular/router';
         </div>
     </div>`
 })
-export class AppTopbar {
+export class AppTopbar implements OnInit, OnDestroy {
     items!: MenuItem[];
+    notifications: AppNotification[] = [];
+    private pollHandle?: ReturnType<typeof setInterval>;
+    private dismissedKeys = loadDismissedKeys();
+
+    searchQuery = '';
+    searchResults: SearchResult[] = [];
+    searching = false;
+    private searchDebounceHandle?: ReturnType<typeof setTimeout>;
 
     constructor(
         public layoutService: LayoutService,
         private authService: AuthService,
+        private notificationService: NotificationService,
+        private searchService: SearchService,
         private router: Router
     ) {}
+
+    ngOnInit() {
+        this.loadNotifications();
+        this.pollHandle = setInterval(() => this.loadNotifications(), NOTIFICATIONS_POLL_MS);
+    }
+
+    ngOnDestroy() {
+        if (this.pollHandle) clearInterval(this.pollHandle);
+        if (this.searchDebounceHandle) clearTimeout(this.searchDebounceHandle);
+    }
+
+    focusSearchInput(input: HTMLInputElement) {
+        setTimeout(() => input.focus());
+    }
+
+    onSearchInput() {
+        if (this.searchDebounceHandle) clearTimeout(this.searchDebounceHandle);
+        const query = this.searchQuery;
+        if (!query.trim()) {
+            this.searchResults = [];
+            this.searching = false;
+            return;
+        }
+        this.searching = true;
+        this.searchDebounceHandle = setTimeout(async () => {
+            try {
+                this.searchResults = await this.searchService.search(query);
+            } catch {
+                this.searchResults = [];
+            } finally {
+                this.searching = false;
+            }
+        }, SEARCH_DEBOUNCE_MS);
+    }
+
+    searchIcon(type: SearchResult['type']): string {
+        return SEARCH_ICONS[type];
+    }
+
+    private async loadNotifications() {
+        try {
+            const all = await this.notificationService.getNotifications();
+            this.notifications = all.filter((n) => !this.dismissedKeys.has(notificationKey(n)));
+        } catch {
+            // silencioso: no debe interrumpir el uso normal de la app
+        }
+    }
+
+    dismiss(n: AppNotification, event: Event) {
+        event.preventDefault();
+        event.stopPropagation();
+        this.dismissedKeys.add(notificationKey(n));
+        saveDismissedKeys(this.dismissedKeys);
+        this.notifications = this.notifications.filter((x) => x !== n);
+    }
 
     toggleDarkMode() {
         this.layoutService.layoutConfig.update((state) => ({ ...state, darkTheme: !state.darkTheme }));
