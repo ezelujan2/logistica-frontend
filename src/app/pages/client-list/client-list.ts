@@ -1,4 +1,5 @@
 import { Component, OnInit } from '@angular/core';
+import { ActivatedRoute } from '@angular/router';
 import { CommonModule } from '@angular/common';
 import { TableModule } from 'primeng/table';
 import { ButtonModule } from 'primeng/button';
@@ -9,6 +10,7 @@ import { DialogModule } from 'primeng/dialog';
 import { FormsModule } from '@angular/forms';
 import { TextareaModule } from 'primeng/textarea';
 import { CheckboxModule } from 'primeng/checkbox';
+import { InputNumberModule } from 'primeng/inputnumber';
 import { Client, ClientService } from '../../service/client.service';
 import { ToastModule } from 'primeng/toast';
 import { MessageService } from 'primeng/api';
@@ -95,6 +97,21 @@ import { MessageService } from 'primeng/api';
                             </div>
                         </div>
 
+                        <div class="pt-2 mt-2 border-t border-surface-200 dark:border-surface-700">
+                            <div class="text-sm font-semibold text-muted-color mb-1">Ciclo de facturación y cobro</div>
+                            <div class="text-xs text-muted-color mb-3">Para clientes con facturación no inmediata (ej. mensual) — evita que sus servicios/facturas se marquen como "estancados" antes de tiempo.</div>
+                            <div class="grid grid-cols-12 gap-4">
+                                <div class="col-span-12 md:col-span-6 flex flex-col gap-2">
+                                    <label for="billing_cycle_days">Días normales hasta facturar</label>
+                                    <p-inputNumber id="billing_cycle_days" [(ngModel)]="client.billing_cycle_days" [min]="0" [max]="120" placeholder="15 (default)" styleClass="w-full" [style]="{'width':'100%'}"></p-inputNumber>
+                                </div>
+                                <div class="col-span-12 md:col-span-6 flex flex-col gap-2">
+                                    <label for="payment_terms_days">Días normales hasta que paga</label>
+                                    <p-inputNumber id="payment_terms_days" [(ngModel)]="client.payment_terms_days" [min]="0" [max]="180" placeholder="30 (default)" styleClass="w-full" [style]="{'width':'100%'}"></p-inputNumber>
+                                </div>
+                            </div>
+                        </div>
+
                         <div class="grid grid-cols-12 gap-4">
                              <div class="col-span-12 md:col-span-6 flex flex-col gap-2">
                                  <label for="default_km_price">Precio KM Default</label>
@@ -121,7 +138,7 @@ import { MessageService } from 'primeng/api';
         </div>
     `,
     standalone: true,
-    imports: [CommonModule, TableModule, ButtonModule, InputTextModule, IconFieldModule, InputIconModule, DialogModule, FormsModule, TextareaModule, CheckboxModule, ToastModule],
+    imports: [CommonModule, TableModule, ButtonModule, InputTextModule, IconFieldModule, InputIconModule, DialogModule, FormsModule, TextareaModule, CheckboxModule, InputNumberModule, ToastModule],
     providers: [MessageService]
 })
 export class ClientList implements OnInit {
@@ -131,10 +148,19 @@ export class ClientList implements OnInit {
     clientDialog: boolean = false;
     submitted: boolean = false;
 
-    constructor(private clientService: ClientService, private messageService: MessageService) {}
+    constructor(private clientService: ClientService, private messageService: MessageService, private route: ActivatedRoute) {}
 
-    ngOnInit() {
-        this.loadClients();
+    async ngOnInit() {
+        await this.loadClients();
+        this.route.queryParams.subscribe(params => {
+            if (params['action'] === 'edit' && params['id']) {
+                const id = Number(params['id']);
+                const client = this.clients.find(c => c.id === id);
+                if (client) {
+                    this.editClient(client);
+                }
+            }
+        });
     }
 
     async loadClients() {

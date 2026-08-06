@@ -8,6 +8,8 @@ export const PERMISSIONS = {
   forceServiceStatus: ['ADMIN'],
   viewAudits: ['ADMIN'],
   manageUsers: ['ADMIN', 'DIRECTOR'],
+  useAssistant: ['ADMIN', 'ADMIN_OPERATIVO', 'DIRECTOR'],
+  useAnalyst: ['ADMIN', 'DIRECTOR'],
 } as const;
 
 export type Permission = keyof typeof PERMISSIONS;

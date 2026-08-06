@@ -14,6 +14,8 @@ export interface Client {
     send_details?: boolean;
     send_invoices?: boolean;
     payment_terms?: string;
+    billing_cycle_days?: number | null;
+    payment_terms_days?: number | null;
     notes?: string;
     default_km_price?: number;
     default_waiting_hour_price?: number;

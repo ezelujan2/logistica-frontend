@@ -11,6 +11,7 @@ export interface Driver {
     email?: string;
     cuit?: string;
     license_number?: string;
+    carnetVencimiento?: string | Date | null;
     createdAt?: Date;
     updatedAt?: Date;
 }

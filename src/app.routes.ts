@@ -28,7 +28,11 @@ export const appRoutes: Routes = [
             { path: 'pages', loadChildren: () => import('./app/pages/pages.routes') },
             { path: 'statistics', loadComponent: () => import('./app/pages/statistics/statistics').then(m => m.StatisticsComponent), canActivate: [AuthGuard], data: { permission: 'viewStatistics' } },
             { path: 'expenses', loadComponent: () => import('./app/pages/expense-list/expense-list').then(m => m.ExpenseList) },
-            { path: 'users', loadComponent: () => import('./app/pages/admin/users/admin-users').then(m => m.AdminUsers), canActivate: [AuthGuard], data: { permission: 'manageUsers' } }
+            { path: 'users', loadComponent: () => import('./app/pages/admin/users/admin-users').then(m => m.AdminUsers), canActivate: [AuthGuard], data: { permission: 'manageUsers' } },
+            { path: 'assistant', loadComponent: () => import('./app/pages/assistant/assistant-page').then(m => m.AssistantPage), canActivate: [AuthGuard], data: { permission: 'useAssistant' } },
+            { path: 'assistant/unanswered', loadComponent: () => import('./app/pages/assistant/unanswered-questions').then(m => m.UnansweredQuestions), canActivate: [AuthGuard], data: { permission: 'manageUsers' } },
+            { path: 'analyst', loadComponent: () => import('./app/pages/assistant/analyst-page').then(m => m.AnalystPage), canActivate: [AuthGuard], data: { permission: 'useAnalyst' } },
+            { path: 'reminders', loadComponent: () => import('./app/pages/reminder-list/reminder-list').then(m => m.ReminderList), canActivate: [AuthGuard], data: { permission: 'manageOperations' } }
         ]
     },
     { path: 'notfound', component: Notfound },
