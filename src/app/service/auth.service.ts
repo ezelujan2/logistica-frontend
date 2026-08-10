@@ -43,7 +43,23 @@ export class AuthService {
   }
 
   isLoggedIn(): boolean {
-    return !!localStorage.getItem('token');
+    const token = localStorage.getItem('token');
+    if (!token) return false;
+    return !this.isTokenExpired(token);
+  }
+
+  // Decodifica el `exp` del JWT sin validar la firma (solo para evitar arrancar
+  // una navegación con un token ya vencido — la validación real la hace el backend).
+  private isTokenExpired(token: string): boolean {
+    try {
+      const payload = token.split('.')[1];
+      if (!payload) return true;
+      const decoded = JSON.parse(atob(payload.replace(/-/g, '+').replace(/_/g, '/')));
+      if (!decoded.exp) return false;
+      return Date.now() >= decoded.exp * 1000;
+    } catch {
+      return true;
+    }
   }
 
   getToken(): string | null {
