@@ -1,6 +1,7 @@
 import { Component, Input, OnInit, ViewChild, ElementRef, AfterViewChecked, SecurityContext } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import { RouterModule } from '@angular/router';
 import { DomSanitizer, SafeHtml } from '@angular/platform-browser';
 import { marked } from 'marked';
 import { ButtonModule } from 'primeng/button';
@@ -10,10 +11,35 @@ import { ToastModule } from 'primeng/toast';
 import { TableModule } from 'primeng/table';
 import { TooltipModule } from 'primeng/tooltip';
 import { SelectModule } from 'primeng/select';
-import { MessageService } from 'primeng/api';
+import { DialogModule } from 'primeng/dialog';
+import { ConfirmDialogModule } from 'primeng/confirmdialog';
+import { MessageService, ConfirmationService } from 'primeng/api';
 import { AssistantChatType, AssistantMessage, AssistantService, ConversationSummary } from '../../service/assistant.service';
 
+const ASSISTANT_CAPABILITIES = [
+    'Buscar servicios por cliente, chofer, vehículo, fecha, estado, N° de factura o N° de reporte',
+    'Buscar un servicio puntual por su ID',
+    'Abrir el formulario de un servicio directo desde el chat',
+    'Cambiar el estado de un servicio en los pasos normales del flujo (te pide confirmación antes de hacerlo)',
+    'Consultar vencimientos de seguros, VTV y carnets',
+    'Leer un PDF (ej. orden de compra) e identificar a qué servicio corresponde',
+    'Listar clientes, choferes y vehículos',
+];
+
+const ANALYST_CAPABILITIES = [
+    'Calcular el margen promedio, total, mínimo y máximo de servicios, con filtros de cliente/chofer/vehículo/período',
+    'Calcular el tiempo promedio de pago (días entre factura y cobro)',
+    'Rankear/agrupar servicios por cliente, chofer, vehículo o mes (facturación, margen, pago a chofer, cantidad)',
+    'Traer un listado crudo de servicios para consultas puntuales que no son un cálculo agregado',
+    'Listar clientes y choferes',
+];
+
 marked.setOptions({ breaks: true });
+
+interface ChatAction {
+    label: string;
+    serviceId: number;
+}
 
 interface ChatBubble {
     role: 'user' | 'assistant';
@@ -22,18 +48,39 @@ interface ChatBubble {
     toolCalls?: { name: string; input: any; result: string }[];
     showTools?: boolean;
     costUsd?: number;
+    actions?: ChatAction[];
+}
+
+function extractActions(toolCalls?: { name: string; input: any; result: string }[]): ChatAction[] {
+    if (!toolCalls?.length) return [];
+    const actions: ChatAction[] = [];
+    for (const call of toolCalls) {
+        if (call.name !== 'abrir_servicio') continue;
+        try {
+            const parsed = JSON.parse(call.result);
+            if (parsed?.found && parsed?.id) {
+                actions.push({ serviceId: parsed.id, label: parsed.reporte ? `Abrir ${parsed.reporte}` : `Abrir servicio #${parsed.id}` });
+            }
+        } catch {
+            // resultado no era JSON válido, ignorar
+        }
+    }
+    return actions;
 }
 
 @Component({
     selector: 'app-assistant-chat',
     standalone: true,
-    imports: [CommonModule, FormsModule, ButtonModule, InputTextModule, CardModule, ToastModule, TableModule, TooltipModule, SelectModule],
-    providers: [MessageService],
+    imports: [CommonModule, FormsModule, RouterModule, ButtonModule, InputTextModule, CardModule, ToastModule, TableModule, TooltipModule, SelectModule, DialogModule, ConfirmDialogModule],
+    providers: [MessageService, ConfirmationService],
     template: `
         <div class="card flex flex-col h-[75vh]">
             <p-toast></p-toast>
             <div class="flex items-center justify-between gap-2 mb-4">
-                <div class="font-semibold text-xl">{{ title }}</div>
+                <div class="flex items-center gap-2">
+                    <div class="font-semibold text-xl">{{ title }}</div>
+                    <p-button icon="pi pi-question-circle" [text]="true" [rounded]="true" pTooltip="¿Qué puede hacer?" (click)="helpDialog = true" />
+                </div>
                 <div class="flex items-center gap-2">
                     <p-select
                         [options]="conversations"
@@ -46,6 +93,14 @@ interface ChatBubble {
                         appendTo="body"
                         styleClass="w-64"
                     />
+                    <p-button
+                        icon="pi pi-trash"
+                        [text]="true"
+                        severity="danger"
+                        pTooltip="Eliminar esta conversación"
+                        [disabled]="!activeConversationId"
+                        (click)="confirmDeleteConversation()"
+                    />
                     <p-button label="Nueva conversación" icon="pi pi-plus" [text]="true" (click)="newConversation()" />
                 </div>
             </div>
@@ -54,6 +109,17 @@ interface ChatBubble {
                 <div *ngFor="let bubble of bubbles" class="flex" [ngClass]="bubble.role === 'user' ? 'justify-end' : 'justify-start'">
                     <div class="max-w-[75%] rounded-xl px-4 py-2" [ngClass]="bubble.role === 'user' ? 'bg-primary text-primary-contrast' : 'bg-surface-100 dark:bg-surface-800'">
                         <div class="prose-sm max-w-none" [innerHTML]="bubble.html"></div>
+
+                        <div *ngIf="bubble.actions?.length" class="flex flex-wrap gap-2 mt-2">
+                            <p-button
+                                *ngFor="let action of bubble.actions"
+                                [label]="action.label"
+                                icon="pi pi-external-link"
+                                size="small"
+                                [routerLink]="['/app/services/all']"
+                                [queryParams]="{ id: action.serviceId }"
+                            />
+                        </div>
 
                         <div *ngIf="bubble.toolCalls?.length" class="mt-1">
                             <button
@@ -88,6 +154,17 @@ interface ChatBubble {
                 <p-button label="Enviar" icon="pi pi-send" (click)="send()" [loading]="loading" [disabled]="!draft.trim() && !selectedFile" />
             </div>
         </div>
+
+        <p-dialog [(visible)]="helpDialog" [style]="{width: '480px'}" header="¿Qué puede hacer {{ title }}?" [modal]="true">
+            <ul class="list-disc pl-5 flex flex-col gap-2 text-sm">
+                <li *ngFor="let item of capabilities">{{ item }}</li>
+            </ul>
+            <ng-template pTemplate="footer">
+                <p-button label="Cerrar" icon="pi pi-times" [text]="true" (click)="helpDialog = false" />
+            </ng-template>
+        </p-dialog>
+
+        <p-confirmDialog [style]="{width: '420px'}"></p-confirmDialog>
     `
 })
 export class AssistantChat implements OnInit, AfterViewChecked {
@@ -102,7 +179,12 @@ export class AssistantChat implements OnInit, AfterViewChecked {
     selectedFile: File | null = null;
     conversations: ConversationSummary[] = [];
     activeConversationId: number | null = null;
+    helpDialog = false;
     private shouldScroll = false;
+
+    get capabilities(): string[] {
+        return this.chatType === 'analyst' ? ANALYST_CAPABILITIES : ASSISTANT_CAPABILITIES;
+    }
 
     get inputPlaceholder(): string {
         return this.chatType === 'analyst'
@@ -110,7 +192,12 @@ export class AssistantChat implements OnInit, AfterViewChecked {
             : 'Ej: servicios del cliente X en agosto, o el chofer del viaje #123';
     }
 
-    constructor(private assistantService: AssistantService, private messageService: MessageService, private sanitizer: DomSanitizer) {}
+    constructor(
+        private assistantService: AssistantService,
+        private messageService: MessageService,
+        private confirmationService: ConfirmationService,
+        private sanitizer: DomSanitizer
+    ) {}
 
     ngOnInit() {
         this.showWelcome();
@@ -158,10 +245,29 @@ export class AssistantChat implements OnInit, AfterViewChecked {
         this.showWelcome();
     }
 
+    confirmDeleteConversation() {
+        if (!this.activeConversationId) return;
+        this.confirmationService.confirm({
+            message: '¿Eliminar esta conversación? No se puede deshacer.',
+            header: 'Confirmar',
+            icon: 'pi pi-exclamation-triangle',
+            accept: async () => {
+                try {
+                    await this.assistantService.deleteConversation(this.chatType, this.activeConversationId!);
+                    this.messageService.add({ severity: 'success', summary: 'Éxito', detail: 'Conversación eliminada' });
+                    this.newConversation();
+                    this.loadConversations();
+                } catch {
+                    this.messageService.add({ severity: 'error', summary: 'Error', detail: 'No se pudo eliminar la conversación' });
+                }
+            }
+        });
+    }
+
     private toBubble(role: 'user' | 'assistant', text: string, toolCalls?: { name: string; input: any; result: string }[], costUsd?: number): ChatBubble {
         const rawHtml = marked.parse(text, { async: false }) as string;
         const safeHtml = this.sanitizer.sanitize(SecurityContext.HTML, rawHtml) ?? '';
-        return { role, text, html: this.sanitizer.bypassSecurityTrustHtml(safeHtml), toolCalls, costUsd };
+        return { role, text, html: this.sanitizer.bypassSecurityTrustHtml(safeHtml), toolCalls, costUsd, actions: extractActions(toolCalls) };
     }
 
     ngAfterViewChecked() {

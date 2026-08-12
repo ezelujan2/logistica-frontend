@@ -79,6 +79,10 @@ export class AssistantService {
         return await firstValueFrom(this.http.get<ConversationDetail>(`${this.apiUrl}${chatType}/conversations/${id}`));
     }
 
+    async deleteConversation(chatType: AssistantChatType, id: number): Promise<void> {
+        await firstValueFrom(this.http.delete(`${this.apiUrl}${chatType}/conversations/${id}`));
+    }
+
     async getUnanswered(): Promise<UnansweredQuery[]> {
         return await firstValueFrom(this.http.get<UnansweredQuery[]>(`${this.apiUrl}assistant/unanswered`));
     }
