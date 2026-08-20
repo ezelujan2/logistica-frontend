@@ -1848,17 +1848,29 @@ export class ServiceList implements OnInit {
                 },
                 body: formData
             })
-            .then(response => response.json())
-            .then(data => {
+            .then(async (response) => {
+                let data: any;
+                try {
+                    data = await response.json();
+                } catch (parseErr) {
+                    console.error(`[Upload] Respuesta no-JSON para ${file.name}: HTTP ${response.status} ${response.statusText}`, parseErr);
+                    throw new Error(`Respuesta inesperada del servidor (código ${response.status}) al subir ${file.name}. Puede ser un problema del proxy/servidor.`);
+                }
+
                 if (data.status === 'success') {
                     this.service.clientReimbursables[index].photoUrls.push(data.url);
                     this.messageService.add({ severity: 'success', summary: 'Éxito', detail: `Archivo ${file.name} subido correctamente.` });
                 } else {
-                    this.messageService.add({ severity: 'error', summary: 'Error', detail: data.message || `Error al subir ${file.name}.` });
+                    console.error(`[Upload] Backend rechazó ${file.name}: HTTP ${response.status}`, data);
+                    throw new Error(data.message || `Error al subir ${file.name}.`);
                 }
             })
             .catch(err => {
-                this.messageService.add({ severity: 'error', summary: 'Error', detail: `Problema de red al subir archivo ${file.name}.` });
+                console.error(`[Upload] Falló la subida de ${file.name}:`, err);
+                const detail = err instanceof TypeError
+                    ? `No se pudo conectar con el servidor para subir ${file.name}. Revisá tu conexión.`
+                    : (err?.message || `Error al subir ${file.name}.`);
+                this.messageService.add({ severity: 'error', summary: 'Error al subir archivo', detail });
             });
         });
 
