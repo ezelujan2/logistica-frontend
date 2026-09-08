@@ -1,5 +1,6 @@
 import { Component, HostListener, OnInit, ViewChild } from '@angular/core';
 import { InvoiceService } from '../../service/invoice.service';
+import { VoucherService } from '../../service/voucher.service';
 import { CommonModule } from '@angular/common';
 import { firstValueFrom } from 'rxjs';
 import { Table, TableModule } from 'primeng/table';
@@ -65,6 +66,15 @@ import { AuthService } from '../../service/auth.service';
                     @if (activeStatusFilter === 'PENDING_INVOICE') {
                          <p-button label="Facturar" icon="pi pi-dollar" severity="help" [text]="true" (click)="openBilling()"></p-button>
                     }
+                </div>
+            }
+
+            <!-- Voucher: available regardless of status (incluso sin chofer/auto asignado) -->
+            @if (selectedServices.length > 0) {
+                <div class="flex gap-2 mb-4 p-3 bg-amber-50 dark:bg-amber-900/20 rounded-xl border border-amber-100 dark:border-amber-800 items-center animate-fadein">
+                    <span class="font-bold text-amber-700 dark:text-amber-300">{{selectedServices.length}} seleccionados</span>
+                    <p-divider layout="vertical"></p-divider>
+                    <p-button label="Generar Voucher" icon="pi pi-file-pdf" severity="warn" [text]="true" (click)="generateVoucher()"></p-button>
                 </div>
             }
 
@@ -426,6 +436,10 @@ import { AuthService } from '../../service/auth.service';
                                     <div class="flex flex-col gap-2">
                                         <label for="destination">Destino</label>
                                         <input type="text" pInputText id="destination" [(ngModel)]="service.destination" class="w-full" />
+                                    </div>
+                                    <div class="flex flex-col gap-2">
+                                        <label for="vehicleTypeRequested">Tipo de Vehículo (para Voucher)</label>
+                                        <p-select [options]="vehicleTypes" [(ngModel)]="service.vehicleTypeRequested" appendTo="body" styleClass="w-full" placeholder="Sin especificar" [showClear]="true"></p-select>
                                     </div>
                                     <div class="grid grid-cols-12 gap-4" *ngIf="service.serviceType !== 'OTHER'">
                                         <div class="col-span-12 md:col-span-4 flex flex-col gap-2">
@@ -1144,6 +1158,9 @@ export class ServiceList implements OnInit {
         { label: 'Otro', value: 'OTHER' }
     ];
 
+    // Voucher: tipo de vehículo solicitado, independiente de la unidad real asignada
+    vehicleTypes = ['Sedán', 'Ejecutiva Van', 'Van/Combi', 'SUV'];
+
 
 
     constructor(
@@ -1156,6 +1173,7 @@ export class ServiceList implements OnInit {
         private confirmationService: ConfirmationService,
         private route: ActivatedRoute,
         private invoiceService: InvoiceService, // Injected
+        private voucherService: VoucherService,
         private primeng: PrimeNG,
         public authService: AuthService
     ) {}
@@ -1204,6 +1222,49 @@ export class ServiceList implements OnInit {
         } catch (error: any) {
             console.error(error);
             this.messageService.add({ severity: 'error', summary: 'Error', detail: error.message || 'Error generando factura' });
+        } finally {
+            this.loading = false;
+        }
+    }
+
+    // Voucher: standalone, no persistence — just generates a PDF on the fly and
+    // triggers a browser download. No status/schema coupling beyond the
+    // optional vehicleTypeRequested field on Service.
+    async generateVoucher() {
+        if (!this.selectedServices.length) return;
+
+        const firstService = this.selectedServices[0];
+        const firstClientId = (firstService.clientIds && firstService.clientIds.length > 0)
+            ? firstService.clientIds[0]
+            : ((firstService as any).clients?.[0]?.id ?? null);
+
+        if (!firstClientId) {
+            this.messageService.add({ severity: 'error', summary: 'Error', detail: 'Los servicios deben tener cliente asignado' });
+            return;
+        }
+
+        const mixed = this.selectedServices.some(s => {
+            const cId = (s.clientIds && s.clientIds.length > 0) ? s.clientIds[0] : ((s as any).clients?.[0]?.id);
+            return cId !== firstClientId;
+        });
+        if (mixed) {
+            this.messageService.add({ severity: 'error', summary: 'Error', detail: 'Seleccioná servicios de un mismo cliente para generar el voucher' });
+            return;
+        }
+
+        try {
+            this.loading = true;
+            const blob = await this.voucherService.generateVoucher(this.selectedServices.map(s => s.id as number));
+            const url = URL.createObjectURL(blob as Blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'voucher.pdf';
+            a.click();
+            URL.revokeObjectURL(url);
+            this.messageService.add({ severity: 'success', summary: 'Voucher generado', detail: 'El voucher se descargó correctamente.' });
+        } catch (error: any) {
+            console.error('[Voucher] Error generando voucher:', error);
+            this.messageService.add({ severity: 'error', summary: 'Error', detail: 'Error generando el voucher' });
         } finally {
             this.loading = false;
         }

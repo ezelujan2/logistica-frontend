@@ -26,6 +26,7 @@ export interface Service {
   origin?: string;
   destination?: string;
   details?: string;
+  vehicleTypeRequested?: string;
 
   // Pricing Overrides (Split Rates)
   kmPriceOverride?: number;
