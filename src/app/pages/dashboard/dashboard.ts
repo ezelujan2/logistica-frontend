@@ -18,11 +18,12 @@ import { DialogModule } from 'primeng/dialog';
 import { InputTextModule } from 'primeng/inputtext';
 import { SelectModule } from 'primeng/select';
 import { FormsModule } from '@angular/forms';
+import { CheckboxModule } from 'primeng/checkbox';
 
 @Component({
     selector: 'app-dashboard',
     standalone: true,
-    imports: [CommonModule, TableModule, ButtonModule, StyleClassModule, PanelMenuModule, TagModule, CardModule, DividerModule, SkeletonModule, DialogModule, InputTextModule, SelectModule, FormsModule],
+    imports: [CommonModule, TableModule, ButtonModule, StyleClassModule, PanelMenuModule, TagModule, CardModule, DividerModule, SkeletonModule, DialogModule, InputTextModule, SelectModule, FormsModule, CheckboxModule],
     template: `
         <div class="grid grid-cols-12 gap-6">
 
@@ -160,7 +161,7 @@ import { FormsModule } from '@angular/forms';
             <div class="col-span-12 xl:col-span-5">
                  <div class="card bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 shadow rounded-xl h-full flex flex-col">
                     <div class="flex justify-between items-center mb-4 px-4 pt-4">
-                        <h5 class="text-lg font-bold m-0">Tareas Pendientes</h5>
+                        <h5 class="text-lg font-bold m-0">Servicios Pendientes de Acción</h5>
                          <span class="text-xs text-gray-500 bg-gray-100 dark:bg-gray-800 px-2 py-1 rounded-full">{{ pendingServices.length }} pendientes</span>
                     </div>
 
@@ -188,6 +189,25 @@ import { FormsModule } from '@angular/forms';
                          </div>
                      </div>
                  </div>
+            </div>
+
+            <!-- Mis Pendientes (checklist libre, distinto de los cambios de estado de arriba) -->
+            <div class="col-span-12" *ngIf="!loading && openTasks.length > 0">
+                <div class="card bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 shadow rounded-xl">
+                    <div class="flex justify-between items-center mb-4 px-4 pt-4">
+                        <h5 class="text-lg font-bold m-0">Mis Pendientes</h5>
+                        <span class="text-xs text-gray-500 bg-gray-100 dark:bg-gray-800 px-2 py-1 rounded-full">{{ openTasks.length }} sin resolver</span>
+                    </div>
+                    <div class="flex flex-col gap-2 px-4 pb-4">
+                        <div *ngFor="let item of openTasks" class="flex items-start gap-3 p-3 border rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors">
+                            <p-checkbox [binary]="true" [ngModel]="false" (onChange)="resolveTask(item)" styleClass="mt-1"></p-checkbox>
+                            <div class="flex flex-col cursor-pointer flex-1" (click)="goToServiceDetail(item.service)">
+                                <span class="text-sm">{{ item.task.description }}</span>
+                                <span class="text-xs text-gray-500">{{ item.service.startDate | date:'dd/MM' }} · {{ getClientName(item.service) }}</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
             </div>
 
             <!-- Servicios Estancados -->
@@ -415,6 +435,7 @@ import { FormsModule } from '@angular/forms';
 export class Dashboard implements OnInit {
     upcomingServices: Service[] = [];
     pendingServices: Service[] = [];
+    openTasks: { task: any; service: Service }[] = [];
     audits: AuditLog[] = [];
     loading: boolean = true;
 
@@ -492,6 +513,11 @@ export class Dashboard implements OnInit {
              // Sort pending by date asc
             this.pendingServices.sort((a, b) => new Date(a.startDate).getTime() - new Date(b.startDate).getTime());
 
+            // Mis Pendientes: checklist items sin resolver de todos los servicios
+            this.openTasks = allActive
+                .flatMap(s => (s.tasks || []).filter((t: any) => !t.done).map((t: any) => ({ task: t, service: s })))
+                .sort((a, b) => new Date(a.service.startDate).getTime() - new Date(b.service.startDate).getTime());
+
             // 3. Servicios estancados y cuentas por cobrar (solo si tiene permisos operativos)
             if (this.authService.hasPermission('manageOperations')) {
                 try {
@@ -544,6 +570,18 @@ export class Dashboard implements OnInit {
     goToServiceDetail(service: Service | StuckService) {
         if (!service.id) return;
         this.router.navigate(['/app/services/all'], { queryParams: { id: service.id } });
+    }
+
+    async resolveTask(item: { task: any; service: Service }) {
+        // Optimistic: lo sacamos de la lista ya mismo, sin esperar la respuesta.
+        this.openTasks = this.openTasks.filter(t => t !== item);
+        try {
+            await this.serviceService.toggleTask(item.task.id, true);
+        } catch (err) {
+            console.error('Error al resolver pendiente:', err);
+            // Revertir si falló
+            this.openTasks = [...this.openTasks, item].sort((a, b) => new Date(a.service.startDate).getTime() - new Date(b.service.startDate).getTime());
+        }
     }
 
     getSeverity(status: string): any {

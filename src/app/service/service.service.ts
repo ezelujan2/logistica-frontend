@@ -16,6 +16,15 @@ export interface ClientReimbursable {
   serviceId?: number;
 }
 
+export interface ServiceTask {
+  id?: number;
+  description: string;
+  done?: boolean;
+  notifyReminder?: boolean;
+  customReminderAt?: Date | string | null;
+  serviceId?: number;
+}
+
 export interface Service {
   id?: number;
   startDate: Date | string;
@@ -57,6 +66,7 @@ export interface Service {
 
   expenses?: Expense[];
   clientReimbursables?: ClientReimbursable[];
+  tasks?: ServiceTask[];
 
   serviceGroupId?: number;
   serviceGroup?: any; // Add typing later if needed
@@ -96,6 +106,10 @@ export class ServiceService {
 
     async deleteService(id: number): Promise<void> {
         await firstValueFrom(this.http.delete(`${this.apiUrl}/${id}`));
+    }
+
+    async toggleTask(taskId: number, done: boolean): Promise<ServiceTask> {
+        return await firstValueFrom(this.http.patch<ServiceTask>(`${this.apiUrl}/tasks/${taskId}`, { done }));
     }
 
     async createGroup(serviceIds: number[], clientId: number, notes?: string) {

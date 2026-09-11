@@ -685,6 +685,30 @@ import { AuthService } from '../../service/auth.service';
                               <p-button label="Agregar Reembolso" icon="pi pi-plus" [text]="true" severity="info" (click)="addReimbursable()"></p-button>
                           </div>
                      </div>
+
+                     <!-- Pendientes (checklist del servicio) -->
+                     <p-divider align="left"><b>Pendientes</b></p-divider>
+                     <div class="flex flex-col gap-2">
+                          <div *ngFor="let task of service.tasks; let k = index" class="p-3 bg-amber-50 dark:bg-amber-900/20 rounded-lg border border-amber-200 dark:border-amber-800 mb-2">
+                             <div class="flex items-start gap-2">
+                                 <p-checkbox [(ngModel)]="task.done" [binary]="true" styleClass="mt-2"></p-checkbox>
+                                 <div class="flex-1 flex flex-col gap-2">
+                                     <input type="text" pInputText [(ngModel)]="task.description" class="w-full" [ngClass]="{'line-through text-gray-400 dark:text-gray-500': task.done}" placeholder="Ej. Preguntar desde qué hotel sale" />
+                                     <div class="flex items-center flex-wrap gap-x-4 gap-y-2 text-sm" *ngIf="!task.done">
+                                         <div class="flex items-center gap-2">
+                                             <p-checkbox [(ngModel)]="task.notifyReminder" [binary]="true" [inputId]="'notifyTask'+k"></p-checkbox>
+                                             <label [for]="'notifyTask'+k" class="cursor-pointer text-gray-600 dark:text-gray-300">Avisar día antes / mismo día</label>
+                                         </div>
+                                         <p-datepicker [(ngModel)]="task.customReminderAt" [showTime]="true" hourFormat="24" placeholder="+ Recordatorio puntual" appendTo="body" styleClass="w-full sm:w-44" [showIcon]="true" [showButtonBar]="true"></p-datepicker>
+                                     </div>
+                                 </div>
+                                 <p-button icon="pi pi-trash" severity="danger" [text]="true" (click)="removeTask(k)"></p-button>
+                             </div>
+                          </div>
+                          <div class="mt-2">
+                              <p-button label="Agregar Pendiente" icon="pi pi-plus" [text]="true" severity="warn" (click)="addTask()"></p-button>
+                          </div>
+                     </div>
                      </div>
                 </ng-template>
 
@@ -1687,7 +1711,8 @@ export class ServiceList implements OnInit {
             driverIds: [],
             vehicleIds: [],
             expenses: [],
-            clientReimbursables: []
+            clientReimbursables: [],
+            tasks: []
         };
     }
 
@@ -1717,7 +1742,11 @@ export class ServiceList implements OnInit {
             driverIds: service.drivers ? service.drivers.map((d: any) => d.id) : [],
             vehicleIds: service.vehicles ? service.vehicles.map((v: any) => v.id) : [],
             expenses: service.expenses || [],
-            clientReimbursables: service.clientReimbursables || []
+            clientReimbursables: service.clientReimbursables || [],
+            tasks: (service.tasks || []).map((t: any) => ({
+                ...t,
+                customReminderAt: t.customReminderAt ? new Date(t.customReminderAt) : null
+            }))
         };
         this.serviceDialog = true;
     }
@@ -1865,7 +1894,8 @@ export class ServiceList implements OnInit {
                          origin: this.service.destination,
                          destination: this.service.origin,
                          expenses: [],
-                         clientReimbursables: []
+                         clientReimbursables: [],
+                         tasks: []
                      };
                      await this.serviceService.createBulkServices([this.service, returnService]);
                      this.messageService.add({ severity: 'success', summary: 'Éxito', detail: 'Servicio y viaje de vuelta creados', life: 3000 });
@@ -1910,6 +1940,15 @@ export class ServiceList implements OnInit {
 
     removeReimbursable(index: number) {
         this.service.clientReimbursables.splice(index, 1);
+    }
+
+    addTask() {
+        if (!this.service.tasks) this.service.tasks = [];
+        this.service.tasks.push({ description: '', done: false, notifyReminder: true });
+    }
+
+    removeTask(index: number) {
+        this.service.tasks.splice(index, 1);
     }
 
     onReimbursableUpload(event: any, index: number) {
