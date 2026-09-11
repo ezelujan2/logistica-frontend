@@ -45,6 +45,7 @@ export interface Service {
   status: string;
 
   billingType?: string;
+  taxRatePercentage?: number;
 
   clients?: Client[];
   drivers?: Driver[];

@@ -545,6 +545,33 @@ import { AuthService } from '../../service/auth.service';
                                         <p-checkbox [(ngModel)]="service.isVatExempt" [binary]="true" inputId="isVatExempt"></p-checkbox>
                                         <label for="isVatExempt" class="cursor-pointer font-bold text-blue-700 dark:text-blue-300">¿Es IVA Exento?</label>
                                     </div>
+                                    <div class="flex flex-col gap-2" *ngIf="!service.isVatExempt">
+                                        <label>% de IVA a aplicar</label>
+                                        <div class="flex items-center flex-wrap gap-2">
+                                            <button
+                                                type="button"
+                                                (click)="service.taxRatePercentage = 21"
+                                                class="px-4 py-2 rounded-full text-sm font-semibold border transition-colors"
+                                                [ngClass]="service.taxRatePercentage == 21
+                                                    ? 'bg-blue-600 border-blue-600 text-white'
+                                                    : 'bg-transparent border-gray-300 dark:border-gray-600 text-gray-600 dark:text-gray-300 hover:border-blue-400'">
+                                                21%
+                                            </button>
+                                            <button
+                                                type="button"
+                                                (click)="service.taxRatePercentage = 10.5"
+                                                class="px-4 py-2 rounded-full text-sm font-semibold border transition-colors"
+                                                [ngClass]="service.taxRatePercentage == 10.5
+                                                    ? 'bg-blue-600 border-blue-600 text-white'
+                                                    : 'bg-transparent border-gray-300 dark:border-gray-600 text-gray-600 dark:text-gray-300 hover:border-blue-400'">
+                                                10,5%
+                                            </button>
+                                            <div class="flex items-center gap-2 w-full sm:w-auto pt-2 sm:pt-0 sm:pl-2 sm:ml-1 border-t sm:border-t-0 sm:border-l border-gray-200 dark:border-gray-700">
+                                                <span class="text-xs text-gray-500 dark:text-gray-400 whitespace-nowrap">u otro:</span>
+                                                <p-inputNumber [(ngModel)]="service.taxRatePercentage" inputId="taxRatePercentage" suffix="%" [minFractionDigits]="0" [maxFractionDigits]="2" styleClass="w-20 sm:w-24" placeholder="21"></p-inputNumber>
+                                            </div>
+                                        </div>
+                                    </div>
                                 </div>
                             </p-panel>
 
@@ -567,7 +594,7 @@ import { AuthService } from '../../service/auth.service';
                                         <span class="text-sm text-gray-600 dark:text-gray-300">Neto Total: {{ calculateClientNet | currency:'USD' }}</span>
 
                                         <!-- Tax -->
-                                        <span *ngIf="calculateClientTax > 0" class="text-xs text-blue-600 font-bold">+ IVA (21%): {{ calculateClientTax | currency:'USD' }}</span>
+                                        <span *ngIf="calculateClientTax > 0" class="text-xs text-blue-600 font-bold">+ IVA ({{ service.taxRatePercentage ?? 21 }}%): {{ calculateClientTax | currency:'USD' }}</span>
 
                                         <span class="text-2xl font-bold text-gray-800 dark:text-white mt-1">{{ calculateClientTotal | currency:'USD' }}</span>
                                     </div>
@@ -917,7 +944,7 @@ import { AuthService } from '../../service/auth.service';
                                  <span>{{ summaryConfig.subtotal | currency:'USD' }}</span>
                              </div>
                               <div class="flex justify-between text-blue-600" *ngIf="summaryConfig.tax > 0">
-                                  <span>IVA (21%):</span>
+                                  <span>IVA:</span>
                                   <span>+ {{ summaryConfig.tax | currency:'USD' }}</span>
                               </div>
                              <div class="flex justify-between font-bold text-xl mt-2 p-2 bg-gray-100 dark:bg-surface-700 rounded">
@@ -1651,6 +1678,7 @@ export class ServiceList implements OnInit {
             status: 'CREATED',
             billingType: 'INFORMAL',
             isVatExempt: false,
+            taxRatePercentage: 21,
             kmTraveled: 0,
             waitingHours: 0,
             extraKmTraveled: 0,
@@ -1671,6 +1699,7 @@ export class ServiceList implements OnInit {
             endDate: service.endDate ? new Date(service.endDate) : null,
             serviceType: service.serviceType || 'SERVICE',
             isVatExempt: service.isVatExempt ?? false,
+            taxRatePercentage: service.taxRatePercentage ?? 21,
             kmTraveled: service.km_traveled,
             waitingHours: service.waiting_hours,
             extraKmTraveled: service.extra_km_traveled,
@@ -2102,7 +2131,8 @@ export class ServiceList implements OnInit {
         let total = this.calculateClientNet;
 
         if (!this.service.isVatExempt && (this.service.billingType === 'OFFICIAL_A' || this.service.billingType === 'MONOTRIBUTO')) {
-             total = total * 1.21;
+             const rate = this.service.taxRatePercentage ?? 21;
+             total = total * (1 + rate / 100);
         }
         return total;
     }
@@ -2114,7 +2144,8 @@ export class ServiceList implements OnInit {
 
     get calculateClientTax(): number {
         if (!this.service.isVatExempt && (this.service.billingType === 'OFFICIAL_A' || this.service.billingType === 'MONOTRIBUTO')) {
-            return this.calculateClientNet * 0.21;
+            const rate = this.service.taxRatePercentage ?? 21;
+            return this.calculateClientNet * (rate / 100);
         }
         return 0;
     }
