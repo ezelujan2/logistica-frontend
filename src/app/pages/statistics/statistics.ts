@@ -11,6 +11,7 @@ import { StatisticsService } from '../../service/statistics.service';
 import { MultiSelectModule } from 'primeng/multiselect';
 import { TooltipModule } from 'primeng/tooltip';
 import { TagModule } from 'primeng/tag';
+import { VehicleService, Vehicle } from '../../service/vehicle.service';
 
 @Component({
   selector: 'app-statistics',
@@ -57,6 +58,17 @@ import { TagModule } from 'primeng/tag';
                     defaultLabel="Tipos de Servicio"
                     optionLabel="label"
                     optionValue="value"
+                    class="w-full sm:w-48">
+                 </p-multiSelect>
+
+                 <p-multiSelect
+                    [options]="vehicleOptions"
+                    [(ngModel)]="selectedVehicleIds"
+                    (onChange)="onFilterChange()"
+                    defaultLabel="Autos"
+                    optionLabel="label"
+                    optionValue="value"
+                    [filter]="true"
                     class="w-full sm:w-48">
                  </p-multiSelect>
             </div>
@@ -356,7 +368,10 @@ export class StatisticsComponent implements OnInit {
       { label: 'Otro', value: 'OTHER' }
   ];
 
-  constructor(private statsService: StatisticsService) {
+  selectedVehicleIds: number[] = [];
+  vehicleOptions: { label: string; value: number }[] = [];
+
+  constructor(private statsService: StatisticsService, private vehicleService: VehicleService) {
       const currentYear = new Date().getFullYear();
       for(let i = currentYear; i >= 2024; i--) {
           this.years.push(i);
@@ -368,7 +383,19 @@ export class StatisticsComponent implements OnInit {
 
   async ngOnInit() {
     this.initChartOptions();
+    await this.loadVehicleOptions();
     await this.loadData();
+  }
+
+  async loadVehicleOptions() {
+      try {
+          const vehicles: Vehicle[] = await this.vehicleService.getVehicles();
+          this.vehicleOptions = vehicles
+              .filter((v) => v.id !== undefined)
+              .map((v) => ({ label: `${v.plate} - ${v.model}`, value: v.id as number }));
+      } catch (e) {
+          console.error('Error loading vehicles for filter', e);
+      }
   }
 
   onFilterChange() {
@@ -381,12 +408,12 @@ export class StatisticsComponent implements OnInit {
         const month = this.viewMode === 'monthly' ? this.selectedMonth : undefined;
 
         const [general, drivers, clients, monthly, vehicles, expenses, receivables] = await Promise.all([
-            this.statsService.getGeneralStats(year, month, this.selectedServiceTypes),
-            this.statsService.getDriverStats(year, month, this.selectedServiceTypes),
-            this.statsService.getClientStats(year, month, this.selectedServiceTypes),
-            this.statsService.getMonthlyStats(year, this.selectedServiceTypes),
-            this.statsService.getVehicleStats(year, month, this.selectedServiceTypes),
-            this.statsService.getExpenseStats(year, month, this.selectedServiceTypes),
+            this.statsService.getGeneralStats(year, month, this.selectedServiceTypes, this.selectedVehicleIds),
+            this.statsService.getDriverStats(year, month, this.selectedServiceTypes, this.selectedVehicleIds),
+            this.statsService.getClientStats(year, month, this.selectedServiceTypes, this.selectedVehicleIds),
+            this.statsService.getMonthlyStats(year, this.selectedServiceTypes, this.selectedVehicleIds),
+            this.statsService.getVehicleStats(year, month, this.selectedServiceTypes, this.selectedVehicleIds),
+            this.statsService.getExpenseStats(year, month, this.selectedServiceTypes, this.selectedVehicleIds),
             this.statsService.getReceivablesStats()
         ]);
 

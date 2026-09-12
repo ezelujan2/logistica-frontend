@@ -1,5 +1,5 @@
 import { Component, OnInit } from '@angular/core';
-import { ActivatedRoute } from '@angular/router';
+import { ActivatedRoute, Router } from '@angular/router';
 import { CommonModule } from '@angular/common';
 import { TableModule } from 'primeng/table';
 import { ButtonModule } from 'primeng/button';
@@ -14,6 +14,8 @@ import { InputNumberModule } from 'primeng/inputnumber';
 import { Client, ClientService } from '../../service/client.service';
 import { ToastModule } from 'primeng/toast';
 import { MessageService } from 'primeng/api';
+import { TooltipModule } from 'primeng/tooltip';
+import { AuthService } from '../../service/auth.service';
 
 @Component({
     selector: 'app-client-list',
@@ -50,6 +52,7 @@ import { MessageService } from 'primeng/api';
                         <td>{{ client.phone }}</td>
                         <td>{{ client.email }}</td>
                         <td>
+                            <p-button *ngIf="canViewStats" icon="pi pi-chart-bar" [rounded]="true" [text]="true" severity="info" pTooltip="Ver estadísticas" (click)="viewStats(client)" />
                             <p-button icon="pi pi-pencil" [rounded]="true" [text]="true" (click)="editClient(client)" />
                             <p-button icon="pi pi-trash" [rounded]="true" [text]="true" severity="danger" (click)="deleteClient(client)" />
                         </td>
@@ -138,7 +141,7 @@ import { MessageService } from 'primeng/api';
         </div>
     `,
     standalone: true,
-    imports: [CommonModule, TableModule, ButtonModule, InputTextModule, IconFieldModule, InputIconModule, DialogModule, FormsModule, TextareaModule, CheckboxModule, InputNumberModule, ToastModule],
+    imports: [CommonModule, TableModule, ButtonModule, InputTextModule, IconFieldModule, InputIconModule, DialogModule, FormsModule, TextareaModule, CheckboxModule, InputNumberModule, ToastModule, TooltipModule],
     providers: [MessageService]
 })
 export class ClientList implements OnInit {
@@ -148,7 +151,15 @@ export class ClientList implements OnInit {
     clientDialog: boolean = false;
     submitted: boolean = false;
 
-    constructor(private clientService: ClientService, private messageService: MessageService, private route: ActivatedRoute) {}
+    canViewStats = false;
+
+    constructor(private clientService: ClientService, private messageService: MessageService, private route: ActivatedRoute, private router: Router, private authService: AuthService) {
+        this.canViewStats = this.authService.hasPermission('viewStatistics');
+    }
+
+    viewStats(client: Client) {
+        this.router.navigate(['/app/clients', client.id, 'stats']);
+    }
 
     async ngOnInit() {
         await this.loadClients();

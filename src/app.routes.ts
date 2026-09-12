@@ -22,6 +22,7 @@ export const appRoutes: Routes = [
             { path: 'advances', loadComponent: () => import('./app/pages/advances/advance-list').then(m => m.AdvanceList) },
             { path: 'settlements', loadComponent: () => import('./app/pages/settlements/settlement-list').then(m => m.SettlementList) },
             { path: 'clients', loadComponent: () => import('./app/pages/client-list/client-list').then((m) => m.ClientList) },
+            { path: 'clients/:id/stats', loadComponent: () => import('./app/pages/client-stats/client-stats').then((m) => m.ClientStats), canActivate: [AuthGuard], data: { permission: 'viewStatistics' } },
             { path: 'drivers', loadComponent: () => import('./app/pages/driver-list/driver-list').then((m) => m.DriverList) },
             { path: 'vehicles', loadComponent: () => import('./app/pages/vehicle-list/vehicle-list').then((m) => m.VehicleList) },
             { path: 'uikit', loadChildren: () => import('./app/pages/uikit/uikit.routes') },
