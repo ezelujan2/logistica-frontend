@@ -57,6 +57,7 @@ export class AppMenu {
         }
         if (this.authService.hasPermission('viewStatistics')) {
             homeItems.push({ label: 'Estadísticas', icon: 'pi pi-fw pi-chart-bar', routerLink: ['/app/statistics'] });
+            homeItems.push({ label: 'Encuestas', icon: 'pi pi-fw pi-star', routerLink: ['/app/surveys'] });
         }
         if (this.authService.hasPermission('manageUsers')) {
             homeItems.push({ label: 'Usuarios', icon: 'pi pi-fw pi-shield', routerLink: ['/app/users'] });

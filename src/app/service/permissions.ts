@@ -8,6 +8,7 @@ export const PERMISSIONS = {
   forceServiceStatus: ['ADMIN'],
   viewAudits: ['ADMIN'],
   manageUsers: ['ADMIN', 'DIRECTOR'],
+  manageSurveys: ['ADMIN'],
   useAssistant: ['ADMIN', 'ADMIN_OPERATIVO', 'DIRECTOR'],
   useAnalyst: ['ADMIN', 'DIRECTOR'],
 } as const;

@@ -1,6 +1,7 @@
 import { Component, HostListener, OnInit, ViewChild } from '@angular/core';
 import { InvoiceService } from '../../service/invoice.service';
 import { VoucherService } from '../../service/voucher.service';
+import { SurveyService } from '../../service/survey.service';
 import { CommonModule } from '@angular/common';
 import { firstValueFrom } from 'rxjs';
 import { Table, TableModule } from 'primeng/table';
@@ -75,6 +76,7 @@ import { AuthService } from '../../service/auth.service';
                     <span class="font-bold text-amber-700 dark:text-amber-300">{{selectedServices.length}} seleccionados</span>
                     <p-divider layout="vertical"></p-divider>
                     <p-button label="Generar Voucher" icon="pi pi-file-pdf" severity="warn" [text]="true" (click)="generateVoucher()"></p-button>
+                    <p-button label="Generar Encuesta" icon="pi pi-star" severity="help" [text]="true" (click)="generateSurveyFromSelection()"></p-button>
                 </div>
             }
 
@@ -751,9 +753,13 @@ import { AuthService } from '../../service/auth.service';
                              </div>
                         </div>
 
-                        <div class="flex justify-end gap-2 mt-2">
-                             <p-button label="Cancelar" icon="pi pi-times" [text]="true" (click)="hideDialog()" />
-                             <p-button label="Guardar" icon="pi pi-check" [text]="true" (click)="saveService()" />
+                        <div class="flex justify-between items-center gap-2 mt-2">
+                             <p-button *ngIf="service.id" label="Generar Encuesta" icon="pi pi-star" severity="help" [text]="true" (click)="generateSurveyFromSelection([service])"></p-button>
+                             <span *ngIf="!service.id"></span>
+                             <div class="flex gap-2">
+                                 <p-button label="Cancelar" icon="pi pi-times" [text]="true" (click)="hideDialog()" />
+                                 <p-button label="Guardar" icon="pi pi-check" [text]="true" (click)="saveService()" />
+                             </div>
                         </div>
                 </ng-template>
             </p-dialog>
@@ -1047,6 +1053,21 @@ import { AuthService } from '../../service/auth.service';
                 </ng-template>
             </p-dialog>
 
+            <p-dialog [(visible)]="surveyDialog" [style]="{ width: '500px', 'max-width': '95vw' }" header="Encuesta de Satisfacción" [modal]="true">
+                <ng-template pTemplate="content">
+                    <div class="flex flex-col gap-3 mt-2">
+                        <p class="text-sm text-gray-600 dark:text-gray-300">Compartí este link con el cliente (WhatsApp, mail, etc.). Es único para este servicio y se puede responder una sola vez.</p>
+                        <div class="flex items-center gap-2">
+                            <input type="text" pInputText [value]="surveyLink" readonly class="w-full text-sm" />
+                            <p-button icon="pi pi-copy" (click)="copySurveyLink()" pTooltip="Copiar link"></p-button>
+                        </div>
+                    </div>
+                </ng-template>
+                <ng-template pTemplate="footer">
+                    <p-button label="Cerrar" [text]="true" (click)="surveyDialog = false"></p-button>
+                </ng-template>
+            </p-dialog>
+
             <p-dialog [(visible)]="editInvoiceDialog" [style]="{ width: '600px' }" header="Editar Número de Factura" [modal]="true" styleClass="p-fluid">
                 <ng-template pTemplate="content">
                     <div class="flex flex-col gap-4 mt-4">
@@ -1225,6 +1246,7 @@ export class ServiceList implements OnInit {
         private route: ActivatedRoute,
         private invoiceService: InvoiceService, // Injected
         private voucherService: VoucherService,
+        private surveyService: SurveyService,
         private primeng: PrimeNG,
         public authService: AuthService
     ) {}
@@ -1321,6 +1343,50 @@ export class ServiceList implements OnInit {
         }
     }
 
+    // Encuesta de satisfacción: manual, un link único por servicio, nunca automático.
+    surveyDialog = false;
+    surveyLink = '';
+
+    async generateSurveyFromSelection(services?: Service[]) {
+        const list = services && services.length ? services : this.selectedServices;
+        if (!list.length) return;
+
+        const firstClientId = (list[0].clientIds && list[0].clientIds.length > 0)
+            ? list[0].clientIds[0]
+            : ((list[0] as any).clients?.[0]?.id ?? null);
+
+        if (!firstClientId) {
+            this.messageService.add({ severity: 'error', summary: 'Error', detail: 'Los servicios deben tener cliente asignado' });
+            return;
+        }
+
+        const mixed = list.some(s => {
+            const cId = (s.clientIds && s.clientIds.length > 0) ? s.clientIds[0] : ((s as any).clients?.[0]?.id);
+            return cId !== firstClientId;
+        });
+        if (mixed) {
+            this.messageService.add({ severity: 'error', summary: 'Error', detail: 'Seleccioná servicios de un mismo cliente para generar la encuesta' });
+            return;
+        }
+
+        try {
+            const { token } = await this.surveyService.generateSurvey(list.map(s => s.id as number));
+            this.surveyLink = `${window.location.origin}/encuesta/${token}`;
+            this.surveyDialog = true;
+        } catch (error: any) {
+            console.error('[Survey] Error generando encuesta:', error);
+            this.messageService.add({ severity: 'error', summary: 'Error', detail: 'Error generando la encuesta' });
+        }
+    }
+
+    async copySurveyLink() {
+        try {
+            await navigator.clipboard.writeText(this.surveyLink);
+            this.messageService.add({ severity: 'success', summary: 'Copiado', detail: 'Link copiado al portapapeles', life: 2000 });
+        } catch {
+            this.messageService.add({ severity: 'warn', summary: 'No se pudo copiar', detail: 'Copiá el link manualmente' });
+        }
+    }
 
     ngOnInit() {
         // Spanish Localization for PrimeNG
