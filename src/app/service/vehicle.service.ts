@@ -14,6 +14,8 @@ export interface Vehicle {
     plate: string;
     model: string;
     ownership: VehicleOwnership;
+    purchase_price?: number | null;
+    purchase_date?: string | Date | null;
     seguroVencimiento?: string | Date | null;
     vtvVencimiento?: string | Date | null;
     rutaVencimiento?: string | Date | null;

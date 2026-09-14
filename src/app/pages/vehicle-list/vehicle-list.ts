@@ -1,5 +1,5 @@
 import { Component, OnInit } from '@angular/core';
-import { ActivatedRoute } from '@angular/router';
+import { ActivatedRoute, Router } from '@angular/router';
 import { CommonModule } from '@angular/common';
 import { TableModule } from 'primeng/table';
 import { ButtonModule } from 'primeng/button';
@@ -14,6 +14,9 @@ import { TagModule } from 'primeng/tag';
 import { Vehicle, VehicleOwnership, VehicleService } from '../../service/vehicle.service';
 import { ToastModule } from 'primeng/toast';
 import { MessageService } from 'primeng/api';
+import { InputNumberModule } from 'primeng/inputnumber';
+import { TooltipModule } from 'primeng/tooltip';
+import { AuthService } from '../../service/auth.service';
 
 @Component({
     selector: 'app-vehicle-list',
@@ -52,6 +55,7 @@ import { MessageService } from 'primeng/api';
                             <p-tag *ngIf="vencimientoStatus(vehicle) as st" [value]="st.label" [severity]="st.severity"></p-tag>
                         </td>
                         <td>
+                            <p-button *ngIf="canViewStats" icon="pi pi-chart-bar" [rounded]="true" [text]="true" severity="info" pTooltip="Ver rentabilidad" (click)="viewStats(vehicle)" />
                             <p-button icon="pi pi-pencil" [rounded]="true" [text]="true" (click)="editVehicle(vehicle)" />
                             <p-button icon="pi pi-trash" [rounded]="true" [text]="true" severity="danger" (click)="deleteVehicle(vehicle)" />
                         </td>
@@ -78,6 +82,21 @@ import { MessageService } from 'primeng/api';
                         <div class="flex flex-col gap-2">
                             <label for="ownership">Propiedad</label>
                             <p-select [(ngModel)]="vehicle.ownership" inputId="ownership" [options]="ownershipOptions" placeholder="Seleccionar" optionLabel="label" optionValue="value" appendTo="body" styleClass="w-full"></p-select>
+                        </div>
+
+                        <div class="pt-2 mt-2 border-t border-surface-200 dark:border-surface-700">
+                            <div class="text-sm font-semibold text-muted-color mb-1">Compra</div>
+                            <div class="text-xs text-muted-color mb-3">Opcional. Si lo cargás, el sistema puede calcular el retorno de inversión de este auto.</div>
+                            <div class="grid grid-cols-12 gap-x-4 gap-y-4">
+                                <div class="col-span-12 md:col-span-6 flex flex-col gap-2">
+                                    <label for="purchasePrice">Precio de compra</label>
+                                    <p-inputnumber inputId="purchasePrice" [(ngModel)]="vehicle.purchase_price" mode="currency" currency="USD" locale="en-US" [min]="0" styleClass="w-full"></p-inputnumber>
+                                </div>
+                                <div class="col-span-12 md:col-span-6 flex flex-col gap-2">
+                                    <label for="purchaseDate">Fecha de compra</label>
+                                    <p-datepicker inputId="purchaseDate" [(ngModel)]="vehicle.purchase_date" dateFormat="dd/mm/yy" [showIcon]="true" [showButtonBar]="true" appendTo="body" styleClass="w-full"></p-datepicker>
+                                </div>
+                            </div>
                         </div>
 
                         <div class="pt-2 mt-2 border-t border-surface-200 dark:border-surface-700">
@@ -108,7 +127,7 @@ import { MessageService } from 'primeng/api';
         </div>
     `,
     standalone: true,
-    imports: [CommonModule, TableModule, ButtonModule, InputTextModule, IconFieldModule, InputIconModule, DialogModule, FormsModule, SelectModule, DatePickerModule, TagModule, ToastModule],
+    imports: [CommonModule, TableModule, ButtonModule, InputTextModule, IconFieldModule, InputIconModule, DialogModule, FormsModule, SelectModule, DatePickerModule, TagModule, ToastModule, InputNumberModule, TooltipModule],
     providers: [MessageService]
 })
 export class VehicleList implements OnInit {
@@ -123,7 +142,15 @@ export class VehicleList implements OnInit {
         { label: 'Tercero', value: VehicleOwnership.THIRD_PARTY }
     ];
 
-    constructor(private vehicleService: VehicleService, private messageService: MessageService, private route: ActivatedRoute) {}
+    canViewStats = false;
+
+    constructor(private vehicleService: VehicleService, private messageService: MessageService, private route: ActivatedRoute, private router: Router, private authService: AuthService) {
+        this.canViewStats = this.authService.hasPermission('viewStatistics');
+    }
+
+    viewStats(vehicle: Vehicle) {
+        this.router.navigate(['/app/vehicles', vehicle.id, 'stats']);
+    }
 
     async ngOnInit() {
         await this.loadVehicles();

@@ -25,6 +25,7 @@ export const appRoutes: Routes = [
             { path: 'clients/:id/stats', loadComponent: () => import('./app/pages/client-stats/client-stats').then((m) => m.ClientStats), canActivate: [AuthGuard], data: { permission: 'viewStatistics' } },
             { path: 'drivers', loadComponent: () => import('./app/pages/driver-list/driver-list').then((m) => m.DriverList) },
             { path: 'vehicles', loadComponent: () => import('./app/pages/vehicle-list/vehicle-list').then((m) => m.VehicleList) },
+            { path: 'vehicles/:id/stats', loadComponent: () => import('./app/pages/vehicle-stats/vehicle-stats').then((m) => m.VehicleStats), canActivate: [AuthGuard], data: { permission: 'viewStatistics' } },
             { path: 'uikit', loadChildren: () => import('./app/pages/uikit/uikit.routes') },
             { path: 'documentation', component: Documentation },
             { path: 'pages', loadChildren: () => import('./app/pages/pages.routes') },

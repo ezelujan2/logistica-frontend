@@ -29,6 +29,33 @@ export interface ClientDetailStats {
   };
 }
 
+export interface VehicleDetailStats {
+  vehicle: {
+    id: number;
+    plate: string;
+    model: string;
+    ownership: string;
+    purchasePrice: number | null;
+    purchaseDate: string | null;
+  };
+  totalServices: number;
+  totalRevenue: number;
+  totalDriverCost: number;
+  totalVehicleExpenses: number;
+  netResult: number;
+  netResultPerMonth: number;
+  totalKm: number;
+  costPerKm: number;
+  revenuePerKm: number;
+  expenseBreakdown: { type: string; amount: number }[];
+  monthsActive: number;
+  firstServiceDate: string | null;
+  lastServiceDate: string | null;
+  roiPercentage: number | null;
+  investmentRecoveredPercentage: number | null;
+  monthsToBreakEven: number | null;
+}
+
 @Injectable({
   providedIn: 'root'
 })
@@ -78,6 +105,10 @@ export class StatisticsService {
 
   getReceivablesStats() {
     return firstValueFrom(this.http.get<any>(`${this.apiUrl}/receivables`));
+  }
+
+  getVehicleDetailStats(vehicleId: number) {
+    return firstValueFrom(this.http.get<VehicleDetailStats>(`${this.apiUrl}/vehicles/${vehicleId}`));
   }
 
   getClientDetailStats(clientId: number, year?: number, month?: number) {
