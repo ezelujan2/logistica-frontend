@@ -109,7 +109,11 @@ const SERVICE_TYPE_LABELS: Record<string, string> = {
                         <div class="absolute right-0 top-0 p-4 opacity-10"><i class="pi pi-clock text-6xl text-orange-500"></i></div>
                         <span class="text-sm font-semibold text-gray-500 uppercase tracking-wider mb-1">Cuentas por Cobrar</span>
                         <span class="text-3xl font-bold" [class.text-orange-600]="stats.pendingAmount > 0" [class.text-gray-400]="stats.pendingAmount === 0">{{ stats.pendingAmount | currency:'USD' }}</span>
-                        <span class="text-xs text-gray-500 mt-2">{{ stats.pendingCount }} servicios/grupos pendientes</span>
+                        <span class="text-xs text-gray-500 mt-2">{{ stats.pendingCount }} servicios facturados esperando pago</span>
+                        <span *ngIf="stats.administrativePendingCount > 0" class="text-xs mt-2 pt-2 border-t border-surface-200 dark:border-surface-700 text-amber-700 dark:text-amber-500">
+                            <i class="pi pi-exclamation-circle"></i>
+                            {{ stats.administrativePendingAmount | currency:'USD' }} en {{ stats.administrativePendingCount }} servicios con trámite pendiente (detalles o facturación)
+                        </span>
                     </div>
                 </div>
 

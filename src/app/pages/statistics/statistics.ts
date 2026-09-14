@@ -153,7 +153,11 @@ import { VehicleService, Vehicle } from '../../service/vehicle.service';
                     <i class="pi pi-info-circle text-gray-400 cursor-pointer" pTooltip="Monto total adeudado por los clientes (Cuentas por Cobrar)." tooltipPosition="top"></i>
                 </div>
                 <span class="text-3xl font-bold text-cyan-600 dark:text-cyan-400">{{ receivablesStats?.totalPendingAmount || 0 | currency:'USD' }}</span>
-                <span class="text-xs text-gray-500 mt-2">{{ receivablesStats?.pendingCount || 0 }} Servicios/Grupos Pendientes</span>
+                <span class="text-xs text-gray-500 mt-2">{{ receivablesStats?.pendingCount || 0 }} servicios facturados esperando pago</span>
+                <span *ngIf="receivablesStats?.administrativePendingCount > 0" class="text-xs mt-2 pt-2 border-t border-surface-200 dark:border-surface-700 text-amber-700 dark:text-amber-500">
+                    <i class="pi pi-exclamation-circle"></i>
+                    {{ receivablesStats.administrativePendingAmount | currency:'USD' }} en {{ receivablesStats.administrativePendingCount }} servicios con trámite pendiente (detalles o facturación)
+                </span>
             </div>
 
             <div class="p-4 bg-white dark:bg-surface-900 rounded-xl shadow-sm border border-surface-200 dark:border-surface-700 flex flex-col relative overflow-hidden">

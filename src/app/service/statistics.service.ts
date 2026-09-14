@@ -21,6 +21,8 @@ export interface ClientDetailStats {
   monthlyEvolution: { month: string; revenue: number }[];
   pendingAmount: number;
   pendingCount: number;
+  administrativePendingAmount: number;
+  administrativePendingCount: number;
   satisfaction: {
     responsesCount: number;
     avgOverall: number | null;
