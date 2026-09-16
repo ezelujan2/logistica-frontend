@@ -63,15 +63,25 @@ interface CalendarDay {
                                  class="cal-month-card" [ngClass]="getServicePillClass(s.status)"
                                  (click)="onServiceClick($event, s)" [pTooltip]="getServiceTooltip(s)" tooltipPosition="top">
                                 <div class="flex items-center gap-1 leading-tight">
+                                    <span *ngIf="hasPendingTask(s)" class="pending-dot"></span>
                                     <span class="font-bold text-[11px] flex-shrink-0">{{ s.startDate | date:'HH:mm' }}</span>
                                     <span class="truncate text-[11px]">{{ s.origin }} → {{ s.destination }}</span>
                                 </div>
-                                <div *ngIf="s.clientNames" class="truncate text-[10px] opacity-70 mt-0.5 leading-tight">
-                                    <i class="pi pi-building text-[9px] mr-0.5"></i>{{ s.clientNames }}
+                                <div class="flex items-center justify-between gap-1 mt-0.5 leading-tight">
+                                    <span *ngIf="s.clientNames" class="truncate text-[10px] opacity-70">
+                                        <i class="pi pi-building text-[9px] mr-0.5"></i>{{ s.clientNames }}
+                                    </span>
+                                    <span *ngIf="getServiceRef(s)" class="cal-ref" [ngClass]="isInvoiceRef(s) ? 'cal-ref--invoice' : 'cal-ref--report'">
+                                        {{ getServiceRef(s) }}
+                                    </span>
                                 </div>
                             </div>
-                            <span *ngIf="day.services.length > 2" class="text-[11px] text-primary font-semibold px-1 cursor-pointer hover:underline"
-                                  (click)="openDayDetail($event, day)">+{{ day.services.length - 2 }} más</span>
+                            <span *ngIf="day.services.length > 2" class="text-[11px] text-primary font-semibold px-1 cursor-pointer hover:underline inline-flex items-center gap-1"
+                                  (click)="openDayDetail($event, day)">
+                                +{{ day.services.length - 2 }} más
+                                <span *ngIf="hiddenPendingCount(day) > 0" class="pending-dot"
+                                      [pTooltip]="hiddenPendingCount(day) + ' de estos tiene(n) pendientes'" tooltipPosition="top"></span>
+                            </span>
                         </div>
                     </div>
                 </div>
@@ -112,10 +122,16 @@ interface CalendarDay {
                          (click)="onServiceClick($event, s)">
                         <div class="w-1 self-stretch rounded-full flex-shrink-0 mt-0.5" [ngClass]="getDotClass(s.status)"></div>
                         <div class="flex-1 min-w-0">
-                            <div class="font-semibold text-sm truncate">{{ s.startDate | date:'HH:mm' }} — {{ s.origin }} → {{ s.destination }}</div>
-                            <div class="text-xs text-color-secondary mt-0.5 flex gap-3">
+                            <div class="font-semibold text-sm truncate flex items-center gap-1.5">
+                                <span *ngIf="hasPendingTask(s)" class="pending-dot"></span>
+                                <span class="truncate">{{ s.startDate | date:'HH:mm' }} — {{ s.origin }} → {{ s.destination }}</span>
+                            </div>
+                            <div class="text-xs text-color-secondary mt-0.5 flex gap-3 items-center flex-wrap">
                                 <span *ngIf="s.driverNames"><i class="pi pi-user text-[10px] mr-1"></i>{{ s.driverNames }}</span>
                                 <span *ngIf="s.clientNames"><i class="pi pi-building text-[10px] mr-1"></i>{{ s.clientNames }}</span>
+                                <span *ngIf="getServiceRef(s)" class="cal-ref" [ngClass]="isInvoiceRef(s) ? 'cal-ref--invoice' : 'cal-ref--report'">
+                                    {{ getServiceRef(s) }}
+                                </span>
                             </div>
                         </div>
                         <span class="cal-pill flex-shrink-0" [ngClass]="getServicePillClass(s.status)">{{ translateStatus(s.status) }}</span>
@@ -166,7 +182,10 @@ interface CalendarDay {
                                  class="week-card" [ngClass]="getWeekCardClass(s.status)"
                                  (click)="onServiceClick($event, s)">
                                 <!-- hora -->
-                                <div class="week-card-time">{{ s.startDate | date:'HH:mm' }}</div>
+                                <div class="week-card-time flex items-center gap-1">
+                                    <span *ngIf="hasPendingTask(s)" class="pending-dot"></span>
+                                    {{ s.startDate | date:'HH:mm' }}
+                                </div>
                                 <!-- ruta -->
                                 <div class="week-card-route">
                                     <i class="pi pi-map-marker text-[9px] mr-0.5"></i>
@@ -187,8 +206,11 @@ interface CalendarDay {
                                     <span class="truncate">{{ s.driverNames }}</span>
                                 </div>
                                 <!-- estado -->
-                                <div class="mt-1.5">
+                                <div class="mt-1.5 flex items-center gap-1 flex-wrap">
                                     <span class="cal-pill" [ngClass]="getServicePillClass(s.status)">{{ translateStatus(s.status) }}</span>
+                                    <span *ngIf="getServiceRef(s)" class="cal-ref" [ngClass]="isInvoiceRef(s) ? 'cal-ref--invoice' : 'cal-ref--report'">
+                                        {{ getServiceRef(s) }}
+                                    </span>
                                 </div>
                             </div>
                         </div>
@@ -209,14 +231,21 @@ interface CalendarDay {
                      (click)="onServiceClick($event, s); dayDetailVisible = false">
                     <div class="w-1 self-stretch rounded-full flex-shrink-0 mt-0.5" [ngClass]="getDotClass(s.status)"></div>
                     <div class="flex-1 min-w-0">
-                        <div class="flex items-center gap-2 mb-1">
+                        <div class="flex items-center gap-2 mb-1 flex-wrap">
+                            <span *ngIf="hasPendingTask(s)" class="pending-dot"></span>
                             <span class="font-bold text-sm">{{ s.startDate | date:'HH:mm' }}</span>
                             <span class="cal-pill" [ngClass]="getServicePillClass(s.status)">{{ translateStatus(s.status) }}</span>
+                            <span *ngIf="getServiceRef(s)" class="cal-ref" [ngClass]="isInvoiceRef(s) ? 'cal-ref--invoice' : 'cal-ref--report'">
+                                {{ getServiceRef(s) }}
+                            </span>
                         </div>
                         <div class="font-semibold text-sm truncate">{{ s.origin }} → {{ s.destination }}</div>
                         <div class="flex gap-4 mt-1 text-xs text-color-secondary">
                             <span *ngIf="s.clientNames"><i class="pi pi-building mr-1"></i>{{ s.clientNames }}</span>
                             <span *ngIf="s.driverNames"><i class="pi pi-user mr-1"></i>{{ s.driverNames }}</span>
+                        </div>
+                        <div *ngIf="hasPendingTask(s)" class="text-[11px] text-amber-600 dark:text-amber-500 mt-1">
+                            <i class="pi pi-exclamation-circle text-[10px] mr-1"></i>{{ pendingTaskCount(s) }} pendiente(s) sin resolver
                         </div>
                     </div>
                     <i class="pi pi-pencil text-color-secondary text-sm mt-1 flex-shrink-0"></i>
@@ -286,6 +315,27 @@ interface CalendarDay {
             cursor: pointer; line-height: 1.5; white-space: nowrap;
         }
         .cal-pill:hover { filter: brightness(0.93); }
+
+        /* Circulito de "tiene pendientes sin resolver" */
+        .pending-dot {
+            width: 7px; height: 7px; border-radius: 9999px;
+            background: #f59e0b;
+            flex-shrink: 0; display: inline-block;
+            box-shadow: 0 0 0 2px rgba(245, 158, 11, 0.28);
+        }
+
+        /* N° de factura (si tiene) o código de reporte.
+           Fondo sólido a propósito: estas insignias se apoyan tanto sobre las tarjetas
+           pastel del calendario (que siguen siendo claras en modo oscuro) como sobre
+           superficies que sí cambian con el tema. Opaco + texto blanco se lee en todas. */
+        .cal-ref {
+            font-size: 9px; font-weight: 700; line-height: 1.4;
+            padding: 1px 4px; border-radius: 4px;
+            flex-shrink: 0; white-space: nowrap;
+            color: #fff;
+        }
+        .cal-ref--invoice { background: #047857; }
+        .cal-ref--report  { background: #b45309; }
 
         /* ── Colores pills ── */
         .pill-gray   { background: var(--surface-300, #d1d5db); color: var(--text-color); }
@@ -655,7 +705,34 @@ export class ServiceCalendar implements OnInit, OnChanges {
         const drivers = service.driverNames || 'Sin Asignar';
         const dest = service.destination || 'Múltiples destinos';
         const statusEs = this.translateStatus(service.status);
-        return `[${statusEs}] ${service.origin} -> ${dest} | Chofer: ${drivers}`;
+        const ref = this.getServiceRef(service);
+        const refTxt = ref ? ` | ${this.isInvoiceRef(service) ? 'Factura' : 'Reporte'}: ${ref}` : '';
+        const pend = this.hasPendingTask(service) ? ` | ${this.pendingTaskCount(service)} pendiente(s)` : '';
+        return `[${statusEs}] ${service.origin} -> ${dest} | Chofer: ${drivers}${refTxt}${pend}`;
+    }
+
+    // Identificador del servicio: si ya se facturó se muestra el N° de factura;
+    // si todavía no, el código del reporte; si no tiene ninguno, nada.
+    getServiceRef(service: Service): string | null {
+        return service.invoice?.invoiceNumber || service.invoiceNumber || service.serviceGroup?.code || null;
+    }
+
+    isInvoiceRef(service: Service): boolean {
+        return !!(service.invoice?.invoiceNumber || service.invoiceNumber);
+    }
+
+    pendingTaskCount(service: Service): number {
+        return service.tasks?.filter((t) => !t.done).length ?? 0;
+    }
+
+    hasPendingTask(service: Service): boolean {
+        return this.pendingTaskCount(service) > 0;
+    }
+
+    // Cuántos de los servicios ocultos detrás del "+N más" tienen pendientes,
+    // para que no queden invisibles.
+    hiddenPendingCount(day: CalendarDay): number {
+        return day.services.slice(2).filter((s) => this.hasPendingTask(s)).length;
     }
 
     translateStatus(status: string): string {
