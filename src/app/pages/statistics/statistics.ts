@@ -12,13 +12,19 @@ import { MultiSelectModule } from 'primeng/multiselect';
 import { TooltipModule } from 'primeng/tooltip';
 import { TagModule } from 'primeng/tag';
 import { VehicleService, Vehicle } from '../../service/vehicle.service';
+import { ButtonModule } from 'primeng/button';
+import { ToastModule } from 'primeng/toast';
+import { MessageService } from 'primeng/api';
+import { StatsExportService, SheetData } from '../../service/stats-export.service';
 
 @Component({
   selector: 'app-statistics',
   standalone: true,
-  imports: [CommonModule, FormsModule, ChartModule, TableModule, CardModule, DividerModule, SelectButtonModule, SelectModule, MultiSelectModule, TooltipModule, TagModule],
+  imports: [CommonModule, FormsModule, ChartModule, TableModule, CardModule, DividerModule, SelectButtonModule, SelectModule, MultiSelectModule, TooltipModule, TagModule, ButtonModule, ToastModule],
+  providers: [MessageService],
   template: `
     <div class="p-4 flex flex-col gap-6 animate-fadein">
+        <p-toast></p-toast>
         <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
             <div class="font-bold text-3xl text-gray-800 dark:text-white">Dashboard & Estadísticas</div>
 
@@ -71,6 +77,17 @@ import { VehicleService, Vehicle } from '../../service/vehicle.service';
                     [filter]="true"
                     class="w-full sm:w-48">
                  </p-multiSelect>
+
+                 <p-button
+                    label="Excel"
+                    icon="pi pi-file-excel"
+                    severity="success"
+                    [outlined]="true"
+                    [loading]="exportando"
+                    (click)="exportarExcel()"
+                    pTooltip="Descarga los datos que estás viendo, respetando los filtros"
+                    tooltipPosition="bottom">
+                 </p-button>
             </div>
         </div>
 
@@ -375,7 +392,14 @@ export class StatisticsComponent implements OnInit {
   selectedVehicleIds: number[] = [];
   vehicleOptions: { label: string; value: number }[] = [];
 
-  constructor(private statsService: StatisticsService, private vehicleService: VehicleService) {
+  exportando = false;
+
+  constructor(
+      private statsService: StatisticsService,
+      private vehicleService: VehicleService,
+      private exportService: StatsExportService,
+      private messageService: MessageService
+  ) {
       const currentYear = new Date().getFullYear();
       for(let i = currentYear; i >= 2024; i--) {
           this.years.push(i);
@@ -432,6 +456,99 @@ export class StatisticsComponent implements OnInit {
     } catch (e) {
         console.error("Error loading stats", e);
     }
+  }
+
+  /** Descripción del período y filtros activos, para que el Excel diga de qué son los datos. */
+  private descripcionDelPeriodo(): string {
+      if (this.viewMode === 'monthly') {
+          const mes = this.months.find((m) => m.value === this.selectedMonth)?.label ?? '';
+          return `${mes} ${this.selectedYear}`;
+      }
+      return `Año ${this.selectedYear}`;
+  }
+
+  async exportarExcel() {
+      if (this.exportando) return;
+      this.exportando = true;
+
+      try {
+          const periodo = this.descripcionDelPeriodo();
+          const tiposElegidos = this.selectedServiceTypes.length
+              ? this.selectedServiceTypes.map((v) => this.serviceTypeOptions.find((o) => o.value === v)?.label ?? v).join(', ')
+              : 'Todos';
+          const autosElegidos = this.selectedVehicleIds.length
+              ? this.selectedVehicleIds.map((v) => this.vehicleOptions.find((o) => o.value === v)?.label ?? v).join(', ')
+              : 'Todos';
+
+          const g = this.generalStats ?? {};
+          const hojas: SheetData[] = [
+              {
+                  nombre: 'Resumen',
+                  filas: [
+                      { Concepto: 'Período', Valor: periodo },
+                      { Concepto: 'Tipos de servicio', Valor: tiposElegidos },
+                      { Concepto: 'Autos', Valor: autosElegidos },
+                      { Concepto: 'Facturación total', Valor: Number(g.totalRevenue ?? 0) },
+                      { Concepto: 'Gastos totales', Valor: Number(g.totalExpenses ?? 0) },
+                      { Concepto: 'Ganancia neta', Valor: Number(g.totalProfit ?? 0) },
+                      { Concepto: 'Impuestos (IVA)', Valor: Number(g.totalIva ?? 0) },
+                      { Concepto: 'Margen de ganancia (%)', Valor: Number(g.marginPercentage ?? 0) },
+                      { Concepto: 'Km totales', Valor: Number(g.totalKm ?? 0) },
+                      { Concepto: 'Cantidad de servicios', Valor: Number(g.servicesCount ?? 0) },
+                      { Concepto: 'Facturación por km', Valor: Number(g.revenuePerKm ?? 0) },
+                      { Concepto: 'Costo operativo por km', Valor: Number(g.costPerKm ?? 0) },
+                      { Concepto: 'Pendiente de pago', Valor: Number(this.receivablesStats?.totalPendingAmount ?? 0) },
+                      { Concepto: 'Servicios pendientes de pago', Valor: Number(this.receivablesStats?.pendingCount ?? 0) },
+                      { Concepto: 'Con trámite pendiente', Valor: Number(this.receivablesStats?.administrativePendingAmount ?? 0) }
+                  ]
+              },
+              {
+                  nombre: 'Evolución mensual',
+                  filas: (this.monthlyData?.labels ?? []).map((mes: string, i: number) => ({
+                      Mes: mes,
+                      Facturación: Number(this.monthlyData.datasets?.[0]?.data?.[i] ?? 0),
+                      'Costo choferes': Number(this.monthlyData.datasets?.[1]?.data?.[i] ?? 0)
+                  }))
+              },
+              {
+                  nombre: 'Top Clientes',
+                  filas: this.topClients.map((c) => ({ Cliente: c.name, Viajes: Number(c.trips ?? 0), Facturación: Number(c.revenue ?? 0) }))
+              },
+              {
+                  nombre: 'Choferes',
+                  filas: this.topDrivers.map((d) => ({
+                      Chofer: d.name,
+                      Viajes: Number(d.trips ?? 0),
+                      Km: Number(d.totalKm ?? 0),
+                      Ganancias: Number(d.earnings ?? 0)
+                  }))
+              },
+              {
+                  nombre: 'Vehículos',
+                  filas: this.topVehicles.map((v) => ({
+                      Patente: v.plate,
+                      Modelo: v.model,
+                      Viajes: Number(v.trips ?? 0),
+                      Km: Number(v.totalKm ?? 0),
+                      Ganancia: Number(v.profit ?? 0)
+                  }))
+              },
+              {
+                  nombre: 'Gastos',
+                  filas: this.expensesStats.map((e) => ({ Tipo: this.getExpenseLabel(e.type), Monto: Number(e.amount ?? 0) }))
+              }
+          ];
+
+          const sufijo = this.viewMode === 'monthly' ? `${this.selectedYear}-${String(this.selectedMonth).padStart(2, '0')}` : `${this.selectedYear}`;
+          await this.exportService.exportar(hojas, `estadisticas-${sufijo}.xlsx`);
+
+          this.messageService.add({ severity: 'success', summary: 'Listo', detail: `Excel descargado (${periodo})` });
+      } catch (e) {
+          console.error('Error exportando a Excel', e);
+          this.messageService.add({ severity: 'error', summary: 'Error', detail: 'No se pudo generar el Excel' });
+      } finally {
+          this.exportando = false;
+      }
   }
 
   getExpenseLabel(type: string): string {
