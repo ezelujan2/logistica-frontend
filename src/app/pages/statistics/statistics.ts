@@ -14,17 +14,59 @@ import { TagModule } from 'primeng/tag';
 import { VehicleService, Vehicle } from '../../service/vehicle.service';
 import { ButtonModule } from 'primeng/button';
 import { ToastModule } from 'primeng/toast';
+import { DialogModule } from 'primeng/dialog';
 import { MessageService } from 'primeng/api';
 import { StatsExportService, SheetData } from '../../service/stats-export.service';
 
 @Component({
   selector: 'app-statistics',
   standalone: true,
-  imports: [CommonModule, FormsModule, ChartModule, TableModule, CardModule, DividerModule, SelectButtonModule, SelectModule, MultiSelectModule, TooltipModule, TagModule, ButtonModule, ToastModule],
+  imports: [CommonModule, FormsModule, ChartModule, TableModule, CardModule, DividerModule, SelectButtonModule, SelectModule, MultiSelectModule, TooltipModule, TagModule, ButtonModule, ToastModule, DialogModule],
   providers: [MessageService],
   template: `
     <div class="p-4 flex flex-col gap-6 animate-fadein">
         <p-toast></p-toast>
+
+        <!-- Detalle de un KPI: los registros que lo componen, para poder auditarlo -->
+        <p-dialog [(visible)]="detalleVisible" [header]="detalleTitulo" [modal]="true" [style]="{ width: '92vw', maxWidth: '1200px' }" [draggable]="false">
+            <div class="flex justify-between items-center flex-wrap gap-2 mb-3">
+                <span class="text-sm text-gray-500">
+                    {{ detalleFilas.length }} registros · sumando
+                    <strong class="text-gray-800 dark:text-white">{{ detalleSuma | currency:'USD' }}</strong>
+                </span>
+                <p-button label="Excel" icon="pi pi-file-excel" severity="success" [outlined]="true" size="small"
+                          [disabled]="detalleFilas.length === 0" (click)="exportarDetalle()"></p-button>
+            </div>
+
+            <div *ngIf="detalleCargando" class="text-center py-10 text-gray-400">
+                <i class="pi pi-spin pi-spinner text-2xl"></i>
+            </div>
+
+            <p-table *ngIf="!detalleCargando" [value]="detalleFilas" [paginator]="true" [rows]="15"
+                     styleClass="p-datatable-sm" [scrollable]="true" scrollHeight="55vh">
+                <ng-template pTemplate="header">
+                    <tr>
+                        <th *ngFor="let c of detalleColumnas">{{ c.titulo }}</th>
+                    </tr>
+                </ng-template>
+                <ng-template pTemplate="body" let-fila>
+                    <tr>
+                        <td *ngFor="let c of detalleColumnas" [class.text-right]="c.tipo === 'money' || c.tipo === 'num'">
+                            <ng-container [ngSwitch]="c.tipo">
+                                <span *ngSwitchCase="'money'">{{ fila[c.campo] | currency:'USD' }}</span>
+                                <span *ngSwitchCase="'date'">{{ fila[c.campo] | date:'dd/MM/yyyy' }}</span>
+                                <span *ngSwitchCase="'num'">{{ fila[c.campo] | number:'1.0-0' }}</span>
+                                <span *ngSwitchDefault>{{ fila[c.campo] }}</span>
+                            </ng-container>
+                        </td>
+                    </tr>
+                </ng-template>
+                <ng-template pTemplate="emptymessage">
+                    <tr><td [attr.colspan]="detalleColumnas.length" class="text-center p-6 text-gray-500">No hay registros para este filtro.</td></tr>
+                </ng-template>
+            </p-table>
+        </p-dialog>
+
         <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
             <div class="font-bold text-3xl text-gray-800 dark:text-white">Dashboard & Estadísticas</div>
 
@@ -112,7 +154,7 @@ import { StatsExportService, SheetData } from '../../service/stats-export.servic
 
         <!-- KPI Cards -->
         <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            <div class="p-4 bg-white dark:bg-surface-900 rounded-xl shadow-sm border border-surface-200 dark:border-surface-700 flex flex-col relative overflow-hidden">
+            <div class="p-4 bg-white dark:bg-surface-900 rounded-xl shadow-sm border border-surface-200 dark:border-surface-700 flex flex-col relative overflow-hidden cursor-pointer hover:shadow-md hover:border-primary-300 transition-all" (click)="verDetalle('services')">
                 <div class="absolute right-0 top-0 p-4 opacity-10">
                     <i class="pi pi-dollar text-6xl text-blue-500"></i>
                 </div>
@@ -124,7 +166,7 @@ import { StatsExportService, SheetData } from '../../service/stats-export.servic
                 <span class="text-xs text-green-500 mt-2 font-medium"> <i class="pi pi-arrow-up"></i> Ingresos Brutos</span>
             </div>
 
-            <div class="p-4 bg-white dark:bg-surface-900 rounded-xl shadow-sm border border-surface-200 dark:border-surface-700 flex flex-col relative overflow-hidden">
+            <div class="p-4 bg-white dark:bg-surface-900 rounded-xl shadow-sm border border-surface-200 dark:border-surface-700 flex flex-col relative overflow-hidden cursor-pointer hover:shadow-md hover:border-primary-300 transition-all" (click)="verDetalle('expenses')">
                 <div class="absolute right-0 top-0 p-4 opacity-10">
                     <i class="pi pi-wallet text-6xl text-red-500"></i>
                 </div>
@@ -161,7 +203,7 @@ import { StatsExportService, SheetData } from '../../service/stats-export.servic
                 </div>
             </div>
 
-            <div class="p-4 bg-white dark:bg-surface-900 rounded-xl shadow-sm border border-surface-200 dark:border-surface-700 flex flex-col relative overflow-hidden">
+            <div class="p-4 bg-white dark:bg-surface-900 rounded-xl shadow-sm border border-surface-200 dark:border-surface-700 flex flex-col relative overflow-hidden cursor-pointer hover:shadow-md hover:border-primary-300 transition-all" (click)="verDetalle('receivables')">
                 <div class="absolute right-0 top-0 p-4 opacity-10">
                     <i class="pi pi-clock text-6xl text-cyan-500"></i>
                 </div>
@@ -177,7 +219,7 @@ import { StatsExportService, SheetData } from '../../service/stats-export.servic
                 </span>
             </div>
 
-            <div class="p-4 bg-white dark:bg-surface-900 rounded-xl shadow-sm border border-surface-200 dark:border-surface-700 flex flex-col relative overflow-hidden">
+            <div class="p-4 bg-white dark:bg-surface-900 rounded-xl shadow-sm border border-surface-200 dark:border-surface-700 flex flex-col relative overflow-hidden cursor-pointer hover:shadow-md hover:border-primary-300 transition-all" (click)="verDetalle('iva')">
                 <div class="absolute right-0 top-0 p-4 opacity-10">
                     <i class="pi pi-building text-6xl text-orange-500"></i>
                 </div>
@@ -216,7 +258,7 @@ import { StatsExportService, SheetData } from '../../service/stats-export.servic
                 <span class="text-xs text-gray-500 mt-2">Ingreso Medio (Rendimiento)</span>
             </div>
 
-            <div class="p-4 bg-white dark:bg-surface-900 rounded-xl shadow-sm border border-surface-200 dark:border-surface-700 flex flex-col relative overflow-hidden">
+            <div class="p-4 bg-white dark:bg-surface-900 rounded-xl shadow-sm border border-surface-200 dark:border-surface-700 flex flex-col relative overflow-hidden cursor-pointer hover:shadow-md hover:border-primary-300 transition-all" (click)="verDetalle('services')">
                 <div class="absolute right-0 top-0 p-4 opacity-10">
                     <i class="pi pi-car text-6xl text-red-400"></i>
                 </div>
@@ -232,10 +274,37 @@ import { StatsExportService, SheetData } from '../../service/stats-export.servic
         <!-- Charts Section + Expenses (New) -->
         <!-- Trying to fit Chart (Left), Expenses (Right) -->
         <div class="grid grid-cols-1 lg:grid-cols-3 gap-4">
-            <!-- Monthly Revenue (Bar) -->
-            <div class="lg:col-span-2 p-6 bg-white dark:bg-surface-900 rounded-xl shadow-sm border border-surface-200 dark:border-surface-700">
-                <h3 class="font-bold text-lg mb-4 text-gray-700 dark:text-gray-200">Evolución {{ selectedYear }}</h3>
-                <p-chart type="bar" [data]="monthlyData" [options]="barOptions" height="300px"></p-chart>
+            <!-- Monthly Revenue (Bar) + reparto por tipo de servicio -->
+            <div class="lg:col-span-2 flex flex-col gap-4">
+                <div class="p-6 bg-white dark:bg-surface-900 rounded-xl shadow-sm border border-surface-200 dark:border-surface-700">
+                    <h3 class="font-bold text-lg mb-4 text-gray-700 dark:text-gray-200">Evolución {{ selectedYear }}</h3>
+                    <p-chart type="bar" [data]="monthlyData" [options]="barOptions" height="300px"></p-chart>
+                </div>
+
+                <div class="p-6 bg-white dark:bg-surface-900 rounded-xl shadow-sm border border-surface-200 dark:border-surface-700">
+                    <div class="flex items-center gap-2 mb-4">
+                        <h3 class="font-bold text-lg text-gray-700 dark:text-gray-200">Tipos de Servicio</h3>
+                        <p-tag severity="secondary" value="Por cantidad de viajes" rounded="true"></p-tag>
+                    </div>
+
+                    <div *ngIf="serviceTypeRows.length === 0" class="text-center py-10 text-gray-400">
+                        Sin servicios en este período
+                    </div>
+
+                    <div *ngIf="serviceTypeRows.length > 0" class="grid grid-cols-1 md:grid-cols-2 gap-6 items-center">
+                        <p-chart type="pie" [data]="serviceTypeData" [options]="pieOptions" height="260px"></p-chart>
+
+                        <div class="flex flex-col gap-2">
+                            <div *ngFor="let t of serviceTypeRows" class="flex items-center justify-between text-sm border-b border-gray-100 dark:border-surface-700 pb-2 last:border-0">
+                                <span class="font-medium">{{ getServiceTypeLabel(t.type) }}</span>
+                                <span class="flex items-center gap-3">
+                                    <span class="text-gray-500">{{ t.count }} ({{ t.percentage }}%)</span>
+                                    <span class="font-semibold text-gray-700 dark:text-gray-200">{{ t.amount | currency:'USD':'symbol':'1.0-0' }}</span>
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
             </div>
 
             <!-- Top Clients List (Keep!) -->
@@ -361,6 +430,9 @@ export class StatisticsComponent implements OnInit {
   // Charts
   monthlyData: any;
   barOptions: any;
+  serviceTypeData: any;
+  pieOptions: any;
+  serviceTypeRows: { type: string; count: number; amount: number; percentage: number }[] = [];
 
   // Filters
   viewMode: 'annual' | 'monthly' = 'annual';
@@ -393,6 +465,130 @@ export class StatisticsComponent implements OnInit {
   vehicleOptions: { label: string; value: number }[] = [];
 
   exportando = false;
+
+  // Detalle de un KPI
+  detalleVisible = false;
+  detalleCargando = false;
+  detalleTitulo = '';
+  detalleMetrica = '';
+  detalleFilas: any[] = [];
+  detalleColumnas: { campo: string; titulo: string; tipo?: 'money' | 'date' | 'num' }[] = [];
+
+  private readonly detalleConfig: Record<string, { titulo: string; sumar: string; columnas: { campo: string; titulo: string; tipo?: 'money' | 'date' | 'num' }[] }> = {
+      services: {
+          titulo: 'Servicios facturados',
+          sumar: 'total',
+          columnas: [
+              { campo: 'fecha', titulo: 'Fecha', tipo: 'date' },
+              { campo: 'cliente', titulo: 'Cliente' },
+              { campo: 'trayecto', titulo: 'Trayecto' },
+              { campo: 'chofer', titulo: 'Chofer' },
+              { campo: 'auto', titulo: 'Auto' },
+              { campo: 'km', titulo: 'Km', tipo: 'num' },
+              { campo: 'neto', titulo: 'Neto', tipo: 'money' },
+              { campo: 'iva', titulo: 'IVA', tipo: 'money' },
+              { campo: 'total', titulo: 'Total', tipo: 'money' }
+          ]
+      },
+      iva: {
+          titulo: 'Servicios con IVA (Oficial A)',
+          sumar: 'iva',
+          columnas: [
+              { campo: 'fecha', titulo: 'Fecha', tipo: 'date' },
+              { campo: 'cliente', titulo: 'Cliente' },
+              { campo: 'trayecto', titulo: 'Trayecto' },
+              { campo: 'neto', titulo: 'Neto', tipo: 'money' },
+              { campo: 'iva', titulo: 'IVA', tipo: 'money' },
+              { campo: 'total', titulo: 'Total', tipo: 'money' }
+          ]
+      },
+      receivables: {
+          titulo: 'Pendientes de pago',
+          sumar: 'total',
+          columnas: [
+              { campo: 'fecha', titulo: 'Fecha', tipo: 'date' },
+              { campo: 'cliente', titulo: 'Cliente' },
+              { campo: 'trayecto', titulo: 'Trayecto' },
+              { campo: 'estado', titulo: 'Estado' },
+              { campo: 'total', titulo: 'Total', tipo: 'money' }
+          ]
+      },
+      administrative: {
+          titulo: 'Servicios con trámite pendiente',
+          sumar: 'total',
+          columnas: [
+              { campo: 'fecha', titulo: 'Fecha', tipo: 'date' },
+              { campo: 'cliente', titulo: 'Cliente' },
+              { campo: 'trayecto', titulo: 'Trayecto' },
+              { campo: 'estado', titulo: 'Estado' },
+              { campo: 'total', titulo: 'Total', tipo: 'money' }
+          ]
+      },
+      expenses: {
+          titulo: 'Gastos y pagos a choferes',
+          sumar: 'monto',
+          columnas: [
+              { campo: 'fecha', titulo: 'Fecha', tipo: 'date' },
+              { campo: 'concepto', titulo: 'Concepto' },
+              { campo: 'detalle', titulo: 'Detalle' },
+              { campo: 'auto', titulo: 'Auto' },
+              { campo: 'chofer', titulo: 'Chofer' },
+              { campo: 'monto', titulo: 'Monto', tipo: 'money' }
+          ]
+      }
+  };
+
+  get detalleSuma(): number {
+      const campo = this.detalleConfig[this.detalleMetrica]?.sumar;
+      if (!campo) return 0;
+      return this.detalleFilas.reduce((s, f) => s + Number(f[campo] ?? 0), 0);
+  }
+
+  async verDetalle(metrica: string) {
+      const config = this.detalleConfig[metrica];
+      if (!config) return;
+
+      this.detalleMetrica = metrica;
+      this.detalleColumnas = config.columnas;
+      this.detalleTitulo = `${config.titulo} — ${this.descripcionDelPeriodo()}`;
+      this.detalleFilas = [];
+      this.detalleVisible = true;
+      this.detalleCargando = true;
+
+      try {
+          const month = this.viewMode === 'monthly' ? this.selectedMonth : undefined;
+          const res = await this.statsService.getBreakdown(metrica, this.selectedYear, month, this.selectedServiceTypes, this.selectedVehicleIds);
+          this.detalleFilas = res.rows ?? [];
+      } catch (e) {
+          console.error('Error cargando el detalle', e);
+          this.messageService.add({ severity: 'error', summary: 'Error', detail: 'No se pudo cargar el detalle' });
+      } finally {
+          this.detalleCargando = false;
+      }
+  }
+
+  async exportarDetalle() {
+      const config = this.detalleConfig[this.detalleMetrica];
+      if (!config || !this.detalleFilas.length) return;
+
+      // Se exporta con los mismos encabezados que se ven en pantalla.
+      const filas = this.detalleFilas.map((f) => {
+          const fila: Record<string, any> = {};
+          for (const c of config.columnas) {
+              const valor = f[c.campo];
+              fila[c.titulo] = c.tipo === 'date' && valor ? new Date(valor) : valor;
+          }
+          return fila;
+      });
+
+      try {
+          await this.exportService.exportar([{ nombre: config.titulo, filas }], `detalle-${this.detalleMetrica}.xlsx`);
+          this.messageService.add({ severity: 'success', summary: 'Listo', detail: 'Detalle descargado' });
+      } catch (e) {
+          console.error('Error exportando el detalle', e);
+          this.messageService.add({ severity: 'error', summary: 'Error', detail: 'No se pudo generar el Excel' });
+      }
+  }
 
   constructor(
       private statsService: StatisticsService,
@@ -435,14 +631,15 @@ export class StatisticsComponent implements OnInit {
         const year = this.selectedYear;
         const month = this.viewMode === 'monthly' ? this.selectedMonth : undefined;
 
-        const [general, drivers, clients, monthly, vehicles, expenses, receivables] = await Promise.all([
+        const [general, drivers, clients, monthly, vehicles, expenses, receivables, serviceTypes] = await Promise.all([
             this.statsService.getGeneralStats(year, month, this.selectedServiceTypes, this.selectedVehicleIds),
             this.statsService.getDriverStats(year, month, this.selectedServiceTypes, this.selectedVehicleIds),
             this.statsService.getClientStats(year, month, this.selectedServiceTypes, this.selectedVehicleIds),
             this.statsService.getMonthlyStats(year, this.selectedServiceTypes, this.selectedVehicleIds),
             this.statsService.getVehicleStats(year, month, this.selectedServiceTypes, this.selectedVehicleIds),
             this.statsService.getExpenseStats(year, month, this.selectedServiceTypes, this.selectedVehicleIds),
-            this.statsService.getReceivablesStats()
+            this.statsService.getReceivablesStats(),
+            this.statsService.getServiceTypeStats(year, month, this.selectedServiceTypes, this.selectedVehicleIds)
         ]);
 
         this.generalStats = general;
@@ -453,6 +650,7 @@ export class StatisticsComponent implements OnInit {
         this.receivablesStats = receivables;
 
         this.setupMonthlyChart(monthly);
+        this.setupServiceTypeChart(serviceTypes);
     } catch (e) {
         console.error("Error loading stats", e);
     }
@@ -536,6 +734,15 @@ export class StatisticsComponent implements OnInit {
               {
                   nombre: 'Gastos',
                   filas: this.expensesStats.map((e) => ({ Tipo: this.getExpenseLabel(e.type), Monto: Number(e.amount ?? 0) }))
+              },
+              {
+                  nombre: 'Tipos de Servicio',
+                  filas: this.serviceTypeRows.map((t) => ({
+                      Tipo: this.getServiceTypeLabel(t.type),
+                      Viajes: Number(t.count ?? 0),
+                      'Porcentaje': Number(t.percentage ?? 0),
+                      'Facturación': Number(t.amount ?? 0)
+                  }))
               }
           ];
 
@@ -566,6 +773,26 @@ export class StatisticsComponent implements OnInit {
   initChartOptions() {
       const documentStyle = getComputedStyle(document.documentElement);
       const textColor = documentStyle.getPropertyValue('--text-color');
+
+      // En la torta el tooltip muestra también la facturación de ese tipo:
+      // la cantidad sola no dice de dónde viene la plata.
+      const filas = () => this.serviceTypeRows;
+      this.pieOptions = {
+          maintainAspectRatio: false,
+          plugins: {
+              legend: { labels: { color: textColor } },
+              tooltip: {
+                  callbacks: {
+                      label: (ctx: any) => {
+                          const fila = filas()[ctx.dataIndex];
+                          if (!fila) return ctx.label;
+                          const monto = fila.amount.toLocaleString('es-AR', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 });
+                          return `${ctx.label}: ${fila.count} viajes (${fila.percentage}%) · ${monto}`;
+                      }
+                  }
+              }
+          }
+      };
       const textColorSecondary = documentStyle.getPropertyValue('--text-color-secondary');
       const surfaceBorder = documentStyle.getPropertyValue('--surface-border');
 
@@ -617,6 +844,12 @@ export class StatisticsComponent implements OnInit {
                   data: data.map(d => d.revenue)
               },
               {
+                  label: 'Neto (sin IVA)',
+                  backgroundColor: '#6366F1', // Indigo-500
+                  borderColor: '#6366F1',
+                  data: data.map(d => d.net)
+              },
+              {
                   label: 'Costo Choferes',
                   backgroundColor: '#10B981', // Green-500
                   borderColor: '#10B981',
@@ -624,6 +857,28 @@ export class StatisticsComponent implements OnInit {
               }
           ]
       };
+  }
+
+  setupServiceTypeChart(data: { type: string; count: number; amount: number; percentage: number }[]) {
+      // Paleta fija por posición: los tipos se ordenan por cantidad, así que el color
+      // no representa un tipo concreto, solo los distingue entre sí.
+      const colores = ['#0C2340', '#C9A84C', '#3B82F6', '#10B981', '#8B5CF6', '#F59E0B', '#EF4444'];
+
+      this.serviceTypeRows = data;
+      this.serviceTypeData = {
+          labels: data.map((d) => this.getServiceTypeLabel(d.type)),
+          datasets: [
+              {
+                  data: data.map((d) => d.count),
+                  backgroundColor: data.map((_, i) => colores[i % colores.length]),
+                  hoverBackgroundColor: data.map((_, i) => colores[i % colores.length])
+              }
+          ]
+      };
+  }
+
+  getServiceTypeLabel(type: string): string {
+      return this.serviceTypeOptions.find((o) => o.value === type)?.label ?? type;
   }
 }
 

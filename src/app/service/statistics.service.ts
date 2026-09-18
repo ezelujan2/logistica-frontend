@@ -105,6 +105,19 @@ export class StatisticsService {
     return firstValueFrom(this.http.get<any[]>(`${this.apiUrl}/vehicles`, { params }));
   }
 
+  getServiceTypeStats(year?: number, month?: number, serviceTypes?: string[], vehicleIds?: number[]) {
+    const params = this.buildParams(year, month, serviceTypes, vehicleIds);
+    return firstValueFrom(
+      this.http.get<{ type: string; count: number; amount: number; percentage: number }[]>(`${this.apiUrl}/service-types`, { params })
+    );
+  }
+
+  /** Registros que componen un KPI del dashboard, para poder auditarlo. */
+  getBreakdown(metric: string, year?: number, month?: number, serviceTypes?: string[], vehicleIds?: number[]) {
+    const params = { ...this.buildParams(year, month, serviceTypes, vehicleIds), metric };
+    return firstValueFrom(this.http.get<{ metric: string; rows: any[] }>(`${this.apiUrl}/breakdown`, { params }));
+  }
+
   getReceivablesStats() {
     return firstValueFrom(this.http.get<any>(`${this.apiUrl}/receivables`));
   }
