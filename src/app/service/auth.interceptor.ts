@@ -19,6 +19,14 @@ export class AuthInterceptor implements HttpInterceptor {
     }
     return next.handle(authReq).pipe(
       catchError((error: HttpErrorResponse) => {
+        // Sesión inválida al cargar quién es el usuario (por ejemplo, tras un
+        // cambio de la clave de sesiones): la ventana que pide la contraseña vive
+        // dentro de la app, que todavía no se abrió, así que la pantalla quedaría
+        // trabada esperando. Se descarta la sesión y se va al inicio de sesión.
+        if (error.status === 401 && req.url.indexOf('auth/me') !== -1) {
+          this.authService.logout();
+          return throwError(() => error);
+        }
         // Handle 401 errors, except for the login route itself
         if (error.status === 401 && req.url.indexOf('auth/login') === -1) {
           return this.handle401Error(req, next);
