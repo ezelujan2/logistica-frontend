@@ -398,7 +398,7 @@ import { AuthService } from '../../service/auth.service';
                                       [pTooltip]="'Avanzar a ' + getMmStatusLabel(getNextStatus(service) || '')"
                                       tooltipPosition="left">
                             </p-button>
-                            <p-button icon="pi pi-history" [rounded]="true" [text]="true" severity="secondary" (click)="openServiceHistory(service)" pTooltip="Historial de estados" tooltipPosition="left" />
+                            <p-button icon="pi pi-history" [rounded]="true" [text]="true" severity="secondary" (click)="openServiceHistory(service)" pTooltip="Historial del servicio" tooltipPosition="left" />
                             <p-button icon="pi pi-pencil" [rounded]="true" [text]="true" (click)="editService(service)" />
                             <p-button icon="pi pi-trash" [rounded]="true" [text]="true" severity="danger" (click)="deleteService(service)" />
                         </td>
@@ -1025,10 +1025,40 @@ import { AuthService } from '../../service/auth.service';
             <!-- Historial de estados (de un servicio o de un reporte con sus servicios) -->
             <p-dialog [(visible)]="historyDialogVisible" [header]="historyTitle" [modal]="true" [style]="{ width: '700px', 'max-width': '95vw' }">
                 <div *ngIf="historyLoading" class="p-4 text-center text-gray-500">Cargando...</div>
-                <div *ngIf="!historyLoading && historyEntries.length === 0" class="p-4 text-center text-gray-500">
+                <div *ngIf="!historyLoading && !historyTimeline && historyEntries.length === 0" class="p-4 text-center text-gray-500">
                     No hay cambios de estado registrados.
                 </div>
-                <p-table *ngIf="!historyLoading && historyEntries.length > 0" [value]="historyEntries" styleClass="p-datatable-sm" [scrollable]="true" scrollHeight="400px">
+                <!-- Historia completa de un servicio. Cada tipo de entrada tiene su ícono y
+                     color; los cambios de estado se muestran como "antes → después" con las
+                     mismas etiquetas de la lista, para distinguirlos de los cambios de datos. -->
+                <div *ngIf="!historyLoading && historyTimeline" class="max-h-[60vh] overflow-y-auto pr-1">
+                    <div *ngIf="historyTimeline.length === 0" class="p-4 text-center text-gray-500">No hay cambios registrados.</div>
+                    <div *ngFor="let entry of historyTimeline; let last = last" class="flex gap-3">
+                        <div class="flex flex-col items-center">
+                            <span class="flex items-center justify-center w-8 h-8 rounded-full shrink-0" [ngClass]="timelineStyle(entry.kind).circle">
+                                <i class="pi text-sm" [ngClass]="timelineStyle(entry.kind).icon"></i>
+                            </span>
+                            <span *ngIf="!last" class="w-px flex-1 bg-gray-200 dark:bg-gray-700 my-1"></span>
+                        </div>
+                        <div class="pb-4 flex-1 min-w-0">
+                            <div class="flex flex-wrap items-baseline gap-x-2 text-sm">
+                                <span class="font-semibold">{{ entry.title }}</span>
+                                <span class="text-gray-500">{{ entry.at | date:'dd/MM/yyyy HH:mm' }} · {{ entry.user || 'Sistema' }}</span>
+                            </div>
+                            <div *ngIf="entry.status" class="flex flex-wrap items-center gap-2 mt-1">
+                                <p-tag *ngIf="entry.status.from" [value]="getGroupStatusLabel(entry.status.from)" [severity]="getSeverity(entry.status.from)" styleClass="text-xs opacity-70" />
+                                <i *ngIf="entry.status.from" class="pi pi-arrow-right text-xs text-gray-400"></i>
+                                <p-tag [value]="getGroupStatusLabel(entry.status.to)" [severity]="getSeverity(entry.status.to)" styleClass="text-xs" />
+                                <span class="text-xs text-gray-500">{{ entry.status.source }}</span>
+                            </div>
+                            <ul *ngIf="!entry.status && entry.details.length" class="list-none pl-0 mt-1 text-sm flex flex-col gap-0.5">
+                                <li *ngFor="let line of entry.details">{{ line }}</li>
+                            </ul>
+                        </div>
+                    </div>
+                    <small class="text-gray-500">Los cambios hechos antes de octubre de 2026 al armar reportes o facturar pueden no figurar.</small>
+                </div>
+                <p-table *ngIf="!historyLoading && !historyTimeline && historyEntries.length > 0" [value]="historyEntries" styleClass="p-datatable-sm" [scrollable]="true" scrollHeight="400px">
                     <ng-template pTemplate="header">
                         <tr>
                             <th>Fecha</th>
@@ -2185,6 +2215,8 @@ export class ServiceList implements OnInit {
             case 'PENDING': return 'warn';
             case 'PENDING_DETAILS': return 'info';
             case 'PENDING_INVOICE': return 'help';
+            case 'GENERATED': return 'help'; // estados de reporte, para el historial
+            case 'INVOICED': return 'primary';
             case 'PAYMENT_PENDING': return 'primary';
             case 'PAID': return 'success';
             case 'CANCELLED': return 'danger';
@@ -2820,6 +2852,7 @@ export class ServiceList implements OnInit {
     historyTitle = '';
     historyShowsEntity = false;
     historyEntries: any[] = [];
+    historyTimeline: any[] | null = null;
     historySourceLabels: Record<string, string> = {
         FLOW: 'Avance normal',
         FORCED: 'Forzado por admin',
@@ -2833,8 +2866,30 @@ export class ServiceList implements OnInit {
         AUDIT: 'Registro anterior'
     };
 
-    openServiceHistory(service: any) {
-        this.showHistory(`Historial del servicio #${service.id}`, false, () => this.serviceService.getServiceStatusHistory(service.id));
+    timelineStyle(kind: string): { icon: string; circle: string } {
+        switch (kind) {
+            case 'alta': return { icon: 'pi-plus', circle: 'bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-300' };
+            case 'estado': return { icon: 'pi-flag', circle: 'bg-orange-100 text-orange-700 dark:bg-orange-900/40 dark:text-orange-300' };
+            case 'estado-reporte': return { icon: 'pi-folder', circle: 'bg-purple-100 text-purple-700 dark:bg-purple-900/40 dark:text-purple-300' };
+            case 'baja': return { icon: 'pi-trash', circle: 'bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-300' };
+            default: return { icon: 'pi-pencil', circle: 'bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300' };
+        }
+    }
+
+    async openServiceHistory(service: any) {
+        this.historyTitle = `Historial del servicio #${service.id}`;
+        this.historyEntries = [];
+        this.historyTimeline = [];
+        this.historyLoading = true;
+        this.historyDialogVisible = true;
+        try {
+            this.historyTimeline = await this.serviceService.getServiceTimeline(service.id);
+        } catch (err) {
+            console.error(err);
+            this.messageService.add({ severity: 'error', summary: 'Error', detail: 'No se pudo cargar el historial' });
+        } finally {
+            this.historyLoading = false;
+        }
     }
 
     openGroupHistory(group: any) {
@@ -2843,6 +2898,7 @@ export class ServiceList implements OnInit {
 
     private async showHistory(title: string, showsEntity: boolean, load: () => Promise<any[]>) {
         this.historyTitle = title;
+        this.historyTimeline = null;
         this.historyShowsEntity = showsEntity;
         this.historyEntries = [];
         this.historyLoading = true;

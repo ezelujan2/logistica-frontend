@@ -164,7 +164,7 @@ Muestra los servicios de cada día. Se puede ver por mes o por semana: se cambia
 | --- | --- |
 | Flecha verde | Avanza el servicio al paso siguiente. El texto de ayuda dice a qué estado pasa |
 | Lápiz | Abre el servicio para ver o editar todos sus datos |
-| Reloj | Muestra el historial de estados: cuándo cambió, de qué a qué y quién lo hizo |
+| Reloj | Muestra la historia completa del servicio: el alta, cada dato que cambió (con su valor anterior y el nuevo), cambios de chofer, gastos y estados, con fecha y usuario |
 | PDF azul | Abre el reporte al que pertenece el servicio |
 | Tacho rojo | Borra el servicio (pide confirmación) |
 

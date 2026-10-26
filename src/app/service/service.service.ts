@@ -128,6 +128,10 @@ export class ServiceService {
         return firstValueFrom(this.http.get<any[]>(`${this.apiUrl}/${id}/status-history`));
     }
 
+    async getServiceTimeline(id: number): Promise<any[]> {
+        return firstValueFrom(this.http.get<any[]>(`${this.apiUrl}/${id}/timeline`));
+    }
+
     async getGroupStatusHistory(id: number): Promise<any[]> {
         return firstValueFrom(this.http.get<any[]>(environment.apiUrl + 'groups/' + id + '/status-history'));
     }
