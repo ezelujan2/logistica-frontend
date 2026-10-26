@@ -10,6 +10,8 @@ import { AuthService } from '../../service/auth.service';
 import { StuckServicesService, StuckService } from '../../service/stuck-services.service';
 import { StatisticsService } from '../../service/statistics.service';
 import { Router } from '@angular/router';
+import { CURRENT_RELEASE } from '../novedades/changelog';
+import { hasUnseenRelease, markReleaseSeen } from '../novedades/release-notice';
 import { TagModule } from 'primeng/tag';
 import { CardModule } from 'primeng/card';
 import { DividerModule } from 'primeng/divider';
@@ -430,6 +432,18 @@ import { CheckboxModule } from 'primeng/checkbox';
                 <p-button icon="pi pi-check" (click)="displayAuditDialog=false" label="Cerrar" styleClass="p-button-text"></p-button>
             </ng-template>
         </p-dialog>
+
+        <!-- Aviso de versión nueva: se muestra una sola vez por versión -->
+        <p-dialog [(visible)]="showReleaseNotice" [header]="'Novedades de la versión ' + release.version" [modal]="true" [style]="{ width: '560px', 'max-width': '95vw' }" (onHide)="closeReleaseNotice()">
+            <div class="font-semibold mb-3">{{ release.title }}</div>
+            <ul class="list-disc pl-5 flex flex-col gap-2 text-sm">
+                <li *ngFor="let change of releaseHighlights">{{ change.text }}</li>
+            </ul>
+            <ng-template pTemplate="footer">
+                <p-button label="Ver todas las novedades" icon="pi pi-megaphone" [text]="true" (click)="openReleaseNotes()"></p-button>
+                <p-button label="Entendido" icon="pi pi-check" (click)="showReleaseNotice = false"></p-button>
+            </ng-template>
+        </p-dialog>
     `
 })
 export class Dashboard implements OnInit {
@@ -453,6 +467,19 @@ export class Dashboard implements OnInit {
     auditModules: any[] = [];
     auditDiffs: { key: string, oldValue: any, newValue: any }[] = [];
     showRawJson: boolean = false;
+
+    release = CURRENT_RELEASE;
+    releaseHighlights = CURRENT_RELEASE.changes.filter((c) => c.kind === 'importante' || c.kind === 'nuevo');
+    showReleaseNotice = hasUnseenRelease();
+
+    closeReleaseNotice() {
+        markReleaseSeen();
+    }
+
+    openReleaseNotes() {
+        this.showReleaseNotice = false;
+        this.router.navigate(['/app/novedades']);
+    }
 
     constructor(
         private serviceService: ServiceService,

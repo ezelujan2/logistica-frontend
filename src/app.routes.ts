@@ -35,7 +35,9 @@ export const appRoutes: Routes = [
             { path: 'users', loadComponent: () => import('./app/pages/admin/users/admin-users').then(m => m.AdminUsers), canActivate: [AuthGuard], data: { permission: 'manageUsers' } },
             { path: 'assistant', loadComponent: () => import('./app/pages/assistant/assistant-page').then(m => m.AssistantPage), canActivate: [AuthGuard], data: { permission: 'useAssistant' } },
             { path: 'assistant/unanswered', loadComponent: () => import('./app/pages/assistant/unanswered-questions').then(m => m.UnansweredQuestions), canActivate: [AuthGuard], data: { permission: 'manageUsers' } },
-            { path: 'analyst', loadComponent: () => import('./app/pages/assistant/analyst-page').then(m => m.AnalystPage), canActivate: [AuthGuard], data: { permission: 'useAnalyst' } },
+            // El Analista quedó integrado en el Asistente.
+            { path: 'analyst', redirectTo: 'assistant' },
+            { path: 'novedades', loadComponent: () => import('./app/pages/novedades/novedades').then(m => m.Novedades) },
             { path: 'reminders', loadComponent: () => import('./app/pages/reminder-list/reminder-list').then(m => m.ReminderList), canActivate: [AuthGuard], data: { permission: 'manageOperations' } }
         ]
     },

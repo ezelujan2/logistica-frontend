@@ -5,6 +5,6 @@ import { AssistantChat } from './assistant-chat';
     selector: 'app-assistant-page',
     standalone: true,
     imports: [AssistantChat],
-    template: `<app-assistant-chat chatType="assistant" title="Asistente" [allowFileUpload]="true"></app-assistant-chat>`
+    template: `<app-assistant-chat title="Asistente"></app-assistant-chat>`
 })
 export class AssistantPage {}

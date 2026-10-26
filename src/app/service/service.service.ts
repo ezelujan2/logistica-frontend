@@ -124,6 +124,14 @@ export class ServiceService {
         return firstValueFrom(this.http.patch(environment.apiUrl + 'groups/' + id + '/status', { status }));
     }
 
+    async getServiceStatusHistory(id: number): Promise<any[]> {
+        return firstValueFrom(this.http.get<any[]>(`${this.apiUrl}/${id}/status-history`));
+    }
+
+    async getGroupStatusHistory(id: number): Promise<any[]> {
+        return firstValueFrom(this.http.get<any[]>(environment.apiUrl + 'groups/' + id + '/status-history'));
+    }
+
     async updateGroupNotes(id: number, notes: string) {
         return firstValueFrom(this.http.patch(environment.apiUrl + 'groups/' + id, { notes }));
     }

@@ -9,6 +9,7 @@ import { DatePickerModule } from 'primeng/datepicker';
 import { ToastModule } from 'primeng/toast';
 import { MessageService } from 'primeng/api';
 import { SettlementService } from '../../service/settlement.service';
+import { FileService } from '../../service/file.service';
 import { Driver, DriverService } from '../../service/driver.service';
 import { TagModule } from 'primeng/tag';
 import { PanelModule } from 'primeng/panel';
@@ -328,7 +329,8 @@ export class SettlementList implements OnInit {
     constructor(
         private settlementService: SettlementService,
         private driverService: DriverService,
-        private messageService: MessageService
+        private messageService: MessageService,
+        private fileService: FileService
     ) {}
 
     ngOnInit() {
@@ -438,11 +440,15 @@ export class SettlementList implements OnInit {
     generatePdf(settlement: any) {
         this.messageService.add({severity:'info', summary:'Generando PDF...', detail:'Esto puede tardar unos segundos.', life: 2000});
         this.settlementService.generatePdf(settlement.id).subscribe({
-            next: (res) => {
+            next: async (res) => {
                 if (res.url) {
                     settlement.pdfUrl = res.url;
-                    window.open(res.url, '_blank');
-                    this.messageService.add({severity:'success', summary:'PDF Generado', detail:'El PDF se abrió en una nueva pestaña.', life: 3000});
+                    try {
+                        await this.fileService.open('settlements', res.file ?? this.fileService.fileName(res.url));
+                        this.messageService.add({severity:'success', summary:'PDF Generado', detail:'El PDF se abrió en una nueva pestaña.', life: 3000});
+                    } catch {
+                        this.messageService.add({severity:'error', summary:'Error', detail:'El PDF se generó pero no se pudo abrir.'});
+                    }
                 }
             },
             error: () => {

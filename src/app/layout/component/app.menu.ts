@@ -67,15 +67,13 @@ export class AppMenu {
         if (this.authService.hasPermission('useAssistant')) {
             iaItems.push({ label: 'Asistente', icon: 'pi pi-fw pi-comments', routerLink: ['/app/assistant'] });
         }
-        if (this.authService.hasPermission('useAnalyst')) {
-            iaItems.push({ label: 'Analista', icon: 'pi pi-fw pi-chart-line', routerLink: ['/app/analyst'] });
-        }
         if (this.authService.hasPermission('manageUsers')) {
             iaItems.push({ label: 'Preguntas sin resolver', icon: 'pi pi-fw pi-question-circle', routerLink: ['/app/assistant/unanswered'] });
         }
         if (iaItems.length) {
             homeItems.push({ label: 'Inteligencia Artificial', icon: 'pi pi-fw pi-sparkles', items: iaItems });
         }
+        homeItems.push({ label: 'Novedades y ayuda', icon: 'pi pi-fw pi-megaphone', routerLink: ['/app/novedades'] });
 
         this.model = [
             {

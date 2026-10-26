@@ -13,70 +13,114 @@ import { TooltipModule } from 'primeng/tooltip';
 import { SelectModule } from 'primeng/select';
 import { DialogModule } from 'primeng/dialog';
 import { ConfirmDialogModule } from 'primeng/confirmdialog';
+import { ChartModule } from 'primeng/chart';
+import { TagModule } from 'primeng/tag';
 import { MessageService, ConfirmationService } from 'primeng/api';
-import { AssistantChatType, AssistantMessage, AssistantService, ConversationSummary } from '../../service/assistant.service';
+import { AssistantAction, AssistantService, ConversationSummary, ToolCall } from '../../service/assistant.service';
+import { AuthService } from '../../service/auth.service';
 
-const ASSISTANT_CAPABILITIES = [
-    'Buscar servicios por cliente, chofer, vehículo, fecha, estado, N° de factura o N° de reporte',
-    'Buscar un servicio puntual por su ID',
-    'Abrir el formulario de un servicio directo desde el chat',
-    'Cambiar el estado de un servicio en los pasos normales del flujo (te pide confirmación antes de hacerlo)',
-    'Consultar vencimientos de seguros, VTV y carnets',
-    'Leer un PDF (ej. orden de compra) e identificar a qué servicio corresponde',
-    'Listar clientes, choferes y vehículos',
-];
-
-const ANALYST_CAPABILITIES = [
-    'Calcular el margen promedio, total, mínimo y máximo de servicios, con filtros de cliente/chofer/vehículo/período',
-    'Calcular el tiempo promedio de pago (días entre factura y cobro)',
-    'Rankear/agrupar servicios por cliente, chofer, vehículo o mes (facturación, margen, pago a chofer, cantidad)',
-    'Traer un listado crudo de servicios para consultas puntuales que no son un cálculo agregado',
-    'Listar clientes y choferes',
+const CAPABILITIES = [
+    'Responder sobre servicios, reportes, facturas, gastos, liquidaciones, adelantos y vencimientos',
+    'Hacer filtros a medida ("servicios de X en agosto con más de 3 horas de espera sin facturar")',
+    'Estadísticas y análisis: márgenes, gastos por auto, cobranzas, rankings, comparaciones entre meses (sólo administradores y directores)',
+    'Mostrar los resultados como tabla (descargable en Excel) o como gráfico',
+    'Leer una o varias órdenes de compra (PDF o foto) e identificar a qué servicio corresponde cada una',
+    'Crear o editar servicios y cambiarles el estado: te propone el cambio y vos lo confirmás con un botón',
+    'Recordar lo que hablaron en la conversación ("pasá el segundo a pagado")'
 ];
 
 marked.setOptions({ breaks: true });
 
-interface ChatAction {
-    label: string;
-    serviceId: number;
+interface ChatTable {
+    titulo: string;
+    columnas: string[];
+    filas: (string | number | null)[][];
+}
+
+interface ChatChart {
+    titulo: string;
+    tipo: 'bar' | 'line' | 'pie';
+    data: any;
+    options: any;
 }
 
 interface ChatBubble {
     role: 'user' | 'assistant';
     text: string;
     html: SafeHtml;
-    toolCalls?: { name: string; input: any; result: string }[];
+    toolCalls?: ToolCall[];
     showTools?: boolean;
     costUsd?: number;
-    actions?: ChatAction[];
+    openLinks?: { label: string; serviceId: number }[];
+    tables?: ChatTable[];
+    charts?: ChatChart[];
+    actions?: (AssistantAction & { busy?: boolean })[];
+    progress?: string;
 }
 
-function extractActions(toolCalls?: { name: string; input: any; result: string }[]): ChatAction[] {
-    if (!toolCalls?.length) return [];
-    const actions: ChatAction[] = [];
-    for (const call of toolCalls) {
-        if (call.name !== 'abrir_servicio') continue;
-        try {
-            const parsed = JSON.parse(call.result);
-            if (parsed?.found && parsed?.id) {
-                actions.push({ serviceId: parsed.id, label: parsed.reporte ? `Abrir ${parsed.reporte}` : `Abrir servicio #${parsed.id}` });
-            }
-        } catch {
-            // resultado no era JSON válido, ignorar
-        }
+const CHART_COLORS = ['#2f6fb3', '#e0a63a', '#3aa57a', '#c4553a', '#7a5ab8', '#4fa3b8', '#8a8f98'];
+
+function parseResult(call: ToolCall): any {
+    try {
+        return JSON.parse(call.result);
+    } catch {
+        return null;
     }
-    return actions;
+}
+
+function openLinksFrom(toolCalls?: ToolCall[]) {
+    return (toolCalls ?? [])
+        .filter((c) => c.name === 'abrir_servicio')
+        .map(parseResult)
+        .filter((r) => r?.found && r?.id)
+        .map((r) => ({ serviceId: r.id as number, label: r.reporte ? `Abrir ${r.reporte}` : `Abrir servicio #${r.id}` }));
+}
+
+function tablesFrom(toolCalls?: ToolCall[]): ChatTable[] {
+    return (toolCalls ?? []).filter((c) => c.name === 'mostrar_tabla' && Array.isArray(c.input?.columnas)).map((c) => c.input as ChatTable);
+}
+
+function chartsFrom(toolCalls?: ToolCall[]): ChatChart[] {
+    return (toolCalls ?? [])
+        .filter((c) => c.name === 'mostrar_grafico' && Array.isArray(c.input?.series))
+        .map((c) => {
+            const { titulo, tipo, etiquetas, series } = c.input;
+            const pie = tipo === 'pie';
+            return {
+                titulo,
+                tipo,
+                data: {
+                    labels: etiquetas,
+                    datasets: series.map((s: any, i: number) => ({
+                        label: s.nombre,
+                        data: s.valores,
+                        backgroundColor: pie ? etiquetas.map((_: any, j: number) => CHART_COLORS[j % CHART_COLORS.length]) : CHART_COLORS[i % CHART_COLORS.length],
+                        borderColor: pie ? undefined : CHART_COLORS[i % CHART_COLORS.length],
+                        fill: false,
+                        tension: 0.2
+                    }))
+                },
+                options: { maintainAspectRatio: false, plugins: { legend: { display: pie || series.length > 1 } } }
+            };
+        });
+}
+
+function actionIdsFrom(toolCalls?: ToolCall[]): number[] {
+    return (toolCalls ?? [])
+        .filter((c) => c.name.startsWith('proponer_'))
+        .map((c) => parseResult(c)?.accionId)
+        .filter((id): id is number => typeof id === 'number');
 }
 
 @Component({
     selector: 'app-assistant-chat',
     standalone: true,
-    imports: [CommonModule, FormsModule, RouterModule, ButtonModule, InputTextModule, CardModule, ToastModule, TableModule, TooltipModule, SelectModule, DialogModule, ConfirmDialogModule],
+    imports: [CommonModule, FormsModule, RouterModule, ButtonModule, InputTextModule, CardModule, ToastModule, TableModule, TooltipModule, SelectModule, DialogModule, ConfirmDialogModule, ChartModule, TagModule],
     providers: [MessageService, ConfirmationService],
     template: `
-        <div class="card flex flex-col h-[75vh]">
+        <div class="card flex flex-col h-[78vh]">
             <p-toast></p-toast>
-            <div class="flex items-center justify-between gap-2 mb-4">
+            <div class="flex flex-wrap items-center justify-between gap-2 mb-4">
                 <div class="flex items-center gap-2">
                     <div class="font-semibold text-xl">{{ title }}</div>
                     <p-button icon="pi pi-question-circle" [text]="true" [rounded]="true" pTooltip="¿Qué puede hacer?" (click)="helpDialog = true" />
@@ -93,69 +137,96 @@ function extractActions(toolCalls?: { name: string; input: any; result: string }
                         appendTo="body"
                         styleClass="w-64"
                     />
-                    <p-button
-                        icon="pi pi-trash"
-                        [text]="true"
-                        severity="danger"
-                        pTooltip="Eliminar esta conversación"
-                        [disabled]="!activeConversationId"
-                        (click)="confirmDeleteConversation()"
-                    />
+                    <p-button icon="pi pi-trash" [text]="true" severity="danger" pTooltip="Eliminar esta conversación" [disabled]="!activeConversationId" (click)="confirmDeleteConversation()" />
                     <p-button label="Nueva conversación" icon="pi pi-plus" [text]="true" (click)="newConversation()" />
                 </div>
             </div>
 
             <div #scrollArea class="flex-1 overflow-y-auto flex flex-col gap-3 p-2">
                 <div *ngFor="let bubble of bubbles" class="flex" [ngClass]="bubble.role === 'user' ? 'justify-end' : 'justify-start'">
-                    <div class="max-w-[75%] rounded-xl px-4 py-2" [ngClass]="bubble.role === 'user' ? 'bg-primary text-primary-contrast' : 'bg-surface-100 dark:bg-surface-800'">
-                        <div class="prose-sm max-w-none" [innerHTML]="bubble.html"></div>
-
-                        <div *ngIf="bubble.actions?.length" class="flex flex-wrap gap-2 mt-2">
-                            <p-button
-                                *ngFor="let action of bubble.actions"
-                                [label]="action.label"
-                                icon="pi pi-external-link"
-                                size="small"
-                                [routerLink]="['/app/services/all']"
-                                [queryParams]="{ id: action.serviceId }"
-                            />
+                    <div class="rounded-xl px-4 py-2" [ngClass]="bubble.role === 'user' ? 'max-w-[75%] bg-primary text-primary-contrast' : 'max-w-[90%] w-fit bg-surface-100 dark:bg-surface-800'">
+                        <div *ngIf="bubble.progress" class="flex items-center gap-2 text-sm text-muted-color">
+                            <i class="pi pi-spin pi-spinner"></i>
+                            <span>{{ bubble.progress }}</span>
                         </div>
+                        <div *ngIf="!bubble.progress" class="prose-sm max-w-none" [innerHTML]="bubble.html"></div>
 
-                        <div *ngIf="bubble.toolCalls?.length" class="mt-1">
-                            <button
-                                type="button"
-                                class="text-xs text-muted-color flex items-center gap-1 opacity-70 hover:opacity-100"
-                                (click)="bubble.showTools = !bubble.showTools"
-                            >
-                                <i class="pi" [ngClass]="bubble.showTools ? 'pi-chevron-down' : 'pi-wrench'"></i>
-                                {{ bubble.showTools ? 'Ocultar detalle técnico' : 'Ver herramientas usadas (' + bubble.toolCalls!.length + ')' }}
-                            </button>
-                            <p-table *ngIf="bubble.showTools" [value]="bubble.toolCalls!" styleClass="mt-2 text-xs" [rows]="10">
+                        <!-- Tablas -->
+                        <div *ngFor="let table of bubble.tables" class="mt-3">
+                            <div class="flex items-center justify-between gap-2 mb-1">
+                                <span class="font-semibold text-sm">{{ table.titulo }}</span>
+                                <p-button icon="pi pi-file-excel" label="Excel" size="small" [text]="true" severity="success" (click)="exportTable(table)" />
+                            </div>
+                            <p-table [value]="table.filas" [scrollable]="true" scrollHeight="320px" styleClass="p-datatable-sm text-sm" [paginator]="table.filas.length > 50" [rows]="50">
                                 <ng-template pTemplate="header">
-                                    <tr><th>Herramienta</th><th>Resultado</th></tr>
+                                    <tr><th *ngFor="let col of table.columnas" class="whitespace-nowrap">{{ col }}</th></tr>
                                 </ng-template>
-                                <ng-template pTemplate="body" let-call>
-                                    <tr><td>{{ call.name }}</td><td class="max-w-[300px] truncate" [pTooltip]="call.result">{{ call.result }}</td></tr>
+                                <ng-template pTemplate="body" let-row>
+                                    <tr><td *ngFor="let cell of row" class="whitespace-nowrap" [class.text-right]="isNumber(cell)">{{ formatCell(cell) }}</td></tr>
                                 </ng-template>
                             </p-table>
                         </div>
-                        <div *ngIf="bubble.costUsd" class="text-xs text-muted-color opacity-60 mt-1">~\${{ bubble.costUsd.toFixed(3) }}</div>
+
+                        <!-- Gráficos -->
+                        <div *ngFor="let chart of bubble.charts" class="mt-3">
+                            <div class="font-semibold text-sm mb-1">{{ chart.titulo }}</div>
+                            <div class="h-72 min-w-[320px] md:min-w-[560px]">
+                                <p-chart [type]="chart.tipo" [data]="chart.data" [options]="chart.options" height="100%"></p-chart>
+                            </div>
+                        </div>
+
+                        <!-- Propuestas para confirmar -->
+                        <div *ngFor="let action of bubble.actions" class="mt-3 p-3 rounded-lg border border-surface-300 dark:border-surface-600 bg-surface-0 dark:bg-surface-900">
+                            <div class="text-sm mb-2">{{ action.summary }}</div>
+                            <div *ngIf="action.status === 'PENDING'" class="flex gap-2">
+                                <p-button label="Confirmar" icon="pi pi-check" size="small" severity="success" [loading]="!!action.busy" (click)="resolveAction(action, true)" />
+                                <p-button label="Cancelar" icon="pi pi-times" size="small" [text]="true" severity="secondary" [disabled]="!!action.busy" (click)="resolveAction(action, false)" />
+                            </div>
+                            <div *ngIf="action.status !== 'PENDING'" class="flex items-center gap-2 text-sm">
+                                <p-tag [value]="actionLabel(action.status)" [severity]="actionSeverity(action.status)" />
+                                <span *ngIf="action.result" class="text-muted-color">{{ action.result }}</span>
+                            </div>
+                        </div>
+
+                        <div *ngIf="bubble.openLinks?.length" class="flex flex-wrap gap-2 mt-2">
+                            <p-button *ngFor="let link of bubble.openLinks" [label]="link.label" icon="pi pi-external-link" size="small" [routerLink]="['/app/services/all']" [queryParams]="{ id: link.serviceId }" />
+                        </div>
+
+                        <div *ngIf="bubble.toolCalls?.length" class="mt-1">
+                            <button type="button" class="text-xs text-muted-color flex items-center gap-1 opacity-70 hover:opacity-100" (click)="bubble.showTools = !bubble.showTools">
+                                <i class="pi" [ngClass]="bubble.showTools ? 'pi-chevron-down' : 'pi-wrench'"></i>
+                                {{ bubble.showTools ? 'Ocultar detalle técnico' : 'Ver cómo lo resolvió (' + bubble.toolCalls!.length + ' pasos)' }}
+                            </button>
+                            <p-table *ngIf="bubble.showTools" [value]="bubble.toolCalls!" styleClass="mt-2 text-xs" [rows]="10">
+                                <ng-template pTemplate="header">
+                                    <tr><th>Herramienta</th><th>Pedido</th><th>Resultado</th></tr>
+                                </ng-template>
+                                <ng-template pTemplate="body" let-call>
+                                    <tr>
+                                        <td>{{ call.name }}</td>
+                                        <td class="max-w-[260px] truncate" [pTooltip]="callInput(call)">{{ callInput(call) }}</td>
+                                        <td class="max-w-[260px] truncate" [pTooltip]="call.result">{{ call.result }}</td>
+                                    </tr>
+                                </ng-template>
+                            </p-table>
+                        </div>
+                        <div *ngIf="bubble.costUsd" class="text-xs text-muted-color opacity-60 mt-1">~US\${{ bubble.costUsd.toFixed(3) }}</div>
                     </div>
                 </div>
-                <div *ngIf="loading" class="text-sm text-muted-color">Pensando...</div>
             </div>
 
-            <div class="flex gap-2 items-center mt-4">
-                <ng-container *ngIf="allowFileUpload">
-                    <input type="file" #fileInput accept=".pdf,.jpg,.jpeg,.png" class="hidden" (change)="onFileSelected($event)" />
-                    <p-button icon="pi pi-paperclip" [text]="true" (click)="fileInput.click()" [severity]="selectedFile ? 'success' : 'secondary'" [pTooltip]="selectedFile?.name || 'Adjuntar PDF'" />
-                </ng-container>
-                <input type="text" pInputText class="flex-1" [placeholder]="inputPlaceholder" [(ngModel)]="draft" (keyup.enter)="send()" [disabled]="loading" />
-                <p-button label="Enviar" icon="pi pi-send" (click)="send()" [loading]="loading" [disabled]="!draft.trim() && !selectedFile" />
+            <div *ngIf="selectedFiles.length" class="flex flex-wrap gap-2 mt-3">
+                <p-tag *ngFor="let file of selectedFiles; let i = index" severity="info" [value]="file.name" icon="pi pi-file" styleClass="cursor-pointer" (click)="removeFile(i)" pTooltip="Quitar" />
+            </div>
+            <div class="flex gap-2 items-center mt-3">
+                <input type="file" #fileInput accept=".pdf,.jpg,.jpeg,.png" multiple class="hidden" (change)="onFilesSelected($event)" />
+                <p-button icon="pi pi-paperclip" [text]="true" (click)="fileInput.click()" [severity]="selectedFiles.length ? 'success' : 'secondary'" pTooltip="Adjuntar PDF o fotos (órdenes de compra, comprobantes)" />
+                <input type="text" pInputText class="flex-1" [placeholder]="placeholder" [(ngModel)]="draft" (keyup.enter)="send()" [disabled]="loading" />
+                <p-button label="Enviar" icon="pi pi-send" (click)="send()" [loading]="loading" [disabled]="!draft.trim() && !selectedFiles.length" />
             </div>
         </div>
 
-        <p-dialog [(visible)]="helpDialog" [style]="{width: '480px'}" header="¿Qué puede hacer {{ title }}?" [modal]="true">
+        <p-dialog [(visible)]="helpDialog" [style]="{ width: '520px' }" header="¿Qué puede hacer el asistente?" [modal]="true">
             <ul class="list-disc pl-5 flex flex-col gap-2 text-sm">
                 <li *ngFor="let item of capabilities">{{ item }}</li>
             </ul>
@@ -164,36 +235,32 @@ function extractActions(toolCalls?: { name: string; input: any; result: string }
             </ng-template>
         </p-dialog>
 
-        <p-confirmDialog [style]="{width: '420px'}"></p-confirmDialog>
+        <p-confirmDialog [style]="{ width: '420px' }"></p-confirmDialog>
     `
 })
 export class AssistantChat implements OnInit, AfterViewChecked {
-    @Input() chatType: AssistantChatType = 'assistant';
     @Input() title = 'Asistente';
-    @Input() allowFileUpload = false;
     @ViewChild('scrollArea') scrollArea?: ElementRef<HTMLDivElement>;
 
     bubbles: ChatBubble[] = [];
     draft = '';
     loading = false;
-    selectedFile: File | null = null;
+    selectedFiles: File[] = [];
     conversations: ConversationSummary[] = [];
     activeConversationId: number | null = null;
     helpDialog = false;
+    capabilities = CAPABILITIES;
     private shouldScroll = false;
 
-    get capabilities(): string[] {
-        return this.chatType === 'analyst' ? ANALYST_CAPABILITIES : ASSISTANT_CAPABILITIES;
-    }
-
-    get inputPlaceholder(): string {
-        return this.chatType === 'analyst'
-            ? 'Ej: ¿cuál fue el margen promedio con el cliente X en julio?'
-            : 'Ej: servicios del cliente X en agosto, o el chofer del viaje #123';
+    get placeholder(): string {
+        return this.authService.hasPermission('useAnalyst')
+            ? 'Ej: ¿cuánto gastamos en combustible por auto en septiembre? o adjuntá una orden de compra'
+            : 'Ej: servicios del cliente X en agosto sin facturar, o adjuntá una orden de compra';
     }
 
     constructor(
         private assistantService: AssistantService,
+        private authService: AuthService,
         private messageService: MessageService,
         private confirmationService: ConfirmationService,
         private sanitizer: DomSanitizer
@@ -205,17 +272,17 @@ export class AssistantChat implements OnInit, AfterViewChecked {
     }
 
     private showWelcome() {
-        this.pushBubble(
-            'assistant',
-            this.chatType === 'analyst'
-                ? 'Preguntame lo que necesites saber sobre márgenes, promedios o tiempos de pago.'
-                : 'Preguntame por servicios, o subí un PDF (orden de compra) y busco a qué servicio corresponde.'
+        this.bubbles.push(
+            this.toBubble(
+                'assistant',
+                'Hola. Preguntame lo que necesites del sistema: servicios, gastos, cobranzas, estadísticas, o adjuntá órdenes de compra y busco a qué servicio corresponde cada una. También puedo crear o editar servicios: te muestro el cambio y vos lo confirmás.'
+            )
         );
     }
 
     private async loadConversations() {
         try {
-            this.conversations = await this.assistantService.getConversations(this.chatType);
+            this.conversations = await this.assistantService.getConversations();
         } catch {
             // silencioso: el historial es secundario, no debe bloquear el chat
         }
@@ -228,9 +295,16 @@ export class AssistantChat implements OnInit, AfterViewChecked {
         }
         this.loading = true;
         try {
-            const conversation = await this.assistantService.getConversation(this.chatType, id);
+            const conversation = await this.assistantService.getConversation(id);
+            const actionsById = new Map(conversation.pendingActions.map((a) => [a.id, a]));
             this.activeConversationId = conversation.id;
-            this.bubbles = conversation.messages.map((m) => this.toBubble(m.role, m.content, m.toolCalls ?? undefined));
+            this.bubbles = conversation.messages.map((m) => {
+                const bubble = this.toBubble(m.role, m.content, m.toolCalls ?? undefined);
+                bubble.actions = actionIdsFrom(m.toolCalls ?? undefined)
+                    .map((id) => actionsById.get(id))
+                    .filter((a): a is AssistantAction => !!a);
+                return bubble;
+            });
             this.shouldScroll = true;
         } catch {
             this.messageService.add({ severity: 'error', summary: 'Error', detail: 'No se pudo cargar la conversación' });
@@ -253,7 +327,7 @@ export class AssistantChat implements OnInit, AfterViewChecked {
             icon: 'pi pi-exclamation-triangle',
             accept: async () => {
                 try {
-                    await this.assistantService.deleteConversation(this.chatType, this.activeConversationId!);
+                    await this.assistantService.deleteConversation(this.activeConversationId!);
                     this.messageService.add({ severity: 'success', summary: 'Éxito', detail: 'Conversación eliminada' });
                     this.newConversation();
                     this.loadConversations();
@@ -264,10 +338,19 @@ export class AssistantChat implements OnInit, AfterViewChecked {
         });
     }
 
-    private toBubble(role: 'user' | 'assistant', text: string, toolCalls?: { name: string; input: any; result: string }[], costUsd?: number): ChatBubble {
+    private toBubble(role: 'user' | 'assistant', text: string, toolCalls?: ToolCall[], costUsd?: number): ChatBubble {
         const rawHtml = marked.parse(text, { async: false }) as string;
         const safeHtml = this.sanitizer.sanitize(SecurityContext.HTML, rawHtml) ?? '';
-        return { role, text, html: this.sanitizer.bypassSecurityTrustHtml(safeHtml), toolCalls, costUsd, actions: extractActions(toolCalls) };
+        return {
+            role,
+            text,
+            html: this.sanitizer.bypassSecurityTrustHtml(safeHtml),
+            toolCalls,
+            costUsd,
+            openLinks: openLinksFrom(toolCalls),
+            tables: tablesFrom(toolCalls),
+            charts: chartsFrom(toolCalls)
+        };
     }
 
     ngAfterViewChecked() {
@@ -277,43 +360,90 @@ export class AssistantChat implements OnInit, AfterViewChecked {
         }
     }
 
-    private pushBubble(role: 'user' | 'assistant', text: string, toolCalls?: { name: string; input: any; result: string }[], costUsd?: number) {
-        this.bubbles.push(this.toBubble(role, text, toolCalls, costUsd));
+    onFilesSelected(event: Event) {
+        const input = event.target as HTMLInputElement;
+        this.selectedFiles = [...this.selectedFiles, ...Array.from(input.files ?? [])].slice(0, 5);
+        input.value = '';
     }
 
-    onFileSelected(event: Event) {
-        const input = event.target as HTMLInputElement;
-        this.selectedFile = input.files?.[0] ?? null;
+    removeFile(index: number) {
+        this.selectedFiles.splice(index, 1);
     }
 
     async send() {
-        if (!this.draft.trim() && !this.selectedFile) return;
+        if (this.loading || (!this.draft.trim() && !this.selectedFiles.length)) return;
 
-        const userText = this.draft.trim() || `[Documento adjunto: ${this.selectedFile?.name}]`;
-        this.pushBubble('user', userText);
+        const message = this.draft.trim();
+        const files = this.selectedFiles;
+        const shown = message || `Adjunto: ${files.map((f) => f.name).join(', ')}`;
+        this.bubbles.push(this.toBubble('user', files.length && message ? `${message}\n\n📎 ${files.map((f) => f.name).join(', ')}` : shown));
+
+        const pending = this.toBubble('assistant', '');
+        pending.progress = 'Pensando…';
+        this.bubbles.push(pending);
         this.shouldScroll = true;
 
-        const history: AssistantMessage[] = this.bubbles
-            .filter((b) => !b.toolCalls || b.role === 'user')
-            .map((b) => ({ role: b.role, content: b.text }));
-
-        const file = this.selectedFile ?? undefined;
         this.draft = '';
-        this.selectedFile = null;
+        this.selectedFiles = [];
         this.loading = true;
 
         try {
-            const result = await this.assistantService.sendMessage(this.chatType, history, file, this.activeConversationId ?? undefined);
-            this.pushBubble('assistant', result.reply, result.toolCalls, result.costUsd);
+            const result = await this.assistantService.sendMessage(message, files, this.activeConversationId, (text) => (pending.progress = text));
+            const bubble = this.toBubble('assistant', result.reply, result.toolCalls, result.costUsd);
+            bubble.actions = result.actions;
+            this.bubbles[this.bubbles.indexOf(pending)] = bubble;
             const isNewConversation = this.activeConversationId === null;
             this.activeConversationId = result.conversationId;
             if (isNewConversation) this.loadConversations();
-        } catch (error) {
-            this.messageService.add({ severity: 'error', summary: 'Error', detail: 'No se pudo procesar la consulta' });
-            this.pushBubble('assistant', 'Uh, tuve un problema para responder. Probá de nuevo.');
+        } catch (error: any) {
+            this.bubbles[this.bubbles.indexOf(pending)] = this.toBubble('assistant', error?.message ?? 'Tuve un problema para responder. Probá de nuevo.');
         } finally {
             this.loading = false;
             this.shouldScroll = true;
         }
+    }
+
+    async resolveAction(action: AssistantAction & { busy?: boolean }, confirm: boolean) {
+        action.busy = true;
+        try {
+            const updated = confirm ? await this.assistantService.confirmAction(action.id) : await this.assistantService.cancelAction(action.id);
+            Object.assign(action, updated);
+            if (updated.status === 'FAILED') this.messageService.add({ severity: 'error', summary: 'No se pudo hacer', detail: updated.result ?? '' });
+        } catch (err: any) {
+            this.messageService.add({ severity: 'error', summary: 'Error', detail: err?.error?.error ?? 'No se pudo resolver la acción' });
+        } finally {
+            action.busy = false;
+        }
+    }
+
+    actionLabel(status: string): string {
+        return ({ CONFIRMED: 'Hecho', CANCELLED: 'Cancelado', FAILED: 'Falló' } as Record<string, string>)[status] ?? status;
+    }
+
+    actionSeverity(status: string): 'success' | 'secondary' | 'danger' | 'info' {
+        return status === 'CONFIRMED' ? 'success' : status === 'FAILED' ? 'danger' : 'secondary';
+    }
+
+    async exportTable(table: ChatTable) {
+        const XLSX = await import('xlsx');
+        const sheet = XLSX.utils.aoa_to_sheet([table.columnas, ...table.filas]);
+        const book = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(book, sheet, 'Datos');
+        const name = table.titulo.replace(/[^\p{L}\p{N} _-]/gu, '').trim().slice(0, 60) || 'tabla';
+        XLSX.writeFile(book, `${name}.xlsx`);
+    }
+
+    isNumber(value: unknown): boolean {
+        return typeof value === 'number';
+    }
+
+    formatCell(value: unknown): string {
+        if (value === null || value === undefined) return '';
+        if (typeof value === 'number') return value.toLocaleString('es-AR', { maximumFractionDigits: 2 });
+        return String(value);
+    }
+
+    callInput(call: ToolCall): string {
+        return call.input?.sql ?? JSON.stringify(call.input);
     }
 }

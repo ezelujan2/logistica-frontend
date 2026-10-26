@@ -3,17 +3,25 @@ import { HttpClient } from '@angular/common/http';
 import { firstValueFrom } from 'rxjs';
 
 import { environment } from '../../environments/environment';
+import { AuthService } from './auth.service';
 
-export type AssistantChatType = 'assistant' | 'analyst';
+export interface ToolCall {
+    name: string;
+    input: any;
+    result: string;
+}
 
-export interface AssistantMessage {
-    role: 'user' | 'assistant';
-    content: string;
+export interface AssistantAction {
+    id: number;
+    summary: string;
+    status: 'PENDING' | 'CONFIRMED' | 'CANCELLED' | 'FAILED';
+    result: string | null;
 }
 
 export interface AssistantReply {
     reply: string;
-    toolCalls: { name: string; input: any; result: string }[];
+    toolCalls: ToolCall[];
+    actions: AssistantAction[];
     conversationId: number;
     costUsd: number;
 }
@@ -30,9 +38,10 @@ export interface ConversationDetail extends ConversationSummary {
         id: number;
         role: 'user' | 'assistant';
         content: string;
-        toolCalls: { name: string; input: any; result: string }[] | null;
+        toolCalls: ToolCall[] | null;
         createdAt: string;
     }[];
+    pendingActions: AssistantAction[];
 }
 
 export interface UnansweredQuery {
@@ -55,32 +64,74 @@ export interface AssistantUsage {
 export class AssistantService {
     private apiUrl = environment.apiUrl;
 
-    constructor(private http: HttpClient) {}
+    constructor(
+        private http: HttpClient,
+        private authService: AuthService
+    ) {}
 
-    async sendMessage(chatType: AssistantChatType, messages: AssistantMessage[], file?: File, conversationId?: number): Promise<AssistantReply> {
-        const url = `${this.apiUrl}${chatType}/message`;
+    /**
+     * Manda un mensaje y va avisando el avance (`onProgress`) mientras el
+     * asistente trabaja. El backend responde con Server-Sent Events, que
+     * HttpClient no sabe leer de a partes, por eso va con fetch.
+     */
+    async sendMessage(message: string, files: File[], conversationId: number | null, onProgress: (text: string) => void): Promise<AssistantReply> {
+        const form = new FormData();
+        form.append('message', message);
+        if (conversationId) form.append('conversationId', String(conversationId));
+        for (const file of files) form.append('files', file);
 
-        if (chatType === 'assistant' && file) {
-            const formData = new FormData();
-            formData.append('messages', JSON.stringify(messages));
-            formData.append('file', file);
-            if (conversationId) formData.append('conversationId', String(conversationId));
-            return await firstValueFrom(this.http.post<AssistantReply>(url, formData));
+        const token = this.authService.getToken();
+        const response = await fetch(`${this.apiUrl}assistant/message`, {
+            method: 'POST',
+            headers: token ? { Authorization: `Bearer ${token}` } : {},
+            body: form
+        });
+        if (!response.ok || !response.body) {
+            if (response.status === 401) throw new Error('Tu sesión venció. Volvé a iniciar sesión.');
+            const data = await response.json().catch(() => null);
+            throw new Error(data?.error ?? 'No se pudo procesar la consulta');
         }
 
-        return await firstValueFrom(this.http.post<AssistantReply>(url, { messages, conversationId }));
+        const reader = response.body.getReader();
+        const decoder = new TextDecoder();
+        let buffer = '';
+        for (;;) {
+            const { value, done } = await reader.read();
+            if (done) break;
+            buffer += decoder.decode(value, { stream: true });
+            let cut: number;
+            while ((cut = buffer.indexOf('\n\n')) >= 0) {
+                const chunk = buffer.slice(0, cut);
+                buffer = buffer.slice(cut + 2);
+                const line = chunk.split('\n').find((l) => l.startsWith('data: '));
+                if (!line) continue; // los comentarios ": ping" mantienen viva la conexión
+                const event = JSON.parse(line.slice(6));
+                if (event.type === 'progress') onProgress(event.text);
+                else if (event.type === 'done') return event as AssistantReply;
+                else if (event.type === 'error') throw new Error(event.error);
+            }
+        }
+        throw new Error('La conexión se cortó antes de terminar. Probá de nuevo.');
     }
 
-    async getConversations(chatType: AssistantChatType): Promise<ConversationSummary[]> {
-        return await firstValueFrom(this.http.get<ConversationSummary[]>(`${this.apiUrl}${chatType}/conversations`));
+    async confirmAction(id: number): Promise<AssistantAction> {
+        return await firstValueFrom(this.http.post<AssistantAction>(`${this.apiUrl}assistant/actions/${id}/confirm`, {}));
     }
 
-    async getConversation(chatType: AssistantChatType, id: number): Promise<ConversationDetail> {
-        return await firstValueFrom(this.http.get<ConversationDetail>(`${this.apiUrl}${chatType}/conversations/${id}`));
+    async cancelAction(id: number): Promise<AssistantAction> {
+        return await firstValueFrom(this.http.post<AssistantAction>(`${this.apiUrl}assistant/actions/${id}/cancel`, {}));
     }
 
-    async deleteConversation(chatType: AssistantChatType, id: number): Promise<void> {
-        await firstValueFrom(this.http.delete(`${this.apiUrl}${chatType}/conversations/${id}`));
+    async getConversations(): Promise<ConversationSummary[]> {
+        return await firstValueFrom(this.http.get<ConversationSummary[]>(`${this.apiUrl}assistant/conversations`));
+    }
+
+    async getConversation(id: number): Promise<ConversationDetail> {
+        return await firstValueFrom(this.http.get<ConversationDetail>(`${this.apiUrl}assistant/conversations/${id}`));
+    }
+
+    async deleteConversation(id: number): Promise<void> {
+        await firstValueFrom(this.http.delete(`${this.apiUrl}assistant/conversations/${id}`));
     }
 
     async getUnanswered(): Promise<UnansweredQuery[]> {

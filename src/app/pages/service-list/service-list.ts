@@ -1,4 +1,5 @@
 import { Component, HostListener, OnInit, ViewChild } from '@angular/core';
+import { FileService } from '../../service/file.service';
 import { InvoiceService } from '../../service/invoice.service';
 import { VoucherService } from '../../service/voucher.service';
 import { SurveyService } from '../../service/survey.service';
@@ -215,18 +216,27 @@ import { AuthService } from '../../service/auth.service';
                             <div class="flex items-center gap-2">
                                 <i class="pi pi-folder text-lg"></i>
                                 <span class="vertical-align-middle text-lg ml-2">{{service.serviceGroup?.code || 'Servicios Sin Agrupar'}}</span>
-                                <p-tag *ngIf="service.serviceGroup" [value]="service.serviceGroup.status" severity="info" class="ml-2"></p-tag>
+                                <!-- El admin puede corregir el estado del grupo entero a mano; el resto
+                                     sólo lo ve. Cambiarlo arrastra a todos los servicios, así que pide confirmación. -->
+                                <p-select *ngIf="service.serviceGroup && authService.hasPermission('forceServiceStatus')"
+                                          [options]="groupStatuses" [ngModel]="service.serviceGroup.status"
+                                          (ngModelChange)="confirmGroupStatusChange(service.serviceGroup, $event)"
+                                          optionLabel="label" optionValue="value" appendTo="body"
+                                          size="small" styleClass="ml-2" pTooltip="Estado del grupo" tooltipPosition="top"></p-select>
+                                <p-tag *ngIf="service.serviceGroup && !authService.hasPermission('forceServiceStatus')" [value]="getGroupStatusLabel(service.serviceGroup.status)" severity="info" class="ml-2"></p-tag>
                                 <p-button *ngIf="service.serviceGroup" icon="pi pi-pencil" [rounded]="true" [text]="true" size="small" severity="secondary" (click)="openEditGroupNotes(service.serviceGroup)" pTooltip="Editar Notas del Reporte" tooltipPosition="top" styleClass="p-0 w-8 h-8 ml-2"></p-button>
+                                <p-button *ngIf="service.serviceGroup" icon="pi pi-history" [rounded]="true" [text]="true" size="small" severity="secondary" (click)="openGroupHistory(service.serviceGroup)" pTooltip="Historial de estados del reporte" tooltipPosition="top" styleClass="p-0 w-8 h-8"></p-button>
 
+                                <!-- Los botones dependen del estado del REPORTE, que es contra lo que
+                                     valida el backend. Antes miraban el estado del primer servicio de la
+                                     lista y mostraban "Pagado" en reportes que todavía no estaban en
+                                     pendiente de pago: el backend lo rechazaba a quien no fuera admin. -->
                                 <div class="ml-auto flex gap-2 items-center" *ngIf="service.serviceGroup">
-                                     <!-- PENDING_INVOICE -> Show PAYMENT_PENDING -->
-                                     <!-- Also handle INVOICED as requested by user -->
-                                     <p-button *ngIf="['PENDING_INVOICE', 'INVOICED', 'GENERATED'].includes(service.status)"
+                                     <p-button *ngIf="['PENDING_INVOICE', 'INVOICED', 'GENERATED'].includes(service.serviceGroup.status)"
                                                label="Pendiente Pago" size="small" [outlined]="true" severity="warn"
                                                (click)="changeGroupStatus(service.serviceGroup.code, 'PAYMENT_PENDING')"></p-button>
 
-                                     <!-- PAYMENT_PENDING -> Show PAID -->
-                                     <p-button *ngIf="service.status === 'PAYMENT_PENDING'"
+                                     <p-button *ngIf="service.serviceGroup.status === 'PAYMENT_PENDING'"
                                                label="Pagado" size="small" [outlined]="true" severity="success"
                                                (click)="changeGroupStatus(service.serviceGroup.code, 'PAID')"></p-button>
                                 </div>
@@ -239,6 +249,9 @@ import { AuthService } from '../../service/auth.service';
                         <div class="flex items-center gap-2">
                             <span class="text-xl font-bold">{{ getHeaderTitle() }}</span>
                             <p-button label="Limpiar Filtros" icon="pi pi-filter-slash" [outlined]="!hasActiveTableFilters()" [severity]="hasActiveTableFilters() ? 'warn' : 'secondary'" size="small" (click)="clear(dt1)" />
+                            <p-select *ngIf="usesPeriod()" [options]="periodOptions" [(ngModel)]="selectedPeriod" (onChange)="loadAllData()"
+                                      optionLabel="label" optionValue="value" size="small" appendTo="body"
+                                      pTooltip="Qué servicios traer, según la fecha de inicio" tooltipPosition="top"></p-select>
                         </div>
                         <div class="flex flex-col md:flex-row gap-2 w-full md:w-auto">
                             <!-- Toggle Group View (Always Visible) -->
@@ -385,6 +398,7 @@ import { AuthService } from '../../service/auth.service';
                                       [pTooltip]="'Avanzar a ' + getMmStatusLabel(getNextStatus(service) || '')"
                                       tooltipPosition="left">
                             </p-button>
+                            <p-button icon="pi pi-history" [rounded]="true" [text]="true" severity="secondary" (click)="openServiceHistory(service)" pTooltip="Historial de estados" tooltipPosition="left" />
                             <p-button icon="pi pi-pencil" [rounded]="true" [text]="true" (click)="editService(service)" />
                             <p-button icon="pi pi-trash" [rounded]="true" [text]="true" severity="danger" (click)="deleteService(service)" />
                         </td>
@@ -494,7 +508,7 @@ import { AuthService } from '../../service/auth.service';
                                     </div>
                                     <div class="flex flex-col gap-2">
                                         <label>Choferes</label>
-                                        <p-multiSelect #driverMulti [options]="driversList" [(ngModel)]="service.driverIds" optionLabel="name" optionValue="id" placeholder="Seleccionar Choferes" display="chip" appendTo="body" styleClass="w-full" (onChange)="driverMulti.hide()"></p-multiSelect>
+                                        <p-multiSelect #driverMulti [options]="driversList" [(ngModel)]="service.driverIds" optionLabel="name" optionValue="id" placeholder="Seleccionar Chofer" display="chip" appendTo="body" styleClass="w-full" [selectionLimit]="1" [showToggleAll]="false" (onChange)="driverMulti.hide()"></p-multiSelect>
                                     </div>
                                     <div class="flex flex-col gap-2">
                                         <label>Autos</label>
@@ -672,7 +686,7 @@ import { AuthService } from '../../service/auth.service';
                                          <input type="file" multiple accept="image/*,.pdf" (change)="onReimbursableUpload($event, j)" class="text-sm w-full block border border-gray-200 dark:border-gray-700 rounded-md p-2 bg-white dark:bg-gray-800" />
                                          <div class="flex flex-wrap gap-2 mt-1" *ngIf="reimbursable.photoUrls && reimbursable.photoUrls.length > 0">
                                              <div *ngFor="let url of reimbursable.photoUrls; let fIndex = index" class="relative group">
-                                                 <a [href]="getAbsoluteUrl(url)" target="_blank" pTooltip="Ver Archivo" class="p-button p-button-sm p-button-secondary p-button-outlined"><i class="pi pi-file mr-1"></i> Evidencia {{fIndex + 1}}</a>
+                                                 <a href="javascript:void(0)" (click)="openEvidence(url)" pTooltip="Ver Archivo" class="p-button p-button-sm p-button-secondary p-button-outlined"><i class="pi pi-file mr-1"></i> Evidencia {{fIndex + 1}}</a>
                                                  <button pButton pRipple icon="pi pi-times" class="p-button-rounded p-button-danger p-button-text p-button-sm absolute -top-2 -right-2 w-6 h-6 opacity-0 group-hover:opacity-100 transition-opacity bg-white dark:bg-gray-800 shadow-sm" (click)="removePhoto(j, fIndex)" pTooltip="Quitar"></button>
                                              </div>
                                          </div>
@@ -1008,6 +1022,37 @@ import { AuthService } from '../../service/auth.service';
                 </ng-template>
             </p-dialog>
 
+            <!-- Historial de estados (de un servicio o de un reporte con sus servicios) -->
+            <p-dialog [(visible)]="historyDialogVisible" [header]="historyTitle" [modal]="true" [style]="{ width: '700px', 'max-width': '95vw' }">
+                <div *ngIf="historyLoading" class="p-4 text-center text-gray-500">Cargando...</div>
+                <div *ngIf="!historyLoading && historyEntries.length === 0" class="p-4 text-center text-gray-500">
+                    No hay cambios de estado registrados.
+                </div>
+                <p-table *ngIf="!historyLoading && historyEntries.length > 0" [value]="historyEntries" styleClass="p-datatable-sm" [scrollable]="true" scrollHeight="400px">
+                    <ng-template pTemplate="header">
+                        <tr>
+                            <th>Fecha</th>
+                            <th *ngIf="historyShowsEntity">Qué</th>
+                            <th>Cambio</th>
+                            <th>Cómo</th>
+                            <th>Usuario</th>
+                        </tr>
+                    </ng-template>
+                    <ng-template pTemplate="body" let-h>
+                        <tr>
+                            <td class="whitespace-nowrap">{{ h.createdAt | date:'dd/MM/yyyy HH:mm' }}</td>
+                            <td *ngIf="historyShowsEntity" class="whitespace-nowrap">{{ h.entity === 'GROUP' ? 'Reporte' : 'Servicio #' + h.entityId }}</td>
+                            <td>
+                                <span *ngIf="h.fromStatus">{{ getGroupStatusLabel(h.fromStatus) }} → </span>
+                                <b>{{ getGroupStatusLabel(h.toStatus) }}</b>
+                            </td>
+                            <td>{{ historySourceLabels[h.source] || h.source }}</td>
+                            <td>{{ h.user?.name || h.user?.email || 'Sistema' }}</td>
+                        </tr>
+                    </ng-template>
+                </p-table>
+            </p-dialog>
+
             <!-- Dialogo de Facturacion -->
             <p-dialog [(visible)]="billingDialogVisible" header="Facturar Servicios" [modal]="true" [style]="{width: '800px'}" [maximizable]="true">
                 <div class="flex flex-col gap-4">
@@ -1193,6 +1238,16 @@ export class ServiceList implements OnInit {
         { label: 'Cancelado', value: 'CANCELLED' }
     ];
 
+    // Estados que un admin puede forzar a mano sobre un grupo entero. Espeja
+    // GROUP_SELECTABLE_STATUSES del backend: GENERATED sólo existe a nivel grupo.
+    groupStatuses = [
+        { label: 'Generado', value: 'GENERATED' },
+        { label: 'A Facturar', value: 'PENDING_INVOICE' },
+        { label: 'Pendiente Pago', value: 'PAYMENT_PENDING' },
+        { label: 'Pagado', value: 'PAID' },
+        { label: 'Cancelado', value: 'CANCELLED' }
+    ];
+
     billingTypes = [
         { label: 'Factura A/B', value: 'OFFICIAL_A' },
         { label: 'Monotributo', value: 'MONOTRIBUTO' },
@@ -1248,7 +1303,8 @@ export class ServiceList implements OnInit {
         private voucherService: VoucherService,
         private surveyService: SurveyService,
         private primeng: PrimeNG,
-        public authService: AuthService
+        public authService: AuthService,
+        private fileService: FileService
     ) {}
 
 
@@ -1504,6 +1560,10 @@ export class ServiceList implements OnInit {
             if (this.activeStatusFilter) {
                 filters.status = this.activeStatusFilter;
             }
+            const since = this.periodStart();
+            if (since) {
+                filters.startDate = since.toISOString();
+            }
 
             const promises: any[] = [
                 this.serviceService.getServices(filters)
@@ -1579,9 +1639,40 @@ export class ServiceList implements OnInit {
              // Check for deep link
              const id = this.route.snapshot.queryParamMap.get('id');
              if (id) {
+                 // Si el servicio es más viejo que el período cargado, se trae todo
+                 // una vez para poder abrirlo.
+                 if (!this.services.some(s => s.id === Number(id)) && this.periodStart() && loadId === this.currentLoadId) {
+                     this.selectedPeriod = 0;
+                     this.loadAllData();
+                     return;
+                 }
                  this.findAndOpenService(Number(id));
              }
         }
+    }
+
+    // --- Período cargado ---
+    // "Todos", "Pagados" y "Cancelados" crecen sin límite, así que por defecto
+    // traen sólo los últimos meses. Las vistas de trabajo (pendientes, a
+    // facturar, etc.) siempre traen todo: son pocos y no se puede perder ninguno.
+    periodOptions = [
+        { label: 'Últimos 3 meses', value: 3 },
+        { label: 'Últimos 6 meses', value: 6 },
+        { label: 'Último año', value: 12 },
+        { label: 'Todo', value: 0 }
+    ];
+    selectedPeriod = 3;
+
+    usesPeriod(): boolean {
+        return !this.activeStatusFilter || this.activeStatusFilter === 'PAID' || this.activeStatusFilter === 'CANCELLED';
+    }
+
+    periodStart(): Date | null {
+        if (!this.usesPeriod() || !this.selectedPeriod || this.isCalendarView) return null;
+        const d = new Date();
+        d.setMonth(d.getMonth() - this.selectedPeriod);
+        d.setHours(0, 0, 0, 0);
+        return d;
     }
 
     findAndOpenService(id: number) {
@@ -1768,7 +1859,7 @@ export class ServiceList implements OnInit {
             status: 'CREATED',
             billingType: 'INFORMAL',
             isVatExempt: false,
-            taxRatePercentage: 21,
+            taxRatePercentage: 10.5, // los servicios nuevos arrancan con IVA reducido; se puede cambiar a 21
             kmTraveled: 0,
             waitingHours: 0,
             extraKmTraveled: 0,
@@ -1974,9 +2065,9 @@ export class ServiceList implements OnInit {
             this.selectedConfig = null;
             this.selectedServices = []; // Clear selection
             this.loadAllData();
-        } catch (error) {
+        } catch (error: any) {
             console.error(error);
-            this.messageService.add({ severity: 'error', summary: 'Error', detail: 'No se pudo guardar el servicio' });
+            this.messageService.add({ severity: 'error', summary: 'Error', detail: error?.error?.error ?? 'No se pudo guardar el servicio' });
         }
     }
 
@@ -2079,19 +2170,13 @@ export class ServiceList implements OnInit {
         }
     }
 
-    getAbsoluteUrl(url: string): string {
-        if (!url) return '';
-        if (url.startsWith('http')) return url;
-
-        // Final Nginx Bypass: use query parameter ?file=...
-        // This stops Nginx from thinking it's a static file even if it has an extension
-        if (url.includes('/uploads/')) {
-            const filename = url.split('/').pop();
-            url = `/api/media-viewer?file=${filename}`;
+    async openEvidence(url: string) {
+        try {
+            await this.fileService.open('uploads', this.fileService.fileName(url));
+        } catch (err) {
+            console.error(err);
+            this.messageService.add({ severity: 'error', summary: 'Error', detail: 'No se pudo abrir el archivo.' });
         }
-
-        const baseUrl = environment.apiUrl.replace('/api/', ''); // e.g. http://localhost:3000
-        return `${baseUrl}${url}`;
     }
 
     getSeverity(status: string): any {
@@ -2158,8 +2243,8 @@ export class ServiceList implements OnInit {
             await this.serviceService.updateService(service.id, { status: next });
             this.messageService.add({ severity: 'success', summary: 'Actualizado', detail: `Estado cambiado a ${this.getMmStatusLabel(next)}` });
             this.loadAllData();
-        } catch (error) {
-            this.messageService.add({ severity: 'error', summary: 'Error', detail: 'No se pudo actualizar el estado' });
+        } catch (error: any) {
+            this.messageService.add({ severity: 'error', summary: 'Error', detail: error?.error?.error ?? 'No se pudo actualizar el estado' });
         }
     }
 
@@ -2533,9 +2618,9 @@ export class ServiceList implements OnInit {
             this.selectedServices = [];
             this.reportNotes = ''; // Reset notes
             this.loadAllData(); // Refresh to move them to next status
-        } catch (error) {
+        } catch (error: any) {
             console.error(error);
-            this.messageService.add({ severity: 'error', summary: 'Error', detail: 'Falló la generación del reporte.' });
+            this.messageService.add({ severity: 'error', summary: 'Error', detail: error?.error?.error ?? 'Falló la generación del reporte.' });
         } finally {
             this.loading = false;
         }
@@ -2576,12 +2661,16 @@ export class ServiceList implements OnInit {
             const groups = await this.serviceService.getGroups({ clientId: this.billingClient.id, status: 'GENERATED' });
 
             // Transform/enrich if needed
-            this.billingGroups = groups.map(g => ({
-                ...g,
-                // Count services or sum amounts if not in group object
-                totalAmount: g.services ? g.services.reduce((sum: number, s: any) => sum + Number(s.total_amount || 0), 0) : 0,
-                serviceCount: g.services ? g.services.length : 0
-            }));
+            // Los cancelados no se facturan (el backend los deja afuera), así que
+            // tampoco cuentan en el total ni en la cantidad que se muestra acá.
+            this.billingGroups = groups.map(g => {
+                const billable = (g.services ?? []).filter((s: any) => s.status !== 'CANCELLED');
+                return {
+                    ...g,
+                    totalAmount: billable.reduce((sum: number, s: any) => sum + Number(s.total_amount || 0), 0),
+                    serviceCount: billable.length
+                };
+            });
 
         } catch (error) {
             console.error(error);
@@ -2615,9 +2704,9 @@ export class ServiceList implements OnInit {
             this.billingDialogVisible = false;
             this.messageService.add({ severity: 'success', summary: 'Éxito', detail: 'Factura creada correctamente.' });
             this.loadAllData(); // Refresh list
-        } catch (error) {
+        } catch (error: any) {
             console.error(error);
-            this.messageService.add({ severity: 'error', summary: 'Error', detail: 'Error al crear la factura.' });
+            this.messageService.add({ severity: 'error', summary: 'Error', detail: error?.error?.error ?? 'Error al crear la factura.' });
         } finally {
             this.loading = false;
         }
@@ -2650,20 +2739,57 @@ export class ServiceList implements OnInit {
         }
     }
 
-    openReport(service: any) {
+    async openReport(service: any) {
         const group = service.serviceGroup;
         if (!group) return;
 
-        // Dynamic URL Construction for Local Dev compatibility
-        if (group.code) {
-             const filename = group.code + '.pdf';
-             const relativeUrl = environment.apiUrl.replace('/api/', '/') + 'reports/' + filename;
-             window.open(relativeUrl, '_blank');
-        } else if (group.pdfUrl) {
-             window.open(group.pdfUrl, '_blank');
-        } else {
+        const name = group.code ? group.code + '.pdf' : group.pdfUrl ? this.fileService.fileName(group.pdfUrl) : null;
+        if (!name) {
              this.messageService.add({severity:'warn', summary:'Sin Reporte', detail:'Este grupo no tiene reporte generado.'});
+             return;
         }
+        try {
+             await this.fileService.open('reports', name);
+        } catch (err) {
+             console.error(err);
+             this.messageService.add({severity:'error', summary:'Error', detail:'No se pudo abrir el reporte.'});
+        }
+    }
+
+    /**
+     * Cambio manual del estado de un grupo desde el selector (sólo admin).
+     *
+     * Arrastra a todos los servicios del grupo — menos los cancelados, que el
+     * backend deja donde están — así que se confirma antes de mandarlo.
+     */
+    confirmGroupStatusChange(group: any, newStatus: string) {
+        if (!group || !newStatus || group.status === newStatus) return;
+
+        const previous = group.status;
+        const label = this.groupStatuses.find(s => s.value === newStatus)?.label ?? newStatus;
+        const count = this.services.filter(s => s.serviceGroup?.id === group.id).length;
+
+        this.confirmationService.confirm({
+            header: 'Cambiar estado del grupo',
+            message: `Vas a pasar el grupo <b>${group.code}</b> a <b>${label}</b>.<br>Esto cambia el estado de sus <b>${count}</b> servicio(s), salvo los cancelados.<br><br>¿Confirmás?`,
+            icon: 'pi pi-exclamation-triangle',
+            acceptLabel: 'Sí, cambiar',
+            rejectLabel: 'Cancelar',
+            acceptButtonProps: { severity: 'warn' },
+            rejectButtonProps: { severity: 'secondary', outlined: true },
+            accept: () => {
+                this.serviceService.updateGroupStatus(group.id, newStatus).then(() => {
+                    this.messageService.add({ severity: 'success', summary: 'Actualizado', detail: `Grupo ${group.code} en ${label}` });
+                    this.loadAllData();
+                }).catch(err => {
+                    console.error(err);
+                    group.status = previous; // el select ya se movió: lo devolvemos
+                    const detail = err?.error?.error ?? 'No se pudo actualizar el estado del grupo';
+                    this.messageService.add({ severity: 'error', summary: 'Error', detail });
+                });
+            },
+            reject: () => { group.status = previous; }
+        });
     }
 
     changeGroupStatus(groupCode: string, newStatus: string) {
@@ -2673,12 +2799,62 @@ export class ServiceList implements OnInit {
          if (!service || !service.serviceGroup) return;
 
          this.serviceService.updateGroupStatus(service.serviceGroup.id, newStatus).then(() => {
-             this.messageService.add({ severity: 'success', summary: 'Actualizado', detail: 'Estado del grupo actualizado a ' + newStatus });
+             this.messageService.add({ severity: 'success', summary: 'Actualizado', detail: 'Reporte pasado a ' + this.getGroupStatusLabel(newStatus) });
              this.loadAllData();
          }).catch(err => {
              console.error(err);
-             this.messageService.add({ severity: 'error', summary: 'Error', detail: 'No se pudo actualizar el estado' });
+             this.messageService.add({ severity: 'error', summary: 'Error', detail: err?.error?.error ?? 'No se pudo actualizar el estado' });
          });
+    }
+
+    getGroupStatusLabel(status: string): string {
+        if (status === 'GENERATED') return 'Generado';
+        if (status === 'INVOICED') return 'Facturado';
+        return this.getMmStatusLabel(status);
+    }
+
+    // --- Historial de estados ---
+
+    historyDialogVisible = false;
+    historyLoading = false;
+    historyTitle = '';
+    historyShowsEntity = false;
+    historyEntries: any[] = [];
+    historySourceLabels: Record<string, string> = {
+        FLOW: 'Avance normal',
+        FORCED: 'Forzado por admin',
+        GROUP: 'Movido con el reporte',
+        SYNC: 'Recalculado por sus servicios',
+        REPORT: 'Armado del reporte',
+        INVOICE: 'Facturación',
+        DETAILS: 'Envío de detalles',
+        ASSISTANT: 'Asistente IA',
+        CREATE: 'Alta',
+        AUDIT: 'Registro anterior'
+    };
+
+    openServiceHistory(service: any) {
+        this.showHistory(`Historial del servicio #${service.id}`, false, () => this.serviceService.getServiceStatusHistory(service.id));
+    }
+
+    openGroupHistory(group: any) {
+        this.showHistory(`Historial del reporte ${group.code}`, true, () => this.serviceService.getGroupStatusHistory(group.id));
+    }
+
+    private async showHistory(title: string, showsEntity: boolean, load: () => Promise<any[]>) {
+        this.historyTitle = title;
+        this.historyShowsEntity = showsEntity;
+        this.historyEntries = [];
+        this.historyLoading = true;
+        this.historyDialogVisible = true;
+        try {
+            this.historyEntries = await load();
+        } catch (err) {
+            console.error(err);
+            this.messageService.add({ severity: 'error', summary: 'Error', detail: 'No se pudo cargar el historial' });
+        } finally {
+            this.historyLoading = false;
+        }
     }
 
     openEditInvoice(service: any) {
