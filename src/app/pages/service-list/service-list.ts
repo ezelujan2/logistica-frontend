@@ -225,7 +225,7 @@ import { AuthService } from '../../service/auth.service';
                                           size="small" styleClass="ml-2" pTooltip="Estado del grupo" tooltipPosition="top"></p-select>
                                 <p-tag *ngIf="service.serviceGroup && !authService.hasPermission('forceServiceStatus')" [value]="getGroupStatusLabel(service.serviceGroup.status)" severity="info" class="ml-2"></p-tag>
                                 <p-button *ngIf="service.serviceGroup" icon="pi pi-pencil" [rounded]="true" [text]="true" size="small" severity="secondary" (click)="openEditGroupNotes(service.serviceGroup)" pTooltip="Editar Notas del Reporte" tooltipPosition="top" styleClass="p-0 w-8 h-8 ml-2"></p-button>
-                                <p-button *ngIf="service.serviceGroup" icon="pi pi-history" [rounded]="true" [text]="true" size="small" severity="secondary" (click)="openGroupHistory(service.serviceGroup)" pTooltip="Historial de estados del reporte" tooltipPosition="top" styleClass="p-0 w-8 h-8"></p-button>
+                                <p-button *ngIf="service.serviceGroup && authService.hasPermission('viewServiceHistory')" icon="pi pi-history" [rounded]="true" [text]="true" size="small" severity="secondary" (click)="openGroupHistory(service.serviceGroup)" pTooltip="Historial de estados del reporte" tooltipPosition="top" styleClass="p-0 w-8 h-8"></p-button>
 
                                 <!-- Los botones dependen del estado del REPORTE, que es contra lo que
                                      valida el backend. Antes miraban el estado del primer servicio de la
@@ -398,7 +398,7 @@ import { AuthService } from '../../service/auth.service';
                                       [pTooltip]="'Avanzar a ' + getMmStatusLabel(getNextStatus(service) || '')"
                                       tooltipPosition="left">
                             </p-button>
-                            <p-button icon="pi pi-history" [rounded]="true" [text]="true" severity="secondary" (click)="openServiceHistory(service)" pTooltip="Historial del servicio" tooltipPosition="left" />
+                            <p-button *ngIf="authService.hasPermission('viewServiceHistory')" icon="pi pi-history" [rounded]="true" [text]="true" severity="secondary" (click)="openServiceHistory(service)" pTooltip="Historial del servicio" tooltipPosition="left" />
                             <p-button icon="pi pi-pencil" [rounded]="true" [text]="true" (click)="editService(service)" />
                             <p-button icon="pi pi-trash" [rounded]="true" [text]="true" severity="danger" (click)="deleteService(service)" />
                         </td>

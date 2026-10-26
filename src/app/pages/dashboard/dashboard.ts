@@ -470,7 +470,7 @@ export class Dashboard implements OnInit {
 
     release = CURRENT_RELEASE;
     releaseHighlights = CURRENT_RELEASE.changes.filter((c) => c.kind === 'importante' || c.kind === 'nuevo');
-    showReleaseNotice = hasUnseenRelease();
+    showReleaseNotice = false;
 
     closeReleaseNotice() {
         markReleaseSeen();
@@ -491,6 +491,8 @@ export class Dashboard implements OnInit {
     ) {}
 
     async ngOnInit() {
+        // El aviso de versión nueva sólo para quienes ven Novedades y ayuda.
+        this.showReleaseNotice = this.authService.hasPermission('viewReleaseNotes') && hasUnseenRelease();
         await this.loadDashboardData();
     }
 

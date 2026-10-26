@@ -19,6 +19,8 @@ Lo que aparece en el menú depende de tu rol. Si no ves una opción que figura e
 | Estadísticas y encuestas | Sí | Sí | No |
 | Administrar usuarios | Sí | Sí | No |
 | Corregir el estado de un servicio o reporte salteando pasos | Sí | No | No |
+| Ver el historial de servicios y reportes | Sí | No | No |
+| Novedades y ayuda (con este manual) | Sí | Sí | No |
 
 ## 2. Ingresar al sistema
 
@@ -81,6 +83,7 @@ La pantalla de inicio muestra de un vistazo qué hay que hacer hoy; el menú de 
 | Usuarios | Alta y bloqueo de usuarios (ADMIN y DIRECTOR) |
 | Inteligencia Artificial › Asistente | Chat con el asistente |
 | Inteligencia Artificial › Preguntas sin resolver | Lo que el asistente no supo responder (ADMIN y DIRECTOR) |
+| Novedades y ayuda | Qué trae cada versión del sistema y este manual (ADMIN y DIRECTOR) |
 
 ## 4. Cargar un servicio
 
@@ -164,7 +167,7 @@ Muestra los servicios de cada día. Se puede ver por mes o por semana: se cambia
 | --- | --- |
 | Flecha verde | Avanza el servicio al paso siguiente. El texto de ayuda dice a qué estado pasa |
 | Lápiz | Abre el servicio para ver o editar todos sus datos |
-| Reloj | Muestra la historia completa del servicio: el alta, cada dato que cambió (con su valor anterior y el nuevo), cambios de chofer, gastos y estados, con fecha y usuario |
+| Reloj | Sólo ADMIN. Muestra la historia completa del servicio: el alta, cada dato que cambió (con su valor anterior y el nuevo), cambios de chofer, gastos y estados, con fecha y usuario |
 | PDF azul | Abre el reporte al que pertenece el servicio |
 | Tacho rojo | Borra el servicio (pide confirmación) |
 
@@ -172,7 +175,7 @@ La flecha no aparece en Env. Detalles ni en A Facturar: esos pasos se hacen arma
 
 ### En la vista agrupada
 
-Cada reporte tiene una cabecera con su código, su estado, un lápiz para editar los comentarios del reporte y un reloj con el historial del reporte y de todos sus servicios. Según el estado del reporte aparece:
+Cada reporte tiene una cabecera con su código, su estado, un lápiz para editar los comentarios del reporte y, para ADMIN, un reloj con el historial del reporte y de todos sus servicios. Según el estado del reporte aparece:
 
 - **"Pendiente Pago"**, para pasar todo el reporte a pendiente de pago.
 - **"Pagado"**, para registrar el cobro del reporte completo (sección 8).
@@ -477,7 +480,7 @@ El asistente recuerda la conversación: podés seguir con "y en septiembre?" o "
 | Gastos | "¿Cuánto gastamos en combustible por auto en septiembre? Mostralo en un gráfico" |
 | Cobranzas | "¿Qué clientes nos deben facturas de hace más de 60 días?" |
 | Comparar | "Margen por cliente este trimestre contra el anterior" |
-| Historial | "¿Cuándo se pagó el REP-0123 y quién lo marcó?" |
+| Historial | "¿Cuándo se pagó el REP-0123 y quién lo marcó?" (sólo ADMIN) |
 | Vencimientos | "¿Qué seguros vencen en los próximos 30 días?" |
 
 Las preguntas de análisis financiero (márgenes, facturación total, rankings) están disponibles para ADMIN y DIRECTOR.

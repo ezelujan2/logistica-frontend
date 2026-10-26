@@ -11,6 +11,8 @@ export const PERMISSIONS = {
   manageSurveys: ['ADMIN'],
   useAssistant: ['ADMIN', 'ADMIN_OPERATIVO', 'DIRECTOR'],
   useAnalyst: ['ADMIN', 'DIRECTOR'],
+  viewServiceHistory: ['ADMIN'],
+  viewReleaseNotes: ['ADMIN', 'DIRECTOR'],
 } as const;
 
 export type Permission = keyof typeof PERMISSIONS;
