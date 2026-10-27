@@ -25,8 +25,17 @@ export interface Release {
 
 export const RELEASES: Release[] = [
     {
-        version: '2.0.0',
+        version: '2.1.0',
         date: '2026-10-27',
+        title: 'Estado del sistema y aviso de errores',
+        changes: [
+            { kind: 'nuevo', text: 'Estado del sistema (sólo administradores): una pantalla con la salud del sistema, el uso del servidor (CPU, memoria y disco), la base de datos, los pedidos y errores de las últimas 24 horas, el costo del asistente y los errores abiertos.' },
+            { kind: 'nuevo', text: 'Aviso de errores: cuando algo falla, queda registrado automáticamente con la pantalla y el momento en que ocurrió, para poder corregirlo sin que nadie tenga que reportarlo.' }
+        ]
+    },
+    {
+        version: '2.0.0',
+        date: '2026-10-26',
         title: 'Asistente de IA renovado, historial de estados y más controles',
         changes: [
             { kind: 'importante', text: 'Los servicios nuevos arrancan con IVA 10,5% en el formulario. Si corresponde 21%, cambialo antes de guardar.' },

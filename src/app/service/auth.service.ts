@@ -1,3 +1,4 @@
+import * as Sentry from '@sentry/angular';
 import { Injectable, signal } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable, Subject, tap } from 'rxjs';
@@ -32,7 +33,11 @@ export class AuthService {
 
   loadCurrentUser(): Observable<CurrentUser> {
     return this.http.get<CurrentUser>(`${this.apiUrl}/me`).pipe(
-      tap((user) => this.currentUser.set(user))
+      tap((user) => {
+        this.currentUser.set(user);
+        // Para saber a quién le pasó un error, sin mandar datos personales.
+        Sentry.setUser({ id: String(user.id), role: user.role } as any);
+      })
     );
   }
 

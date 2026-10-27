@@ -1,6 +1,6 @@
 {
   "name": "sakai-ng",
-  "version": "2.0.0",
+  "version": "2.1.0",
   "scripts": {
     "ng": "ng",
     "start": "ng serve",
@@ -23,6 +23,7 @@
     "@angular/router": "^20",
     "@angular/service-worker": "^20",
     "@primeuix/themes": "^1.2.1",
+    "@sentry/angular": "11.9.0",
     "@tailwindcss/postcss": "^4.1.11",
     "chart.js": "^4.4.2",
     "marked": "^18.0.9",

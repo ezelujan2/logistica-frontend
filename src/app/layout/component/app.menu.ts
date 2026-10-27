@@ -73,6 +73,9 @@ export class AppMenu {
         if (iaItems.length) {
             homeItems.push({ label: 'Inteligencia Artificial', icon: 'pi pi-fw pi-sparkles', items: iaItems });
         }
+        if (this.authService.hasPermission('viewSystem')) {
+            homeItems.push({ label: 'Estado del sistema', icon: 'pi pi-fw pi-server', routerLink: ['/app/sistema'] });
+        }
         if (this.authService.hasPermission('viewReleaseNotes')) {
             homeItems.push({ label: 'Novedades y ayuda', icon: 'pi pi-fw pi-megaphone', routerLink: ['/app/novedades'] });
         }

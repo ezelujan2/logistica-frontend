@@ -13,6 +13,7 @@ export const PERMISSIONS = {
   useAnalyst: ['ADMIN', 'DIRECTOR'],
   viewServiceHistory: ['ADMIN'],
   viewReleaseNotes: ['ADMIN', 'DIRECTOR'],
+  viewSystem: ['ADMIN'],
 } as const;
 
 export type Permission = keyof typeof PERMISSIONS;

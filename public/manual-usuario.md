@@ -21,6 +21,7 @@ Lo que aparece en el menú depende de tu rol. Si no ves una opción que figura e
 | Corregir el estado de un servicio o reporte salteando pasos | Sí | No | No |
 | Ver el historial de servicios y reportes | Sí | No | No |
 | Novedades y ayuda (con este manual) | Sí | Sí | No |
+| Estado del sistema | Sí | No | No |
 
 ## 2. Ingresar al sistema
 
@@ -84,6 +85,7 @@ La pantalla de inicio muestra de un vistazo qué hay que hacer hoy; el menú de 
 | Inteligencia Artificial › Asistente | Chat con el asistente |
 | Inteligencia Artificial › Preguntas sin resolver | Lo que el asistente no supo responder (ADMIN y DIRECTOR) |
 | Novedades y ayuda | Qué trae cada versión del sistema y este manual (ADMIN y DIRECTOR) |
+| Estado del sistema | Salud del sistema, servidor, errores y uso (sólo ADMIN) |
 
 ## 4. Cargar un servicio
 
@@ -561,7 +563,23 @@ Los usuarios no se borran: cuando alguien deja la empresa, bloquealo. Un usuario
 - Un DIRECTOR no puede modificar a un ADMIN.
 - La columna "Último acceso" muestra cuándo entró cada uno por última vez; sirve para detectar usuarios que ya no se usan.
 
-## 17. Preguntas frecuentes
+## 17. Estado del sistema (sólo ADMIN)
+
+La pantalla Estado del sistema muestra de un vistazo si todo funciona y se actualiza sola cada minuto.
+
+| Bloque | Qué muestra |
+| --- | --- |
+| Etiquetas de arriba | Si la base de datos responde, si el aviso de errores (Sentry) está activo y si el asistente tiene su clave |
+| Pedidos, errores y tiempo de respuesta | Cuánto se usó el sistema en las últimas 24 horas, qué parte terminó en error y cuánto tardan las respuestas |
+| Asistente de IA | Consultas y costo del mes |
+| Pedidos por hora | Gráfico de las últimas 24 horas; en rojo, los que dieron error |
+| Servidor | Uso de CPU, memoria y disco, en verde, naranja o rojo según qué tan cerca están del límite |
+| Base de datos | Tiempo de respuesta, tamaño y conexiones abiertas, y los pedidos más lentos |
+| Errores abiertos | Los errores de las últimas 24 horas registrados en Sentry, con cuántas veces pasaron, a cuántos usuarios y un enlace al detalle |
+
+Las cifras de pedidos se cuentan desde el último reinicio del servidor. Los gráficos históricos del servidor están en el panel de Coolify, en Servidor › Métricas.
+
+## 18. Preguntas frecuentes
 
 | Pregunta o mensaje | Respuesta |
 | --- | --- |
