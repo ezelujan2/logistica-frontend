@@ -40,8 +40,8 @@ const RELEASES_SHOWN = 10;
 
 /**
  * Las versiones que comparten los dos primeros números (2.4.0, 2.4.1, 2.4.2)
- * se muestran juntas: la principal (la primera que salió) con su título, y
- * las actualizaciones chicas que vinieron después, debajo.
+ * se muestran juntas en una tarjeta con el número de la última y el título de
+ * la principal (la primera que salió). Adentro, de la más nueva a la más vieja.
  */
 interface ReleaseGroup {
     key: string;
@@ -108,7 +108,7 @@ function groupReleases(releases: Release[]): ReleaseGroup[] {
                                 (click)="toggle(group.key)"
                             >
                                 <i class="pi text-muted-color" [ngClass]="isOpen(group.key) ? 'pi-chevron-down' : 'pi-chevron-right'"></i>
-                                <span class="text-lg font-bold">{{ group.updates.length ? group.key : group.main.version }}</span>
+                                <span class="text-lg font-bold">{{ group.versions[0] }}</span>
                                 <span class="text-sm text-muted-color">{{ formatDate(group.date) }}</span>
                                 <p-tag *ngIf="group.versions.includes(current.version)" value="Actual" severity="success" />
                                 <span class="font-medium flex-1 min-w-48">{{ group.main.title }}</span>
@@ -117,8 +117,9 @@ function groupReleases(releases: Release[]): ReleaseGroup[] {
                                 </span>
                             </button>
                             <!-- Contenido separado del título por una línea; en pantallas anchas
-                                 queda alineado con el título (después de la flecha). Las
-                                 actualizaciones chicas van debajo, cada una con su número. -->
+                                 queda alineado con el título (después de la flecha). Si hay
+                                 actualizaciones chicas, cada versión va con su número, la más
+                                 nueva arriba. -->
                             <div *ngIf="isOpen(group.key)" class="px-4 pt-4 pb-5 sm:pl-11 flex flex-col gap-5 border-t border-surface-200 dark:border-surface-700">
                                 <section *ngFor="let release of groupReleasesShown(group)" class="flex flex-col gap-4">
                                     <div *ngIf="group.updates.length" class="flex flex-wrap items-baseline gap-x-2 text-sm">
@@ -240,9 +241,9 @@ export class Novedades implements OnInit {
             .sort((a, b) => KIND_ORDER.indexOf(a.kind) - KIND_ORDER.indexOf(b.kind));
     }
 
-    /** La principal primero y después sus actualizaciones; al buscar, sólo las que coinciden. */
+    /** De la más nueva a la más vieja (la principal al final); al buscar, sólo las que coinciden. */
     groupReleasesShown(group: ReleaseGroup): Release[] {
-        const all = [group.main, ...group.updates];
+        const all = [...group.updates, group.main];
         return this.filtering() ? all.filter((r) => this.filteredChanges(r).length > 0) : all;
     }
 

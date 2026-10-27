@@ -665,7 +665,7 @@ La pantalla Estado del sistema muestra de un vistazo si todo funciona y se actua
 | Google Calendar | Si la copia a Google Calendar está activa, cuándo fue la última actualización y cuántos eventos creó, cambió o borró. Si falló, muestra el motivo y cuántos no se pudieron copiar |
 | Errores abiertos | Los errores de las últimas 24 horas registrados en Sentry, con cuántas veces pasaron, a cuántos usuarios y un enlace al detalle. Se pueden buscar, filtrar por proyecto y nivel, ordenar y paginar; "Ver todo en Sentry" abre la lista completa |
 
-En el historial de 24 horas, los pedidos se cuentan desde el último reinicio del servidor. Para períodos más largos se usa lo que se guarda una vez por hora desde la versión 2.2.0, que se conserva un año. Un ingreso "desde un lugar nuevo" no siempre es un problema (otra red de wifi, el celular): conviene revisarlo sólo si la persona no lo reconoce.
+El historial se arma con lo que se guarda una vez por hora desde la versión 2.2.0 (se conserva un año), más la hora en curso. Las horas sin barra no tienen datos: el servidor estaba apagado o todavía no se guardaba. En 7 días, el eje marca el comienzo de cada día; pasá el mouse para ver la hora. Un ingreso "desde un lugar nuevo" no siempre es un problema (otra red de wifi, el celular): conviene revisarlo sólo si la persona no lo reconoce.
 
 ## 19. Preguntas frecuentes
 

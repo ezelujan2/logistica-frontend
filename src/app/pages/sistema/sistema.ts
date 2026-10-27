@@ -91,12 +91,12 @@ type Level = 'good' | 'warning' | 'critical';
                         <p-selectbutton [options]="rangeOptions" [(ngModel)]="range" (onChange)="loadHistory()" optionLabel="label" optionValue="value" size="small" [allowEmpty]="false" />
                     </div>
                     <div *ngIf="historyEmpty()" class="text-sm text-muted-color mb-3">
-                        Todavía no hay historial guardado para este período: se guarda una vez por hora desde la versión 2.2.0.
+                        Todavía no hay historial para este período: se guarda una vez por hora desde la versión 2.2.0.
                     </div>
                     <div class="grid grid-cols-12 gap-6">
                         <div class="col-span-12">
-                            <div class="text-sm font-medium mb-1">Pedidos {{ range === '24h' ? 'por hora' : granularity === 'day' ? 'por día' : 'por hora' }}</div>
-                            <div class="text-xs text-muted-color mb-2">En rojo, los que terminaron en error del servidor.</div>
+                            <div class="text-sm font-medium mb-1">Pedidos {{ granularity === 'day' ? 'por día' : 'por hora' }}</div>
+                            <div class="text-xs text-muted-color mb-2">En rojo, los que terminaron en error del servidor. Las horas sin barra no tienen datos (el servidor estaba apagado o todavía no se guardaba).</div>
                             <div class="h-64"><p-chart type="bar" [data]="requestsChart" [options]="requestsOptions" height="100%"></p-chart></div>
                         </div>
                         <div class="col-span-12 lg:col-span-6">
@@ -465,7 +465,9 @@ export class Sistema implements OnInit, OnDestroy {
         try {
             this.status = await firstValueFrom(this.http.get<any>(`${environment.apiUrl}system/status`));
             this.error = '';
-            if (this.range === '24h') this.buildCharts();
+            // Las 24 horas incluyen la hora en curso: se actualizan junto con el resto.
+            if (this.range === '24h') this.loadHistory();
+            else this.buildCharts();
         } catch {
             this.error = 'No se pudo obtener el estado del sistema.';
         } finally {
@@ -495,17 +497,30 @@ export class Sistema implements OnInit, OnDestroy {
     }
 
     historyEmpty(): boolean {
-        return this.range !== '24h' && !this.history.length;
+        return !this.history.some((p) => p.requests !== null && p.requests !== undefined);
     }
 
-    private label(at: string): string {
+    private pointDate(at: string): Date {
         if (this.granularity === 'day') {
             const [y, m, d] = at.split('-').map(Number);
-            return new Date(y!, m! - 1, d!).toLocaleDateString('es-AR', { day: '2-digit', month: '2-digit' });
+            return new Date(y!, m! - 1, d!);
         }
-        const date = new Date(at);
-        const time = date.toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit' });
-        return this.range === '24h' ? time : `${date.toLocaleDateString('es-AR', { day: '2-digit', month: '2-digit' })} ${time}`;
+        return new Date(at);
+    }
+
+    /** Lo que va en el eje: la hora en 24 h, el día al empezar cada día en 7 días, la fecha en 30 y 90. */
+    private axisLabel(date: Date): string {
+        if (this.granularity === 'day') return date.toLocaleDateString('es-AR', { day: '2-digit', month: '2-digit' });
+        if (this.range === '24h') return `${date.getHours()} hs`;
+        return date.getHours() === 0 ? date.toLocaleDateString('es-AR', { weekday: 'short', day: '2-digit', month: '2-digit' }) : '';
+    }
+
+    /** Lo que va en el cartel al pasar el mouse: día y hora completos. */
+    private tooltipLabel(date: Date): string {
+        const day = date.toLocaleDateString('es-AR', { weekday: 'short', day: '2-digit', month: '2-digit' });
+        if (this.granularity === 'day') return day;
+        const next = new Date(date.getTime() + 3_600_000);
+        return `${day} · ${date.getHours()} a ${next.getHours()} hs`;
     }
 
     private buildCharts() {
@@ -517,35 +532,41 @@ export class Sistema implements OnInit, OnDestroy {
         const text = style.getPropertyValue('--p-text-muted-color').trim() || '#6b7280';
         const grid = style.getPropertyValue('--p-content-border-color').trim() || '#e5e7eb';
 
-        // Pedidos y tiempos de las últimas 24 h salen en vivo de la memoria del
-        // servidor; el uso del servidor, siempre de lo guardado.
-        const live = this.range === '24h';
-        const rows: Array<{ label: string; requests: number; errors: number; p95: number }> = live
-            ? this.status.api.hours.map((h: any) => ({ label: new Date(h.hour).toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit' }), requests: h.requests, errors: h.errors, p95: h.p95 }))
-            : this.history.map((p) => ({ label: this.label(p.at), requests: p.requests, errors: p.errors, p95: p.p95Ms }));
-        const x = { ticks: { color: text, maxRotation: 0, autoSkip: true, maxTicksLimit: 12 }, grid: { display: false } };
+        // Una fila por hora (24 h y 7 días) o por día (30 y 90), sin huecos: las
+        // horas sin datos vienen vacías. La hora en curso sale de la memoria.
+        const dates = this.history.map((p) => this.pointDate(p.at));
+        const rows: Array<{ requests: number | null; errors: number | null; p95: number | null }> = this.history.map((p) => ({ requests: p.requests, errors: p.errors, p95: p.p95Ms }));
+        const labels = dates.map((d) => this.axisLabel(d));
+        // En 7 días cada etiqueta es el comienzo de un día: se muestran todas
+        // (son 7) y el resto queda en blanco; en los demás, Chart.js saltea.
+        const weekByHour = this.range !== '24h' && this.granularity === 'hour';
+        const x = {
+            ticks: weekByHour ? { color: text, maxRotation: 0, autoSkip: false } : { color: text, maxRotation: 0, autoSkip: true, maxTicksLimit: 12 },
+            grid: weekByHour ? { color: (c: any) => (labels[c.index] ? grid : 'transparent'), drawTicks: false } : { display: false }
+        };
+        const tooltipTitle = (items: any[]) => (items.length ? this.tooltipLabel(dates[items[0].dataIndex]!) : '');
         const base = { maintainAspectRatio: false, interaction: { mode: 'index', intersect: false } };
 
         this.requestsChart = {
-            labels: rows.map((r) => r.label),
+            labels,
             datasets: [
-                { label: 'Correctos', data: rows.map((r) => r.requests - r.errors), backgroundColor: colors.ok, borderRadius: 4, maxBarThickness: 18 },
+                { label: 'Correctos', data: rows.map((r) => (r.requests === null ? null : r.requests - (r.errors ?? 0))), backgroundColor: colors.ok, borderRadius: 4, maxBarThickness: 18 },
                 { label: 'Con error', data: rows.map((r) => r.errors), backgroundColor: colors.error, borderRadius: 4, maxBarThickness: 18 }
             ]
         };
         this.requestsOptions = {
             ...base,
-            plugins: { legend: { position: 'top', align: 'end', labels: { color: text, boxWidth: 12 } } },
+            plugins: { legend: { position: 'top', align: 'end', labels: { color: text, boxWidth: 12 } }, tooltip: { callbacks: { title: tooltipTitle } } },
             scales: { x: { ...x, stacked: true }, y: { stacked: true, beginAtZero: true, ticks: { color: text, precision: 0 }, grid: { color: grid } } }
         };
 
         this.latencyChart = {
-            labels: rows.map((r) => r.label),
+            labels,
             datasets: [{ label: '95% en menos de (ms)', data: rows.map((r) => r.p95 || null), borderColor: colors.ok, backgroundColor: colors.ok, borderWidth: 2, pointRadius: 0, pointHoverRadius: 4, tension: 0.3, spanGaps: true }]
         };
         this.latencyOptions = {
             ...base,
-            plugins: { legend: { display: false } },
+            plugins: { legend: { display: false }, tooltip: { callbacks: { title: tooltipTitle } } },
             scales: { x, y: { beginAtZero: true, ticks: { color: text, callback: (v: number) => `${v} ms` }, grid: { color: grid } } }
         };
 
@@ -556,7 +577,7 @@ export class Sistema implements OnInit, OnDestroy {
             ['Disco', 'diskPercent', 'triangle']
         ];
         this.usageChart = {
-            labels: usage.map((p) => this.label(p.at)),
+            labels,
             datasets: series.map(([label, key, pointStyle], i) => ({
                 label,
                 data: usage.map((p) => (p[key] === null ? null : Math.round(p[key]))),
@@ -574,7 +595,7 @@ export class Sistema implements OnInit, OnDestroy {
             ...base,
             plugins: {
                 legend: { position: 'top', align: 'end', labels: { color: text, usePointStyle: true, boxWidth: 8 } },
-                tooltip: { callbacks: { label: (c: any) => `${c.dataset.label}: ${c.parsed.y}%` } }
+                tooltip: { callbacks: { title: tooltipTitle, label: (c: any) => `${c.dataset.label}: ${c.parsed.y}%` } }
             },
             scales: { x, y: { min: 0, max: 100, ticks: { color: text, stepSize: 25, callback: (v: number) => `${v}%` }, grid: { color: grid } } }
         };

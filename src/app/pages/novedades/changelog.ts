@@ -25,6 +25,16 @@ export interface Release {
 
 export const RELEASES: Release[] = [
     {
+        version: '2.4.3',
+        date: '2026-10-27',
+        title: 'Orden de las novedades e historial del sistema',
+        changes: [
+            { kind: 'mejora', text: 'Novedades: cada tarjeta muestra el número de la última versión, y adentro las actualizaciones van de la más nueva a la más vieja.' },
+            { kind: 'correccion', text: 'Estado del sistema: el historial de 24 horas aparecía casi vacío después de cada actualización del sistema. Ahora muestra lo guardado hora por hora más la hora en curso.' },
+            { kind: 'mejora', text: 'Estado del sistema: en el historial de 7 días el eje marca el comienzo de cada día, y al pasar el mouse se ve el día y la hora. Las horas sin datos quedan vacías en lugar de en cero.' }
+        ]
+    },
+    {
         version: '2.4.2',
         date: '2026-10-27',
         title: 'Agenda con horario y calendario de cada chofer',
