@@ -89,6 +89,12 @@ import { MessageService } from 'primeng/api';
                             </div>
                         </div>
 
+                        <div class="flex flex-col gap-2">
+                            <label for="googleCalendar">Calendario de Google <span class="text-muted-color font-normal">(opcional)</span></label>
+                            <input type="text" pInputText id="googleCalendar" [(ngModel)]="driver.google_calendar_id" placeholder="…@group.calendar.google.com" />
+                            <small class="text-muted-color">Pegá el ID de su calendario y el sistema le copia ahí sus servicios (con detalles y notas) y sus días no disponibles. Ver el manual, sección 13.</small>
+                        </div>
+
                         <div class="pt-2 mt-2 border-t border-surface-200 dark:border-surface-700">
                             <div class="text-sm font-semibold text-muted-color mb-3">Vencimientos</div>
                             <div class="flex flex-col gap-2">

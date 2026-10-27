@@ -11,6 +11,8 @@ export interface Driver {
     email?: string;
     cuit?: string;
     license_number?: string;
+    /** Calendario de Google propio del chofer, donde se copian sus servicios. */
+    google_calendar_id?: string | null;
     carnetVencimiento?: string | Date | null;
     createdAt?: Date;
     updatedAt?: Date;

@@ -390,7 +390,7 @@ El ícono "Ver estadísticas" abre el detalle del cliente (sólo ADMIN y DIRECTO
 
 ### Choferes
 
-Nombre, teléfono, email, CUIT y número de licencia. La fecha de vencimiento del "Carnet de conducir" crea el vencimiento correspondiente (sección 12).
+Nombre, teléfono, email, CUIT y número de licencia. La fecha de vencimiento del "Carnet de conducir" crea el vencimiento correspondiente (sección 12). En "Calendario de Google" se pega el ID de su calendario propio, para que vea sus servicios en el celular (sección 13).
 
 ### Autos
 
@@ -449,8 +449,11 @@ En la Agenda se carga cuándo un auto no está disponible (taller, service, VTV)
 
 1. Andá a Agenda y tocá "Auto no disponible", "Chofer no disponible" o "Evento".
 2. Elegí el auto (y el motivo: Taller, Service, VTV u Otro), el chofer (con un motivo opcional) o escribí el título del evento.
-3. Marcá "Todo el día" o sacale la marca para poner desde qué hora hasta qué hora.
-4. Poné las fechas "Desde" y "Hasta" y, si querés, una nota.
+3. Elegí cuándo:
+    - **Con horario** (la opción que viene marcada): el día y de qué hora a qué hora. Arranca en la próxima hora en punto y dura 1 hora; si cambiás la hora de inicio, la de fin se corre igual.
+    - **Todo el día**: sólo el día.
+    - **Varios días**: desde qué día hasta qué día, enteros.
+4. Si querés, agregá una nota.
 5. Tocá "Guardar".
 
 Si en esos días ya hay servicios con ese auto o ese chofer, al guardar te los muestra para que revises si hay que cambiar algo. Lo que cargaste queda guardado igual.
@@ -483,6 +486,17 @@ El sistema copia todo a tres calendarios de Google de LECMA, para verlo desde el
 Google es sólo para mirar: todo se carga y se cambia en LECMA, y Google se actualiza solo a los pocos segundos (y cada 10 minutos por las dudas). Si cambiás algo directamente en Google, la próxima actualización lo vuelve a dejar como está en LECMA. Se copian los servicios desde hace 60 días hasta dentro de un año.
 
 Para verlos en tu Google Calendar, pedile a quien administra la cuenta de LECMA que te los comparta con "Ver todos los detalles de los eventos".
+
+### Calendario de cada chofer
+
+Cada chofer puede tener su propio calendario de Google con sólo sus servicios (recorrido, horario, auto, cliente, detalles y notas, sin importes) y sus días no disponibles. Para armarlo:
+
+1. Entrá a calendar.google.com con la cuenta de LECMA y creá un calendario, por ejemplo "LECMA · Milton".
+2. En "Configuración y uso compartido", compartilo con la cuenta de servicio del sistema (la que termina en iam.gserviceaccount.com) con "Hacer cambios en eventos".
+3. Compartilo también con el mail del chofer, con "Ver todos los detalles de los eventos". Le llega un aviso de Google y lo ve en el celular.
+4. Copiá el "ID del calendario" (en "Integrar el calendario") y pegalo en la ficha del chofer, en "Calendario de Google".
+
+En unos segundos aparecen sus servicios. Si un servicio cambia de chofer, pasa del calendario de uno al del otro. Para que deje de verlo, sacale el acceso desde Google.
 
 ## 14. Estadísticas
 

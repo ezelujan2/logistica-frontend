@@ -38,6 +38,37 @@ const KIND_ORDER: ChangeKind[] = ['importante', 'nuevo', 'mejora', 'correccion',
 // Cuántas versiones se muestran antes de "Ver versiones anteriores".
 const RELEASES_SHOWN = 10;
 
+/**
+ * Las versiones que comparten los dos primeros números (2.4.0, 2.4.1, 2.4.2)
+ * se muestran juntas: la principal (la primera que salió) con su título, y
+ * las actualizaciones chicas que vinieron después, debajo.
+ */
+interface ReleaseGroup {
+    key: string;
+    main: Release;
+    /** Actualizaciones posteriores a la principal, la más nueva primero. */
+    updates: Release[];
+    /** Fecha de la última del grupo. */
+    date: string;
+    versions: string[];
+}
+
+function groupReleases(releases: Release[]): ReleaseGroup[] {
+    const groups = new Map<string, Release[]>();
+    for (const r of releases) {
+        const key = r.version.split('.').slice(0, 2).join('.');
+        groups.set(key, [...(groups.get(key) ?? []), r]);
+    }
+    // RELEASES viene de la más nueva a la más vieja: la principal es la última del grupo.
+    return [...groups.entries()].map(([key, list]) => ({
+        key,
+        main: list[list.length - 1]!,
+        updates: list.slice(0, -1),
+        date: list[0]!.date,
+        versions: list.map((r) => r.version)
+    }));
+}
+
 @Component({
     selector: 'app-novedades',
     standalone: true,
@@ -66,33 +97,43 @@ const RELEASES_SHOWN = 10;
                             <p-selectbutton [options]="kindOptions" [(ngModel)]="kinds" [multiple]="true" optionLabel="label" optionValue="value" size="small" />
                         </div>
 
-                        <div *ngIf="filtering() && !visibleReleases().length" class="text-muted-color">Ningún cambio coincide con la búsqueda.</div>
-                        <div *ngIf="filtering() && visibleReleases().length" class="text-sm text-muted-color mb-3">{{ matchCount() }} cambios en {{ visibleReleases().length }} versiones</div>
+                        <div *ngIf="filtering() && !visibleGroups().length" class="text-muted-color">Ningún cambio coincide con la búsqueda.</div>
+                        <div *ngIf="filtering() && visibleGroups().length" class="text-sm text-muted-color mb-3">{{ matchCount() }} cambios en {{ visibleGroups().length }} versiones</div>
 
-                        <div *ngFor="let release of shownReleases()" class="border border-surface-200 dark:border-surface-700 rounded-lg mb-3 overflow-hidden">
+                        <div *ngFor="let group of shownGroups()" class="border border-surface-200 dark:border-surface-700 rounded-lg mb-3 overflow-hidden">
                             <button
                                 type="button"
                                 class="w-full flex flex-wrap items-center gap-x-3 gap-y-1 px-4 py-3 text-left hover:bg-surface-50 dark:hover:bg-surface-800 transition-colors"
-                                [attr.aria-expanded]="isOpen(release.version)"
-                                (click)="toggle(release.version)"
+                                [attr.aria-expanded]="isOpen(group.key)"
+                                (click)="toggle(group.key)"
                             >
-                                <i class="pi text-muted-color" [ngClass]="isOpen(release.version) ? 'pi-chevron-down' : 'pi-chevron-right'"></i>
-                                <span class="text-lg font-bold">{{ release.version }}</span>
-                                <span class="text-sm text-muted-color">{{ formatDate(release.date) }}</span>
-                                <p-tag *ngIf="release.version === current.version" value="Actual" severity="success" />
-                                <span class="font-medium flex-1 min-w-48">{{ release.title }}</span>
+                                <i class="pi text-muted-color" [ngClass]="isOpen(group.key) ? 'pi-chevron-down' : 'pi-chevron-right'"></i>
+                                <span class="text-lg font-bold">{{ group.updates.length ? group.key : group.main.version }}</span>
+                                <span class="text-sm text-muted-color">{{ formatDate(group.date) }}</span>
+                                <p-tag *ngIf="group.versions.includes(current.version)" value="Actual" severity="success" />
+                                <span class="font-medium flex-1 min-w-48">{{ group.main.title }}</span>
                                 <span class="flex flex-wrap gap-1">
-                                    <p-tag *ngFor="let c of kindCounts(release)" [value]="c.count + ' ' + c.label" [severity]="c.severity" styleClass="text-xs" />
+                                    <p-tag *ngFor="let c of kindCounts(group)" [value]="c.count + ' ' + c.label" [severity]="c.severity" styleClass="text-xs" />
                                 </span>
                             </button>
                             <!-- Contenido separado del título por una línea; en pantallas anchas
-                                 queda alineado con el título (después de la flecha). -->
-                            <ul *ngIf="isOpen(release.version)" class="list-none m-0 px-4 pt-4 pb-5 sm:pl-11 flex flex-col gap-4 border-t border-surface-200 dark:border-surface-700">
-                                <li *ngFor="let change of filteredChanges(release)" class="flex flex-col sm:flex-row sm:items-start gap-1.5 sm:gap-4">
-                                    <p-tag [value]="kindLabel(change.kind)" [severity]="kindSeverity(change.kind)" styleClass="shrink-0 self-start sm:w-28 justify-center" />
-                                    <span class="leading-relaxed sm:pt-0.5">{{ change.text }}</span>
-                                </li>
-                            </ul>
+                                 queda alineado con el título (después de la flecha). Las
+                                 actualizaciones chicas van debajo, cada una con su número. -->
+                            <div *ngIf="isOpen(group.key)" class="px-4 pt-4 pb-5 sm:pl-11 flex flex-col gap-5 border-t border-surface-200 dark:border-surface-700">
+                                <section *ngFor="let release of groupReleasesShown(group)" class="flex flex-col gap-4">
+                                    <div *ngIf="group.updates.length" class="flex flex-wrap items-baseline gap-x-2 text-sm">
+                                        <span class="font-semibold">{{ release.version }}</span>
+                                        <span class="text-muted-color">· {{ formatDate(release.date) }}</span>
+                                        <span *ngIf="release !== group.main" class="text-muted-color">· {{ release.title }}</span>
+                                    </div>
+                                    <ul class="list-none m-0 p-0 flex flex-col gap-4">
+                                        <li *ngFor="let change of filteredChanges(release)" class="flex flex-col sm:flex-row sm:items-start gap-1.5 sm:gap-4">
+                                            <p-tag [value]="kindLabel(change.kind)" [severity]="kindSeverity(change.kind)" styleClass="shrink-0 self-start sm:w-28 justify-center" />
+                                            <span class="leading-relaxed sm:pt-0.5">{{ change.text }}</span>
+                                        </li>
+                                    </ul>
+                                </section>
+                            </div>
                         </div>
 
                         <p-button *ngIf="hiddenCount() > 0" [label]="'Ver ' + hiddenCount() + ' versiones anteriores'" icon="pi pi-angle-down" [text]="true" (click)="showAll = true" />
@@ -153,7 +194,7 @@ const RELEASES_SHOWN = 10;
     `,
 })
 export class Novedades implements OnInit {
-    releases: Release[] = RELEASES;
+    groups: ReleaseGroup[] = groupReleases(RELEASES);
     current = CURRENT_RELEASE;
     tab = 'novedades';
     serverVersion: string | null = null;
@@ -163,7 +204,7 @@ export class Novedades implements OnInit {
     kinds: ChangeKind[] = [];
     kindOptions = KIND_ORDER.map((k) => ({ label: KIND_LABELS[k], value: k }));
     showAll = false;
-    private open = new Set<string>([CURRENT_RELEASE.version]);
+    private open = new Set<string>([this.groups[0]?.key ?? '']);
 
     // Manual
     sections: ManualSection[] = [];
@@ -199,36 +240,42 @@ export class Novedades implements OnInit {
             .sort((a, b) => KIND_ORDER.indexOf(a.kind) - KIND_ORDER.indexOf(b.kind));
     }
 
-    visibleReleases(): Release[] {
-        return this.filtering() ? this.releases.filter((r) => this.filteredChanges(r).length > 0) : this.releases;
+    /** La principal primero y después sus actualizaciones; al buscar, sólo las que coinciden. */
+    groupReleasesShown(group: ReleaseGroup): Release[] {
+        const all = [group.main, ...group.updates];
+        return this.filtering() ? all.filter((r) => this.filteredChanges(r).length > 0) : all;
     }
 
-    shownReleases(): Release[] {
-        const visible = this.visibleReleases();
+    visibleGroups(): ReleaseGroup[] {
+        return this.filtering() ? this.groups.filter((g) => this.groupReleasesShown(g).length > 0) : this.groups;
+    }
+
+    shownGroups(): ReleaseGroup[] {
+        const visible = this.visibleGroups();
         return this.filtering() || this.showAll ? visible : visible.slice(0, RELEASES_SHOWN);
     }
 
     hiddenCount(): number {
-        return this.visibleReleases().length - this.shownReleases().length;
+        return this.visibleGroups().length - this.shownGroups().length;
     }
 
     matchCount(): number {
-        return this.visibleReleases().reduce((sum, r) => sum + this.filteredChanges(r).length, 0);
+        return this.visibleGroups().reduce((sum, g) => sum + this.groupReleasesShown(g).reduce((n, r) => n + this.filteredChanges(r).length, 0), 0);
     }
 
-    isOpen(version: string): boolean {
+    isOpen(key: string): boolean {
         // Al buscar o filtrar se abren todas, para ver qué coincidió.
-        return this.filtering() || this.open.has(version);
+        return this.filtering() || this.open.has(key);
     }
 
-    toggle(version: string) {
+    toggle(key: string) {
         if (this.filtering()) return;
-        if (this.open.has(version)) this.open.delete(version);
-        else this.open.add(version);
+        if (this.open.has(key)) this.open.delete(key);
+        else this.open.add(key);
     }
 
-    kindCounts(release: Release) {
-        const changes = this.filtering() ? this.filteredChanges(release) : release.changes;
+    kindCounts(group: ReleaseGroup) {
+        const changes = this.groupReleasesShown(group).flatMap((r) => (this.filtering() ? this.filteredChanges(r) : r.changes));
         return KIND_ORDER.map((k) => ({ label: KIND_LABELS[k], severity: KIND_SEVERITY[k], count: changes.filter((c) => c.kind === k).length })).filter((c) => c.count > 0);
     }
 

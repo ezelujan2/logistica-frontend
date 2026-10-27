@@ -12,7 +12,6 @@ import { InputNumberModule } from 'primeng/inputnumber';
 import { DatePickerModule } from 'primeng/datepicker';
 import { SelectModule } from 'primeng/select';
 import { SelectButtonModule } from 'primeng/selectbutton';
-import { CheckboxModule } from 'primeng/checkbox';
 import { TagModule } from 'primeng/tag';
 import { TooltipModule } from 'primeng/tooltip';
 import { ConfirmDialogModule } from 'primeng/confirmdialog';
@@ -23,14 +22,24 @@ import { VehicleService, Vehicle } from '../../service/vehicle.service';
 /** Intervalo de service que se propone si no se sabe otro (se puede cambiar). */
 const DEFAULT_SERVICE_INTERVAL_KM = 10000;
 
+type AgendaMode = 'timed' | 'day' | 'days';
+
+/** Duración con la que arranca una carga con horario. */
+const DEFAULT_DURATION_MS = 60 * 60 * 1000;
+
 interface AgendaForm {
     id?: number;
     kind: AgendaKind;
     reason: string | null;
     title: string | null;
+    /** Con horario (un día, de tal hora a tal hora), todo el día, o varios días enteros. */
+    mode: AgendaMode;
+    day: Date | null;
+    startTime: Date | null;
+    endTime: Date | null;
+    /** Sólo para "Varios días". */
     startDate: Date | null;
     endDate: Date | null;
-    allDay: boolean;
     notes: string | null;
     vehicleId: number | null;
     driverId: number | null;
@@ -46,7 +55,7 @@ interface AgendaForm {
     standalone: true,
     imports: [
         CommonModule, FormsModule, TableModule, ButtonModule, ToastModule, DialogModule, InputTextModule, TextareaModule,
-        InputNumberModule, DatePickerModule, SelectModule, SelectButtonModule, CheckboxModule, TagModule, TooltipModule, ConfirmDialogModule
+        InputNumberModule, DatePickerModule, SelectModule, SelectButtonModule, TagModule, TooltipModule, ConfirmDialogModule
     ],
     providers: [MessageService, ConfirmationService],
     template: `
@@ -170,18 +179,33 @@ interface AgendaForm {
                     <input pInputText [(ngModel)]="form.title" placeholder="Ej. reunión con Techint" class="w-full" />
                 </div>
 
-                <div class="flex items-center gap-2">
-                    <p-checkbox [(ngModel)]="form.allDay" [binary]="true" inputId="allDay"></p-checkbox>
-                    <label for="allDay">Todo el día</label>
+                <p-selectButton [options]="modeOptions" [(ngModel)]="form.mode" optionLabel="label" optionValue="value" [allowEmpty]="false" size="small"></p-selectButton>
+
+                <div *ngIf="form.mode !== 'days'" class="flex gap-3">
+                    <div class="flex flex-col gap-2 flex-1">
+                        <label>Día</label>
+                        <p-datepicker [(ngModel)]="form.day" dateFormat="dd/mm/yy" [showIcon]="true" appendTo="body" styleClass="w-full" inputStyleClass="w-full"></p-datepicker>
+                    </div>
+                    <ng-container *ngIf="form.mode === 'timed'">
+                        <div class="flex flex-col gap-2 w-28">
+                            <label>De</label>
+                            <p-datepicker [ngModel]="form.startTime" (ngModelChange)="onStartTimeChange($event)" [timeOnly]="true" hourFormat="24" appendTo="body" styleClass="w-full" inputStyleClass="w-full"></p-datepicker>
+                        </div>
+                        <div class="flex flex-col gap-2 w-28">
+                            <label>A</label>
+                            <p-datepicker [(ngModel)]="form.endTime" [timeOnly]="true" hourFormat="24" appendTo="body" styleClass="w-full" inputStyleClass="w-full"></p-datepicker>
+                        </div>
+                    </ng-container>
                 </div>
-                <div class="flex gap-3">
+
+                <div *ngIf="form.mode === 'days'" class="flex gap-3">
                     <div class="flex flex-col gap-2 flex-1">
                         <label>Desde</label>
-                        <p-datepicker [(ngModel)]="form.startDate" [showTime]="!form.allDay" dateFormat="dd/mm/yy" appendTo="body" styleClass="w-full" inputStyleClass="w-full" (onSelect)="onStartSelect()"></p-datepicker>
+                        <p-datepicker [(ngModel)]="form.startDate" dateFormat="dd/mm/yy" [showIcon]="true" appendTo="body" styleClass="w-full" inputStyleClass="w-full" (onSelect)="onStartSelect()"></p-datepicker>
                     </div>
                     <div class="flex flex-col gap-2 flex-1">
                         <label>Hasta</label>
-                        <p-datepicker [(ngModel)]="form.endDate" [showTime]="!form.allDay" dateFormat="dd/mm/yy" appendTo="body" styleClass="w-full" inputStyleClass="w-full"></p-datepicker>
+                        <p-datepicker [(ngModel)]="form.endDate" dateFormat="dd/mm/yy" [showIcon]="true" appendTo="body" styleClass="w-full" inputStyleClass="w-full"></p-datepicker>
                     </div>
                 </div>
 
@@ -231,6 +255,11 @@ export class AgendaPage implements OnInit {
         { label: 'Auto', value: 'VEHICLE' },
         { label: 'Chofer', value: 'DRIVER' },
         { label: 'Evento', value: 'EVENT' }
+    ];
+    modeOptions = [
+        { label: 'Con horario', value: 'timed' },
+        { label: 'Todo el día', value: 'day' },
+        { label: 'Varios días', value: 'days' }
     ];
     vehicleReasons = VEHICLE_REASONS;
     defaultInterval = DEFAULT_SERVICE_INTERVAL_KM;
@@ -322,13 +351,19 @@ export class AgendaPage implements OnInit {
     private emptyForm(kind: AgendaKind): AgendaForm {
         const today = new Date();
         today.setHours(0, 0, 0, 0);
+        // Arranca en la próxima hora en punto y dura una hora.
+        const start = new Date();
+        start.setHours(start.getHours() + 1, 0, 0, 0);
         return {
             kind,
             reason: kind === 'VEHICLE' ? 'Taller' : null,
             title: null,
+            mode: 'timed',
+            day: new Date(start.getFullYear(), start.getMonth(), start.getDate()),
+            startTime: start,
+            endTime: new Date(start.getTime() + DEFAULT_DURATION_MS),
             startDate: today,
             endDate: new Date(today),
-            allDay: true,
             notes: null,
             vehicleId: null,
             driverId: null,
@@ -348,9 +383,7 @@ export class AgendaPage implements OnInit {
             kind: e.kind,
             reason: e.reason ?? null,
             title: e.title ?? null,
-            startDate: new Date(e.startDate),
-            endDate: new Date(e.endDate),
-            allDay: e.allDay,
+            ...this.datesFrom(e),
             notes: e.notes ?? null,
             vehicleId: e.vehicleId ?? null,
             driverId: e.driverId ?? null,
@@ -358,6 +391,26 @@ export class AgendaPage implements OnInit {
             nextServiceKm: e.nextServiceKm ?? null
         };
         this.dialog = true;
+    }
+
+    /** De lo guardado a los campos del formulario según el tipo de fecha. */
+    private datesFrom(e: AgendaEntry): Pick<AgendaForm, 'mode' | 'day' | 'startTime' | 'endTime' | 'startDate' | 'endDate'> {
+        const start = new Date(e.startDate);
+        const end = new Date(e.endDate);
+        const startDay = new Date(start.getFullYear(), start.getMonth(), start.getDate());
+        const endDay = new Date(end.getFullYear(), end.getMonth(), end.getDate());
+        const sameDay = startDay.getTime() === endDay.getTime();
+        const mode: AgendaMode = !e.allDay ? 'timed' : sameDay ? 'day' : 'days';
+        return { mode, day: startDay, startTime: start, endTime: end, startDate: startDay, endDate: endDay };
+    }
+
+    /** Al mover la hora de inicio, la de fin se corre igual (mantiene la duración). */
+    onStartTimeChange(value: Date | null) {
+        const prev = this.form.startTime;
+        const end = this.form.endTime;
+        const duration = prev && end && end.getTime() > prev.getTime() ? end.getTime() - prev.getTime() : DEFAULT_DURATION_MS;
+        this.form.startTime = value;
+        if (value) this.form.endTime = new Date(value.getTime() + duration);
     }
 
     onKindChange() {
@@ -377,16 +430,26 @@ export class AgendaPage implements OnInit {
 
     async save() {
         const f = this.form;
-        if (!f.startDate || !f.endDate) {
-            this.messageService.add({ severity: 'warn', summary: 'Faltan las fechas', detail: 'Completá desde y hasta.' });
-            return;
-        }
-        // "Todo el día" va de las 0 del primer día al final del último.
-        const start = new Date(f.startDate);
-        const end = new Date(f.endDate);
-        if (f.allDay) {
+        const warn = (detail: string) => this.messageService.add({ severity: 'warn', summary: 'Revisá las fechas', detail });
+        let start: Date;
+        let end: Date;
+        if (f.mode === 'timed') {
+            if (!f.day || !f.startTime || !f.endTime) return warn('Completá el día y las horas.');
+            start = new Date(f.day);
+            start.setHours(f.startTime.getHours(), f.startTime.getMinutes(), 0, 0);
+            end = new Date(f.day);
+            end.setHours(f.endTime.getHours(), f.endTime.getMinutes(), 0, 0);
+            if (end <= start) return warn('La hora de fin tiene que ser después de la de inicio.');
+        } else {
+            // "Todo el día" y "Varios días" van de las 0 del primer día al final del último.
+            const from = f.mode === 'day' ? f.day : f.startDate;
+            const to = f.mode === 'day' ? f.day : f.endDate;
+            if (!from || !to) return warn(f.mode === 'day' ? 'Elegí el día.' : 'Completá desde y hasta.');
+            start = new Date(from);
             start.setHours(0, 0, 0, 0);
+            end = new Date(to);
             end.setHours(23, 59, 59, 0);
+            if (end < start) return warn('La fecha "Hasta" es anterior a "Desde".');
         }
         const isService = f.kind === 'VEHICLE' && f.reason === 'Service';
         const payload: AgendaEntry = {
@@ -395,7 +458,7 @@ export class AgendaPage implements OnInit {
             title: f.title,
             startDate: start,
             endDate: end,
-            allDay: f.allDay,
+            allDay: f.mode !== 'timed',
             notes: f.notes,
             vehicleId: f.vehicleId,
             driverId: f.driverId,

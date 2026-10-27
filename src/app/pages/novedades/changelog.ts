@@ -25,6 +25,16 @@ export interface Release {
 
 export const RELEASES: Release[] = [
     {
+        version: '2.4.2',
+        date: '2026-10-27',
+        title: 'Agenda con horario y calendario de cada chofer',
+        changes: [
+            { kind: 'mejora', text: 'Agenda: al cargar algo se elige "Con horario" (un día, de tal hora a tal hora; arranca con 1 hora de duración), "Todo el día" o "Varios días". Si cambiás la hora de inicio, la de fin se corre sola.' },
+            { kind: 'nuevo', text: 'Calendario de cada chofer: en su ficha se pega el ID de un calendario de Google y el sistema le copia ahí sus servicios (con detalles y notas, sin importes) y sus días no disponibles. Así cada chofer ve sólo lo suyo en el celular.' },
+            { kind: 'mejora', text: 'Novedades: las actualizaciones chicas (como 2.4.1 y 2.4.2) se muestran dentro de su versión, en una sola tarjeta.' }
+        ]
+    },
+    {
         version: '2.4.1',
         date: '2026-10-27',
         title: 'Arreglo de la copia a Google Calendar',
