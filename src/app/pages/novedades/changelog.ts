@@ -25,6 +25,22 @@ export interface Release {
 
 export const RELEASES: Release[] = [
     {
+        version: '2.2.0',
+        date: '2026-10-27',
+        title: 'Ayuda en cada pantalla, historial del sistema y control de ingresos',
+        changes: [
+            { kind: 'nuevo', text: 'Ayuda en cada pantalla: el botón con el signo de pregunta (?) de la barra de arriba muestra la parte del manual que explica la pantalla en la que estás, con un buscador para el resto. Lo tienen todos los usuarios.' },
+            { kind: 'nuevo', text: 'El asistente responde dudas sobre cómo usar el sistema ("¿cómo corrijo el número de una factura?") con los pasos del manual, según el rol de cada uno.' },
+            { kind: 'nuevo', text: 'Estado del sistema (sólo administradores): historial de pedidos, tiempos de respuesta y uso del servidor de 24 horas, 7, 30 o 90 días.' },
+            { kind: 'nuevo', text: 'Estado del sistema: control de los respaldos de la base de datos, con aviso si el último está atrasado o salió incompleto.' },
+            { kind: 'seguridad', text: 'Estado del sistema: panel de ingresos con los intentos fallidos, usuarios bloqueados, las IPs y cuentas con más fallos y los ingresos desde un lugar nuevo.' },
+            { kind: 'mejora', text: 'Novedades: la versión actual aparece abierta y las anteriores resumidas; se puede buscar un tema en todas las versiones y filtrar por tipo de cambio.' },
+            { kind: 'mejora', text: 'Manual de usuario: índice para saltar a cada sección y un buscador que muestra sólo las secciones que hablan de lo que buscás.' },
+            { kind: 'mejora', text: 'Estado del sistema (sólo administradores): la lista de errores se puede buscar, filtrar, ordenar y paginar, y tiene un acceso directo a Sentry.' },
+            { kind: 'correccion', text: 'El límite de intentos de inicio de sesión se contaba para todo el equipo junto: si entre todos se sumaban muchos ingresos en pocos minutos, nadie podía entrar. Ahora se cuenta para cada persona por separado.' }
+        ]
+    },
+    {
         version: '2.1.0',
         date: '2026-10-27',
         title: 'Estado del sistema y aviso de errores',

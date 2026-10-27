@@ -4,6 +4,12 @@ Este manual explica, paso a paso, cómo hacer cada tarea del día a día en el s
 
 Los nombres entre comillas ("Nuevo Servicio", "Generar Reporte") son los textos exactos de los botones y opciones en pantalla.
 
+### Ayuda en cada pantalla
+
+En la barra de arriba, el botón con el signo de pregunta (?) abre al costado la parte de este manual que explica la pantalla en la que estás. Arriba del panel hay un buscador para encontrar cualquier otro tema del manual. Lo tienen todos los usuarios.
+
+También podés preguntarle al asistente cómo se hace algo ("¿cómo corrijo el número de una factura?"): busca la respuesta en este manual y te da los pasos según tu rol.
+
 El manual describe el sistema con las mejoras de octubre de 2026 (asistente de IA nuevo, historial de estados, selector de período y nuevas validaciones). Si alguna pantalla todavía no coincide, esa mejora aún no se instaló.
 
 ### Qué ve cada usuario
@@ -20,6 +26,7 @@ Lo que aparece en el menú depende de tu rol. Si no ves una opción que figura e
 | Administrar usuarios | Sí | Sí | No |
 | Corregir el estado de un servicio o reporte salteando pasos | Sí | No | No |
 | Ver el historial de servicios y reportes | Sí | No | No |
+| Ayuda de cada pantalla (botón ?) | Sí | Sí | Sí |
 | Novedades y ayuda (con este manual) | Sí | Sí | No |
 | Estado del sistema | Sí | No | No |
 
@@ -473,6 +480,8 @@ El asistente es un chat al que le podés preguntar en lenguaje común por los da
 
 El asistente recuerda la conversación: podés seguir con "y en septiembre?" o "pasá el segundo a pagado".
 
+También responde dudas sobre cómo usar el sistema ("¿cómo registro un cobro parcial?", "¿por qué no me aparece el botón Pagado?"). Para eso lee este manual y te da los pasos que corresponden a tu rol.
+
 ### Ejemplos
 
 | Para | Preguntá algo como |
@@ -572,12 +581,15 @@ La pantalla Estado del sistema muestra de un vistazo si todo funciona y se actua
 | Etiquetas de arriba | Si la base de datos responde, si el aviso de errores (Sentry) está activo y si el asistente tiene su clave |
 | Pedidos, errores y tiempo de respuesta | Cuánto se usó el sistema en las últimas 24 horas, qué parte terminó en error y cuánto tardan las respuestas |
 | Asistente de IA | Consultas y costo del mes |
-| Pedidos por hora | Gráfico de las últimas 24 horas; en rojo, los que dieron error |
+| Etiqueta de respaldo | "Respaldo al día" si el último respaldo bueno tiene menos de 26 horas; "Respaldo atrasado" si no |
+| Historial | Tres gráficos con el período que elijas (24 horas, 7, 30 o 90 días): pedidos (en rojo los que dieron error), tiempo de respuesta y uso del servidor (CPU, memoria y disco). Hasta 7 días se ven hora por hora; más, día por día |
 | Servidor | Uso de CPU, memoria y disco, en verde, naranja o rojo según qué tan cerca están del límite |
 | Base de datos | Tiempo de respuesta, tamaño y conexiones abiertas, y los pedidos más lentos |
-| Errores abiertos | Los errores de las últimas 24 horas registrados en Sentry, con cuántas veces pasaron, a cuántos usuarios y un enlace al detalle |
+| Respaldos de la base de datos | Cuándo fue el último respaldo bueno, su tamaño (avisa si salió mucho más chico que el anterior, señal de que quedó incompleto) y los últimos 10 intentos |
+| Seguridad: ingresos al sistema | Para hoy, 7 o 30 días: ingresos correctos, intentos fallidos y por qué fallaron, usuarios bloqueados, las IPs y cuentas con más fallos, los ingresos desde un lugar nuevo (una IP que esa persona no usó en los 90 días anteriores) y la lista de intentos, con buscador y filtro "Sólo fallidos" |
+| Errores abiertos | Los errores de las últimas 24 horas registrados en Sentry, con cuántas veces pasaron, a cuántos usuarios y un enlace al detalle. Se pueden buscar, filtrar por proyecto y nivel, ordenar y paginar; "Ver todo en Sentry" abre la lista completa |
 
-Las cifras de pedidos se cuentan desde el último reinicio del servidor. Los gráficos históricos del servidor están en el panel de Coolify, en Servidor › Métricas.
+En el historial de 24 horas, los pedidos se cuentan desde el último reinicio del servidor. Para períodos más largos se usa lo que se guarda una vez por hora desde la versión 2.2.0, que se conserva un año. Un ingreso "desde un lugar nuevo" no siempre es un problema (otra red de wifi, el celular): conviene revisarlo sólo si la persona no lo reconoce.
 
 ## 18. Preguntas frecuentes
 

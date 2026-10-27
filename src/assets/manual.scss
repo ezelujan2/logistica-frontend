@@ -1,0 +1,16 @@
+// Estilo del manual de usuario (viene de un markdown), compartido por
+// Novedades y ayuda y por el panel de ayuda de cada pantalla.
+.lecma-manual { max-width: 56rem; line-height: 1.6; }
+.lecma-manual + .lecma-manual { margin-top: 2rem; padding-top: 1rem; border-top: 1px solid var(--surface-border); }
+.lecma-manual h2 { font-size: 1.4rem; font-weight: 700; margin: 0 0 0.75rem; }
+.lecma-manual h3 { font-size: 1.1rem; font-weight: 600; margin: 1.25rem 0 0.5rem; }
+.lecma-manual p { margin: 0 0 0.75rem; }
+.lecma-manual ul, .lecma-manual ol { margin: 0 0 0.75rem; padding-left: 1.5rem; }
+.lecma-manual ul { list-style: disc; }
+.lecma-manual ol { list-style: decimal; }
+.lecma-manual li { margin-bottom: 0.25rem; }
+.lecma-manual table { width: 100%; border-collapse: collapse; margin: 0 0 1rem; font-size: 0.925rem; display: block; overflow-x: auto; }
+.lecma-manual th, .lecma-manual td { border: 1px solid var(--surface-border); padding: 0.4rem 0.6rem; text-align: left; vertical-align: top; }
+.lecma-manual th { background: var(--surface-ground); font-weight: 600; }
+.lecma-manual blockquote { margin: 0 0 1rem; padding: 0.5rem 1rem; border-left: 4px solid var(--primary-color); background: var(--surface-ground); }
+.lecma-manual code { font-size: 0.875em; }

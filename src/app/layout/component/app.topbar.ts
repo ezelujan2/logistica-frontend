@@ -9,6 +9,7 @@ import { BadgeModule } from 'primeng/badge';
 import { ButtonModule } from 'primeng/button';
 import { TooltipModule } from 'primeng/tooltip';
 import { InputTextModule } from 'primeng/inputtext';
+import { AppHelp } from './app.help';
 import { AppConfigurator } from './app.configurator';
 import { LayoutService } from '../service/layout.service';
 import { AuthService } from '../../service/auth.service';
@@ -49,7 +50,7 @@ function saveDismissedKeys(keys: Set<string>) {
 @Component({
     selector: 'app-topbar',
     standalone: true,
-    imports: [RouterModule, CommonModule, FormsModule, StyleClassModule, PopoverModule, BadgeModule, ButtonModule, TooltipModule, InputTextModule, AppConfigurator],
+    imports: [RouterModule, CommonModule, FormsModule, StyleClassModule, PopoverModule, BadgeModule, ButtonModule, TooltipModule, InputTextModule, AppConfigurator, AppHelp],
     template: ` <div class="layout-topbar">
         <div class="layout-topbar-logo-container">
             <button class="layout-menu-button layout-topbar-action" (click)="layoutService.onMenuToggle()">
@@ -161,6 +162,7 @@ function saveDismissedKeys(keys: Set<string>) {
                         </div>
                     </div>
                 </p-popover>
+                <app-help></app-help>
                 <button type="button" class="layout-topbar-action" (click)="toggleDarkMode()">
                     <i [ngClass]="{ 'pi ': true, 'pi-moon': layoutService.isDarkTheme(), 'pi-sun': !layoutService.isDarkTheme() }"></i>
                 </button>
