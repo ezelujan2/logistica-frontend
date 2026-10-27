@@ -39,6 +39,7 @@ const HELP_BY_ROUTE: Array<[RegExp, string[]]> = [
     [/^\/app\/(drivers|clients|vehicles)/, ['clientes, choferes, autos']],
     [/^\/app\/statistics/, ['estadisticas']],
     [/^\/app\/reminders/, ['vencimientos']],
+    [/^\/app\/agenda/, ['agenda']],
     [/^\/app\/assistant/, ['asistente de ia']],
     [/^\/app\/surveys/, ['encuestas']],
     [/^\/app\/users/, ['administrar usuarios']],

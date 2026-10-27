@@ -208,6 +208,23 @@ type Level = 'good' | 'warning' | 'critical';
                     </ng-container>
                 </div>
 
+                <!-- Copia a Google Calendar: se sincroniza tras cada cambio y cada 10 minutos. -->
+                <div class="card" *ngIf="status.googleCalendar">
+                    <div class="flex flex-wrap items-center justify-between gap-2 mb-2">
+                        <div class="font-semibold">Google Calendar</div>
+                        <p-tag *ngIf="status.googleCalendar.enabled && status.googleCalendar.last" [value]="status.googleCalendar.last.ok ? 'Sincronizado' : 'Con error'" [severity]="status.googleCalendar.last.ok ? 'success' : 'danger'" />
+                    </div>
+                    <div *ngIf="!status.googleCalendar.enabled" class="text-sm text-muted-color">
+                        Desactivado. Para activarlo hay que cargar GOOGLE_SERVICE_ACCOUNT_JSON y los tres GOOGLE_CALENDAR_*_ID en el backend.
+                    </div>
+                    <div *ngIf="status.googleCalendar.enabled && !status.googleCalendar.last" class="text-sm text-muted-color">Todavía no terminó la primera sincronización.</div>
+                    <div *ngIf="status.googleCalendar.last as g" class="text-sm">
+                        Última: {{ g.at | date: 'dd/MM HH:mm' }}
+                        <span *ngIf="g.ok" class="text-muted-color"> · {{ g.created }} nuevos, {{ g.updated }} actualizados, {{ g.deleted }} borrados</span>
+                        <div *ngIf="!g.ok" class="mt-1 font-mono text-xs break-all" [ngClass]="levelText('critical')">{{ g.error }}</div>
+                    </div>
+                </div>
+
                 <!-- Seguridad: intentos de ingreso, bloqueos y accesos desde lugares nuevos. -->
                 <div class="card">
                     <div class="flex flex-wrap items-center justify-between gap-3 mb-4">

@@ -25,6 +25,19 @@ export interface Release {
 
 export const RELEASES: Release[] = [
     {
+        version: '2.4.0',
+        date: '2026-10-27',
+        title: 'Agenda de autos y choferes y Google Calendar',
+        changes: [
+            { kind: 'nuevo', text: 'Agenda: se carga cuándo un auto está en taller, service o VTV, cuándo un chofer no puede trabajar y cualquier otro evento. Todo aparece en el calendario de servicios, con borde punteado.' },
+            { kind: 'nuevo', text: 'Al cargar o editar un servicio, si el auto o el chofer no están disponibles en ese horario (o tienen el seguro, la VTV o el carnet vencidos), aparece un aviso. Es sólo un aviso: se puede guardar igual.' },
+            { kind: 'nuevo', text: 'Al cargar un taller o un día en que un chofer no puede, si ya hay servicios con ese auto o chofer en esas fechas, el sistema los muestra para revisarlos.' },
+            { kind: 'nuevo', text: 'Services de los autos: se anota a qué km se hizo y a qué km toca el próximo, y la Agenda muestra cuántos km le faltan a cada auto según los viajes cargados.' },
+            { kind: 'nuevo', text: 'Google Calendar: los servicios, la agenda y los vencimientos se copian solos a tres calendarios de Google de LECMA, para verlos desde el celular. Es sólo para mirar: todo se sigue cargando en LECMA.' },
+            { kind: 'mejora', text: 'Asistente: al cruzar una orden de pago con los servicios, usa el número de factura que trae (por ejemplo 00001-00000003 = F003). Sirve cuando un cliente tiene varios viajes por el mismo importe.' }
+        ]
+    },
+    {
         version: '2.3.0',
         date: '2026-10-27',
         title: 'Cargar la semana de un cliente desde una foto',

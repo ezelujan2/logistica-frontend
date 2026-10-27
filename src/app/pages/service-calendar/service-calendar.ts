@@ -8,12 +8,15 @@ import { DialogModule } from 'primeng/dialog';
 import { TagModule } from 'primeng/tag';
 import { FormsModule } from '@angular/forms';
 import { Service } from '../../service/service.service';
+import { AgendaEntry, agendaLabel, agendaIcon } from '../../service/agenda.service';
 
 interface CalendarDay {
     date: Date;
     isCurrentMonth: boolean;
     isToday: boolean;
     services: Service[];
+    /** Talleres, choferes no disponibles y eventos que tocan este día. */
+    agenda: AgendaEntry[];
 }
 
 @Component({
@@ -59,6 +62,9 @@ interface CalendarDay {
                             <span class="cal-day-number" [ngClass]="day.isToday ? 'cal-day-number--today' : ''">{{ day.date.getDate() }}</span>
                         </div>
                         <div class="flex flex-col gap-1">
+                            <div *ngFor="let a of day.agenda" class="agenda-chip" [pTooltip]="agendaTooltip(a)" tooltipPosition="top" (click)="$event.stopPropagation()">
+                                <i [class]="agendaIcon(a.kind)" class="text-[9px]"></i><span class="truncate">{{ agendaLabel(a) }}</span>
+                            </div>
                             <div *ngFor="let s of day.services.slice(0, 2)"
                                  class="cal-month-card" [ngClass]="getServicePillClass(s.status)"
                                  (click)="onServiceClick($event, s)" [pTooltip]="getServiceTooltip(s)" tooltipPosition="top">
@@ -104,6 +110,7 @@ interface CalendarDay {
                             {{ day.date.getDate() }}
                         </span>
                         <div class="flex gap-0.5 mt-0.5 h-1.5">
+                            <span *ngIf="day.agenda.length" class="agenda-dot"></span>
                             <span *ngFor="let s of day.services.slice(0,3)" class="w-1.5 h-1.5 rounded-full" [ngClass]="getDotClass(s.status)"></span>
                         </div>
                     </div>
@@ -113,6 +120,12 @@ interface CalendarDay {
                     <div class="flex items-center justify-between px-4 py-2 bg-surface-50 dark:bg-surface-800">
                         <span class="font-semibold text-sm">{{ getSelectedDayLabel() }}</span>
                         <button pButton icon="pi pi-plus" size="small" [rounded]="true" [text]="true" (click)="onAddClick($event, selectedDay.date)"></button>
+                    </div>
+                    <div *ngIf="selectedDay.agenda.length" class="flex flex-col gap-1 px-4 pt-3">
+                        <div *ngFor="let a of selectedDay.agenda" class="agenda-chip agenda-chip--lg">
+                            <i [class]="agendaIcon(a.kind)" class="text-xs"></i><span class="truncate">{{ agendaLabel(a) }}</span>
+                            <span class="ml-auto text-[11px] opacity-70 flex-shrink-0">{{ agendaTime(a) }}</span>
+                        </div>
                     </div>
                     <div *ngIf="selectedDay.services.length === 0" class="flex flex-col items-center py-8 text-color-secondary text-sm gap-2">
                         <i class="pi pi-calendar-times text-3xl"></i>Sin servicios este día
@@ -171,6 +184,10 @@ interface CalendarDay {
                              [ngClass]="{ 'week-col-body--today': day.isToday }"
                              (click)="onAddClick($event, day.date)">
 
+                            <div *ngFor="let a of day.agenda" class="agenda-chip agenda-chip--lg" [pTooltip]="agendaTooltip(a)" tooltipPosition="top" (click)="$event.stopPropagation()">
+                                <i [class]="agendaIcon(a.kind)" class="text-[10px]"></i><span class="truncate">{{ agendaLabel(a) }}</span>
+                            </div>
+
                             <!-- Sin servicios -->
                             <div *ngIf="day.services.length === 0" class="week-empty">
                                 <button pButton icon="pi pi-plus" [rounded]="true" [text]="true" severity="secondary" size="small"
@@ -226,6 +243,10 @@ interface CalendarDay {
                   [style]="{ width: '480px', 'max-width': '95vw' }"
                   [draggable]="false">
             <div class="flex flex-col gap-2 pt-1">
+                <div *ngFor="let a of dayDetailAgenda" class="agenda-chip agenda-chip--lg">
+                    <i [class]="agendaIcon(a.kind)" class="text-xs"></i><span class="truncate">{{ agendaLabel(a) }}</span>
+                    <span class="ml-auto text-[11px] opacity-70 flex-shrink-0">{{ agendaTime(a) }}</span>
+                </div>
                 <div *ngFor="let s of dayDetailServices"
                      class="flex items-start gap-3 p-3 rounded-xl border border-surface-200 dark:border-surface-700 cursor-pointer hover:bg-surface-50 dark:hover:bg-surface-800 transition-colors"
                      (click)="onServiceClick($event, s); dayDetailVisible = false">
@@ -336,6 +357,22 @@ interface CalendarDay {
         }
         .cal-ref--invoice { background: #047857; }
         .cal-ref--report  { background: #b45309; }
+
+        /* Agenda (taller, chofer no disponible, evento): borde punteado para que
+           no se confunda con las tarjetas de servicio, que van por color de estado. */
+        .agenda-chip {
+            display: flex; align-items: center; gap: 4px; min-width: 0;
+            font-size: 10px; font-weight: 600; line-height: 1.4;
+            padding: 1px 6px; border-radius: 4px;
+            border: 1px dashed var(--text-color-secondary);
+            background: var(--surface-ground); color: var(--text-color);
+            cursor: default;
+        }
+        .agenda-chip--lg { font-size: 12px; padding: 4px 8px; border-radius: 6px; }
+        .agenda-dot {
+            width: 6px; height: 6px; border-radius: 1px; flex-shrink: 0;
+            border: 1px solid var(--text-color-secondary); background: transparent;
+        }
 
         /* ── Colores pills ── */
         .pill-gray   { background: var(--surface-300, #d1d5db); color: var(--text-color); }
@@ -451,6 +488,7 @@ interface CalendarDay {
 })
 export class ServiceCalendar implements OnInit, OnChanges {
     @Input() allServices: Service[] = [];
+    @Input() agenda: AgendaEntry[] = [];
     @Output() editService = new EventEmitter<Service>();
     @Output() addServiceDate = new EventEmitter<Date>();
 
@@ -460,6 +498,10 @@ export class ServiceCalendar implements OnInit, OnChanges {
     dayDetailVisible = false;
     dayDetailLabel = '';
     dayDetailServices: Service[] = [];
+    dayDetailAgenda: AgendaEntry[] = [];
+
+    agendaLabel = agendaLabel;
+    agendaIcon = agendaIcon;
 
     weekZoomDays: number = 7;
     private _pinchStartDist = 0;
@@ -495,7 +537,7 @@ export class ServiceCalendar implements OnInit, OnChanges {
     }
 
     ngOnChanges(changes: SimpleChanges) {
-        if (changes['allServices']) {
+        if (changes['allServices'] || changes['agenda']) {
             this.generateCalendar();
             this.autoSelectToday();
         }
@@ -526,6 +568,7 @@ export class ServiceCalendar implements OnInit, OnChanges {
         const dayNames = ['Domingo', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado'];
         this.dayDetailLabel = `${dayNames[day.date.getDay()]} ${day.date.getDate()} de ${this.months[day.date.getMonth()]}`;
         this.dayDetailServices = day.services;
+        this.dayDetailAgenda = day.agenda;
         this.dayDetailVisible = true;
     }
 
@@ -641,12 +684,32 @@ export class ServiceCalendar implements OnInit, OnChanges {
         // Sort services by time
         dayServices.sort((a, b) => new Date(a.startDate).getTime() - new Date(b.startDate).getTime());
 
+        const dayStart = new Date(date.getFullYear(), date.getMonth(), date.getDate()).getTime();
+        const dayEnd = dayStart + 86_400_000;
+        const dayAgenda = this.agenda.filter(a => new Date(a.startDate).getTime() < dayEnd && new Date(a.endDate).getTime() >= dayStart);
+
         this.calendarDays.push({
             date,
             isCurrentMonth,
             isToday,
-            services: dayServices
+            services: dayServices,
+            agenda: dayAgenda
         });
+    }
+
+    /** "Todo el día" o el horario, para la agenda. */
+    agendaTime(a: AgendaEntry): string {
+        if (a.allDay) return 'Todo el día';
+        const t = (d: Date) => d.toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit' });
+        return `${t(new Date(a.startDate))} a ${t(new Date(a.endDate))}`;
+    }
+
+    agendaTooltip(a: AgendaEntry): string {
+        const start = new Date(a.startDate);
+        const end = new Date(a.endDate);
+        const d = (x: Date) => x.toLocaleDateString('es-AR', { day: '2-digit', month: '2-digit' });
+        const range = start.toDateString() === end.toDateString() ? d(start) : `${d(start)} al ${d(end)}`;
+        return [agendaLabel(a), a.allDay ? range : `${range} · ${this.agendaTime(a)}`, a.notes].filter(Boolean).join(' · ');
     }
 
     isSameDay(d1: Date, d2: Date): boolean {

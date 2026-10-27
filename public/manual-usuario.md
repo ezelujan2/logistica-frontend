@@ -85,6 +85,7 @@ La pantalla de inicio muestra de un vistazo qué hay que hacer hoy; el menú de 
 | Clientes | Datos y tarifas de cada cliente |
 | Choferes › Listado/Config, Adelantos, Liquidaciones | Datos de choferes, dinero adelantado y pagos |
 | Autos | Vehículos |
+| Agenda | Talleres, services, días en que un chofer no puede y eventos |
 | Vencimientos | Seguros, VTV, carnets y otros documentos |
 | Estadísticas | Indicadores (ADMIN y DIRECTOR) |
 | Encuestas | Respuestas de satisfacción de clientes (ADMIN y DIRECTOR) |
@@ -104,7 +105,7 @@ Un servicio se carga desde cualquier lista de Servicios con "Nuevo Servicio". El
 2. Completá "Fecha Inicio" y "Fecha Fin".
 3. Elegí el "Tipo de Servicio" y el "Tipo de Facturación": factura A, monotributo o informal (sin factura).
 4. En "Tarifa a Aplicar" elegí la tarifa: carga los precios por km y por hora del cliente y del chofer. Podés ajustarlos a mano en "Precios Cliente" y "Precios Chofer".
-5. Elegí el cliente en "Clientes", el chofer en "Choferes" (uno solo por servicio) y el auto en "Autos".
+5. Elegí el cliente en "Clientes", el chofer en "Choferes" (uno solo por servicio) y el auto en "Autos". Si el auto o el chofer no están disponibles en ese horario (taller, un día que el chofer no puede, un documento vencido), aparece un aviso amarillo debajo; podés guardar igual (sección 13).
 6. Completá "Origen" y "Destino". Si el cliente pidió un tipo de auto, indicalo en "Tipo de Vehículo (para Voucher)".
 7. Cargá "KM Recorridos", "KM Extra (Cliente)" y "Horas de Espera". Si a partir de la sexta hora de espera se cobra doble, marcá "¿Recargo 5+ Hs? (Vale doble)".
 8. Revisá el IVA en "% de IVA a aplicar": los servicios nuevos arrancan en 10,5%; cambialo a 21% si corresponde. Marcá "¿Es IVA Exento?" si el servicio no lleva IVA. Si hay descuento, cargalo en "Descuento (%)".
@@ -141,7 +142,7 @@ Si falta algún dato obligatorio (cliente, fechas, origen, destino, chofer, auto
 - **"Agregar Gasto":** gastos del viaje (combustible, peajes, estacionamiento…). Ver sección 9.
 - **"Agregar Reembolso":** gastos que se le recobran al cliente, con foto o PDF en "Evidencias (Opcional)".
 - **"Agregar Pendiente":** tareas para recordar (por ejemplo, confirmar el horario con el pasajero). Con "Avisar día antes / mismo día" el sistema envía un recordatorio por correo.
-- **"Generar Encuesta":** crea el enlace de la encuesta de satisfacción del servicio (sección 15).
+- **"Generar Encuesta":** crea el enlace de la encuesta de satisfacción del servicio (sección 16).
 
 ## 5. Trabajar con la lista de servicios
 
@@ -169,6 +170,7 @@ Muestra los servicios de cada día. Se puede ver por mes o por semana: se cambia
 | Rojo | Pendiente de pago |
 | Verde | Pagado |
 | Punto naranja | El servicio tiene algún pendiente |
+| Borde punteado | Algo de la Agenda: un auto en taller, un chofer que no puede o un evento (sección 13) |
 
 ### Botones de cada servicio
 
@@ -439,7 +441,50 @@ Cuando se renueva un documento, editá el vencimiento y poné la fecha nueva. El
 
 Las tareas pendientes de todos los servicios también aparecen en "Mis Pendientes" de la pantalla de inicio.
 
-## 13. Estadísticas
+## 13. Agenda: talleres, choferes y eventos
+
+En la Agenda se carga cuándo un auto no está disponible (taller, service, VTV), cuándo un chofer no puede trabajar y cualquier otro evento. Todo aparece en el calendario de servicios, y si al cargar un servicio elegís un auto o un chofer que ese día no está disponible, el sistema te avisa. Son sólo avisos: nunca te impiden guardar.
+
+### Cargar algo en la agenda
+
+1. Andá a Agenda y tocá "Auto no disponible", "Chofer no disponible" o "Evento".
+2. Elegí el auto (y el motivo: Taller, Service, VTV u Otro), el chofer (con un motivo opcional) o escribí el título del evento.
+3. Marcá "Todo el día" o sacale la marca para poner desde qué hora hasta qué hora.
+4. Poné las fechas "Desde" y "Hasta" y, si querés, una nota.
+5. Tocá "Guardar".
+
+Si en esos días ya hay servicios con ese auto o ese chofer, al guardar te los muestra para que revises si hay que cambiar algo. Lo que cargaste queda guardado igual.
+
+### Services de los autos
+
+Al cargar un auto con motivo "Service", poné a qué km se hizo ("Service de los") y a qué km toca el próximo. El próximo se propone 10.000 km después; cambialo si el manual del auto dice otra cosa.
+
+Arriba de la Agenda, "Próximos services" muestra cada auto con cuántos km le faltan, el más cercano primero. Los km de hoy son una estimación: los del último service más los km de los viajes cargados desde entonces. La etiqueta se pone amarilla cuando faltan menos de 1.500 km y roja cuando ya toca.
+
+### En el calendario y al cargar un servicio
+
+- En el calendario, lo de la agenda aparece arriba de los servicios de cada día, con borde punteado. Pasá el mouse para ver las fechas y la nota.
+- En el formulario del servicio, debajo de "Autos", aparece un aviso amarillo si el auto o el chofer no están disponibles en ese horario, o si tienen el seguro, la VTV o el carnet vencidos para esa fecha.
+
+### Editar o borrar
+
+En la lista de la Agenda, usá el lápiz para editar y el tacho para borrar. Por defecto se ve de hoy en adelante; elegí "Todo" para ver lo anterior, o filtrá por auto o chofer.
+
+### Verlo en Google Calendar
+
+El sistema copia todo a tres calendarios de Google de LECMA, para verlo desde el celular o junto con tu calendario personal:
+
+| Calendario | Qué tiene |
+| --- | --- |
+| LECMA · Servicios | Cada servicio no cancelado, con patente, recorrido, chofer y cliente (por ejemplo "AB123CD · Ros → KCC · Milton · Spoto"). Sin importes. En la descripción está el estado, el reporte y un enlace para abrirlo en LECMA |
+| LECMA · Autos y choferes | Todo lo de la Agenda: talleres, services, días en que un chofer no puede y eventos |
+| LECMA · Vencimientos | Seguros, VTV, carnets y demás vencimientos, el día que vencen |
+
+Google es sólo para mirar: todo se carga y se cambia en LECMA, y Google se actualiza solo a los pocos segundos (y cada 10 minutos por las dudas). Si cambiás algo directamente en Google, la próxima actualización lo vuelve a dejar como está en LECMA. Se copian los servicios desde hace 60 días hasta dentro de un año.
+
+Para verlos en tu Google Calendar, pedile a quien administra la cuenta de LECMA que te los comparta con "Ver todos los detalles de los eventos".
+
+## 14. Estadísticas
 
 La pantalla Estadísticas (ADMIN y DIRECTOR) muestra cuánto se facturó, cuánto se gastó y cuánto quedó, con filtros por año, mes, tipo de servicio y auto. Todo se puede bajar con el botón "Excel".
 
@@ -466,9 +511,9 @@ La pantalla Estadísticas (ADMIN y DIRECTOR) muestra cuánto se facturó, cuánt
 - Los servicios cancelados no se cuentan.
 - Un viaje del último día del mes después de las 21 h puede aparecer en el mes siguiente, porque el sistema agrupa los meses en hora UTC.
 
-Para preguntas que estas pantallas no responden, usá el asistente de IA (sección 14).
+Para preguntas que estas pantallas no responden, usá el asistente de IA (sección 15).
 
-## 14. Usar el asistente de IA
+## 15. Usar el asistente de IA
 
 El asistente es un chat al que le podés preguntar en lenguaje común por los datos del sistema, pasarle órdenes de compra para identificarlas y pedirle cambios. Los cambios nunca se hacen solos: te muestra la propuesta y vos tocás "Confirmar".
 
@@ -501,6 +546,8 @@ Las preguntas de análisis financiero (márgenes, facturación total, rankings) 
 1. Tocá el clip y adjuntá la orden en PDF o foto. Podés adjuntar hasta 5 archivos a la vez.
 2. Escribí algo como "¿A qué servicio corresponde cada una?" y enviá.
 3. Para cada orden te muestra el servicio más probable, con su reporte, su factura y por qué lo eligió (importe, cliente, fecha, trayecto). Si dos servicios quedan parejos, te dice qué dato falta para decidir.
+
+Si la orden de pago trae el número de nuestra factura (por ejemplo 00001-00000003), el asistente lo compara con el del sistema (F003) y eso manda sobre el importe. Sirve cuando un cliente tiene varios viajes por el mismo monto.
 
 ### Cargar la semana de un cliente desde una foto
 
@@ -535,7 +582,7 @@ El asistente aplica las mismas reglas que la pantalla: no saltea estados (salvo 
 
 Si el asistente no puede responder algo, lo registra para que el equipo lo revise en Preguntas sin resolver.
 
-## 15. Encuestas de satisfacción y vouchers
+## 16. Encuestas de satisfacción y vouchers
 
 ### Enviar una encuesta
 
@@ -558,7 +605,7 @@ El voucher es el comprobante del viaje para el pasajero.
 
 El voucher muestra el tipo de auto indicado en "Tipo de Vehículo (para Voucher)" del servicio.
 
-## 16. Administrar usuarios (ADMIN y DIRECTOR)
+## 17. Administrar usuarios (ADMIN y DIRECTOR)
 
 Cada persona tiene que tener su propio usuario: así el sistema registra quién hizo cada cambio.
 
@@ -586,7 +633,7 @@ Los usuarios no se borran: cuando alguien deja la empresa, bloquealo. Un usuario
 - Un DIRECTOR no puede modificar a un ADMIN.
 - La columna "Último acceso" muestra cuándo entró cada uno por última vez; sirve para detectar usuarios que ya no se usan.
 
-## 17. Estado del sistema (sólo ADMIN)
+## 18. Estado del sistema (sólo ADMIN)
 
 La pantalla Estado del sistema muestra de un vistazo si todo funciona y se actualiza sola cada minuto.
 
@@ -601,11 +648,12 @@ La pantalla Estado del sistema muestra de un vistazo si todo funciona y se actua
 | Base de datos | Tiempo de respuesta, tamaño y conexiones abiertas, y los pedidos más lentos |
 | Respaldos de la base de datos | Cuándo fue el último respaldo bueno, su tamaño (avisa si salió mucho más chico que el anterior, señal de que quedó incompleto) y los últimos 10 intentos |
 | Seguridad: ingresos al sistema | Para hoy, 7 o 30 días: ingresos correctos, intentos fallidos y por qué fallaron, usuarios bloqueados, las IPs y cuentas con más fallos, los ingresos desde un lugar nuevo (una IP que esa persona no usó en los 90 días anteriores) y la lista de intentos, con buscador y filtro "Sólo fallidos" |
+| Google Calendar | Si la copia a Google Calendar está activa, cuándo fue la última actualización y cuántos eventos creó, cambió o borró. Si falló, muestra el motivo |
 | Errores abiertos | Los errores de las últimas 24 horas registrados en Sentry, con cuántas veces pasaron, a cuántos usuarios y un enlace al detalle. Se pueden buscar, filtrar por proyecto y nivel, ordenar y paginar; "Ver todo en Sentry" abre la lista completa |
 
 En el historial de 24 horas, los pedidos se cuentan desde el último reinicio del servidor. Para períodos más largos se usa lo que se guarda una vez por hora desde la versión 2.2.0, que se conserva un año. Un ingreso "desde un lugar nuevo" no siempre es un problema (otra red de wifi, el celular): conviene revisarlo sólo si la persona no lo reconoce.
 
-## 18. Preguntas frecuentes
+## 19. Preguntas frecuentes
 
 | Pregunta o mensaje | Respuesta |
 | --- | --- |

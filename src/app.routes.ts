@@ -39,7 +39,8 @@ export const appRoutes: Routes = [
             { path: 'analyst', redirectTo: 'assistant' },
             { path: 'sistema', loadComponent: () => import('./app/pages/sistema/sistema').then(m => m.Sistema), canActivate: [AuthGuard], data: { permission: 'viewSystem' } },
             { path: 'novedades', loadComponent: () => import('./app/pages/novedades/novedades').then(m => m.Novedades), canActivate: [AuthGuard], data: { permission: 'viewReleaseNotes' } },
-            { path: 'reminders', loadComponent: () => import('./app/pages/reminder-list/reminder-list').then(m => m.ReminderList), canActivate: [AuthGuard], data: { permission: 'manageOperations' } }
+            { path: 'reminders', loadComponent: () => import('./app/pages/reminder-list/reminder-list').then(m => m.ReminderList), canActivate: [AuthGuard], data: { permission: 'manageOperations' } },
+            { path: 'agenda', loadComponent: () => import('./app/pages/agenda/agenda').then(m => m.AgendaPage), canActivate: [AuthGuard], data: { permission: 'manageOperations' } }
         ]
     },
     { path: 'notfound', component: Notfound },

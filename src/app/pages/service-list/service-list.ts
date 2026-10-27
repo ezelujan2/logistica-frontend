@@ -36,6 +36,7 @@ import { ActivatedRoute } from '@angular/router';
 import { environment } from '../../../environments/environment';
 import { ServiceCalendar } from '../service-calendar/service-calendar';
 import { AuthService } from '../../service/auth.service';
+import { AgendaService, AgendaEntry, AvailabilityWarning } from '../../service/agenda.service';
 
 @Component({
     selector: 'app-service-list',
@@ -45,7 +46,7 @@ import { AuthService } from '../../service/auth.service';
             <p-confirmDialog></p-confirmDialog>
 
             <div *ngIf="isCalendarView">
-                <app-service-calendar [allServices]="services" (editService)="editService($event)" (addServiceDate)="openNewWithDate($event)"></app-service-calendar>
+                <app-service-calendar [allServices]="services" [agenda]="agendaEntries" (editService)="editService($event)" (addServiceDate)="openNewWithDate($event)"></app-service-calendar>
             </div>
 
             <div *ngIf="!isCalendarView" class="font-semibold text-xl mb-4">Servicios (Viajes)</div>
@@ -417,11 +418,11 @@ import { AuthService } from '../../service/auth.service';
                                     <div class="flex gap-4">
                                         <div class="flex flex-col gap-2 flex-1">
                                             <label for="startDate">Fecha Inicio</label>
-                                            <p-datepicker [(ngModel)]="service.startDate" [showTime]="true" dateFormat="dd/mm/yy" appendTo="body" styleClass="w-full" [style]="{'width':'100%'}" inputStyleClass="w-full" (onSelect)="onStartDateSelect($event)"></p-datepicker>
+                                            <p-datepicker [(ngModel)]="service.startDate" [showTime]="true" dateFormat="dd/mm/yy" appendTo="body" styleClass="w-full" [style]="{'width':'100%'}" inputStyleClass="w-full" (onSelect)="onStartDateSelect($event)" (ngModelChange)="refreshAvailability()"></p-datepicker>
                                         </div>
                                         <div class="flex flex-col gap-2 flex-1">
                                             <label for="endDate">Fecha Fin</label>
-                                            <p-datepicker [(ngModel)]="service.endDate" [showTime]="true" dateFormat="dd/mm/yy" appendTo="body" styleClass="w-full" [style]="{'width':'100%'}" inputStyleClass="w-full"></p-datepicker>
+                                            <p-datepicker [(ngModel)]="service.endDate" [showTime]="true" dateFormat="dd/mm/yy" appendTo="body" styleClass="w-full" [style]="{'width':'100%'}" inputStyleClass="w-full" (ngModelChange)="refreshAvailability()"></p-datepicker>
                                         </div>
                                     </div>
                                     <div class="flex flex-col gap-2">
@@ -508,17 +509,27 @@ import { AuthService } from '../../service/auth.service';
                                     </div>
                                     <div class="flex flex-col gap-2">
                                         <label>Choferes</label>
-                                        <p-multiSelect #driverMulti [options]="driversList" [(ngModel)]="service.driverIds" optionLabel="name" optionValue="id" placeholder="Seleccionar Chofer" display="chip" appendTo="body" styleClass="w-full" [selectionLimit]="1" [showToggleAll]="false" (onChange)="driverMulti.hide()"></p-multiSelect>
+                                        <p-multiSelect #driverMulti [options]="driversList" [(ngModel)]="service.driverIds" optionLabel="name" optionValue="id" placeholder="Seleccionar Chofer" display="chip" appendTo="body" styleClass="w-full" [selectionLimit]="1" [showToggleAll]="false" (onChange)="driverMulti.hide(); refreshAvailability()"></p-multiSelect>
                                     </div>
                                     <div class="flex flex-col gap-2">
                                         <label>Autos</label>
-                                        <p-multiSelect #vehicleMulti [options]="vehiclesList" [(ngModel)]="service.vehicleIds" optionLabel="plate" optionValue="id" placeholder="Seleccionar Autos" display="chip" appendTo="body" styleClass="w-full" (onChange)="vehicleMulti.hide()">
+                                        <p-multiSelect #vehicleMulti [options]="vehiclesList" [(ngModel)]="service.vehicleIds" optionLabel="plate" optionValue="id" placeholder="Seleccionar Autos" display="chip" appendTo="body" styleClass="w-full" (onChange)="vehicleMulti.hide(); refreshAvailability()">
                                             <ng-template let-car pTemplate="item">
                                                 <div class="flex align-items-center gap-2">
                                                     <span>{{ car.plate }} - {{ car.model }}</span>
                                                 </div>
                                             </ng-template>
                                         </p-multiSelect>
+                                    </div>
+                                    <!-- Aviso de agenda: auto o chofer no disponible. No impide guardar. -->
+                                    <div *ngIf="availabilityWarnings.length" class="rounded-lg border border-amber-300 bg-amber-50 dark:bg-amber-950/40 dark:border-amber-700 px-3 py-2 text-sm">
+                                        <div class="font-semibold text-amber-800 dark:text-amber-300 flex items-center gap-2">
+                                            <i class="pi pi-exclamation-triangle"></i>No disponible en ese horario
+                                        </div>
+                                        <ul class="m-0 mt-1 pl-5 list-disc text-amber-900 dark:text-amber-200">
+                                            <li *ngFor="let w of availabilityWarnings">{{ w.text }} · {{ warningWhen(w) }}<span *ngIf="w.createdBy"> (lo cargó {{ w.createdBy }})</span></li>
+                                        </ul>
+                                        <div class="text-xs mt-1 text-amber-800 dark:text-amber-300">Es sólo un aviso: se puede guardar igual.</div>
                                     </div>
                                 </div>
                             </p-panel>
@@ -1334,8 +1345,52 @@ export class ServiceList implements OnInit {
         private surveyService: SurveyService,
         private primeng: PrimeNG,
         public authService: AuthService,
-        private fileService: FileService
+        private fileService: FileService,
+        private agendaService: AgendaService
     ) {}
+
+    // Agenda (talleres, choferes no disponibles, eventos): se muestra en el
+    // calendario y avisa en el formulario, sin impedir guardar.
+    agendaEntries: AgendaEntry[] = [];
+    availabilityWarnings: AvailabilityWarning[] = [];
+    private availabilityTimer: any = null;
+    private availabilityRequest = 0;
+
+    loadAgenda() {
+        this.agendaService.list().then((entries) => (this.agendaEntries = entries)).catch(() => {});
+    }
+
+    refreshAvailability() {
+        clearTimeout(this.availabilityTimer);
+        this.availabilityTimer = setTimeout(async () => {
+            const request = ++this.availabilityRequest;
+            const start = this.service?.startDate ? new Date(this.service.startDate) : null;
+            const driverIds: number[] = this.service?.driverIds ?? [];
+            const vehicleIds: number[] = this.service?.vehicleIds ?? [];
+            if (!start || Number.isNaN(start.getTime()) || (!driverIds.length && !vehicleIds.length)) {
+                this.availabilityWarnings = [];
+                return;
+            }
+            try {
+                const end = this.service.endDate ? new Date(this.service.endDate) : null;
+                const warnings = await this.agendaService.availability(start, end, driverIds, vehicleIds);
+                if (request === this.availabilityRequest) this.availabilityWarnings = warnings;
+            } catch {
+                // Es sólo un aviso: si falla, el formulario sigue igual.
+            }
+        }, 300);
+    }
+
+    warningWhen(w: AvailabilityWarning): string {
+        const day = (d: Date) => d.toLocaleDateString('es-AR', { weekday: 'short', day: '2-digit', month: '2-digit' });
+        const time = (d: Date) => d.toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit' });
+        const start = new Date(w.startDate);
+        const end = new Date(w.endDate);
+        if (w.type === 'document') return `venció el ${day(start)}`;
+        const sameDay = start.toDateString() === end.toDateString();
+        if (w.allDay) return sameDay ? day(start) : `del ${day(start)} al ${day(end)}`;
+        return sameDay ? `${day(start)} de ${time(start)} a ${time(end)}` : `del ${day(start)} ${time(start)} al ${day(end)} ${time(end)}`;
+    }
 
 
 
@@ -1521,6 +1576,8 @@ export class ServiceList implements OnInit {
             const statusParam = params.get('status');
             this.handleStatusChange(statusParam);
         });
+
+        this.loadAgenda();
 
         // Deep Link Handling
         this.route.queryParams.subscribe(params => {
@@ -1766,6 +1823,7 @@ export class ServiceList implements OnInit {
         if (this.selectedConfig) {
              this.applyConfig(this.selectedConfig);
         }
+        this.availabilityWarnings = [];
         this.serviceDialog = true;
     }
 
@@ -1935,6 +1993,8 @@ export class ServiceList implements OnInit {
                 customReminderAt: t.customReminderAt ? new Date(t.customReminderAt) : null
             }))
         };
+        this.availabilityWarnings = [];
+        this.refreshAvailability();
         this.serviceDialog = true;
     }
 

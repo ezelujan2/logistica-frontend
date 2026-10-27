@@ -53,6 +53,7 @@ export class AppMenu {
         ];
 
         if (this.authService.hasPermission('manageOperations')) {
+            homeItems.push({ label: 'Agenda', icon: 'pi pi-fw pi-calendar', routerLink: ['/app/agenda'] });
             homeItems.push({ label: 'Vencimientos', icon: 'pi pi-fw pi-calendar-times', routerLink: ['/app/reminders'] });
         }
         if (this.authService.hasPermission('viewStatistics')) {
