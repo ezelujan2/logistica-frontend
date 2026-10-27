@@ -502,6 +502,20 @@ Las preguntas de análisis financiero (márgenes, facturación total, rankings) 
 2. Escribí algo como "¿A qué servicio corresponde cada una?" y enviá.
 3. Para cada orden te muestra el servicio más probable, con su reporte, su factura y por qué lo eligió (importe, cliente, fecha, trayecto). Si dos servicios quedan parejos, te dice qué dato falta para decidir.
 
+### Cargar la semana de un cliente desde una foto
+
+Cuando un cliente manda la planilla de sus viajes (foto, captura o PDF), el asistente arma todos los servicios juntos.
+
+1. Tocá el clip y adjuntá la foto.
+2. Escribí algo como "Cargá estos viajes de Mariela Spoto" y enviá. Si un viaje lo hace otro chofer, decilo en el mismo mensaje ("el jueves lo hace Javier").
+3. Aparece una tabla con un viaje por fila: fecha, recorrido, pasajeros y hora, chofer y km.
+4. Revisala. Podés cambiar el chofer de cualquier viaje y destildar los que no van.
+5. Tocá "Crear N servicios".
+
+Lo que la planilla no dice se completa con cómo se vienen cargando los viajes de ese cliente: el chofer es el que hizo la mayoría de los últimos 10 viajes, y el auto y los km son los habituales de cada recorrido. Cada viaje dura 1 hora, salvo que la planilla diga a qué hora termina. Los nombres que aparecen en la planilla y no son pasajeros (por ejemplo, a quién se la mandan) no se toman como chofer.
+
+Los viajes que ya están cargados aparecen destildados con el aviso "Ya está cargado" y el número de servicio, así no se duplican. Si una fila tiene todos los datos queda en Pendiente, como al cargarla a mano; si le falta chofer, auto o km, queda en Creado.
+
 ### Pedir cambios
 
 Podés pedirle que cree un servicio (por ejemplo, pegando el mail del cliente), que edite datos de uno o que le cambie el estado.

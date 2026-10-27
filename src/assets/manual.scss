@@ -1,16 +1,50 @@
 // Estilo del manual de usuario (viene de un markdown), compartido por
-// Novedades y ayuda y por el panel de ayuda de cada pantalla.
-.lecma-manual { max-width: 56rem; line-height: 1.6; }
-.lecma-manual + .lecma-manual { margin-top: 2rem; padding-top: 1rem; border-top: 1px solid var(--surface-border); }
-.lecma-manual h2 { font-size: 1.4rem; font-weight: 700; margin: 0 0 0.75rem; }
-.lecma-manual h3 { font-size: 1.1rem; font-weight: 600; margin: 1.25rem 0 0.5rem; }
-.lecma-manual p { margin: 0 0 0.75rem; }
-.lecma-manual ul, .lecma-manual ol { margin: 0 0 0.75rem; padding-left: 1.5rem; }
+// Novedades y ayuda y por el panel de ayuda de cada pantalla. Ancho de lectura
+// acotado, aire entre bloques y los subtemas plegados como una lista.
+app-manual-section { display: block; }
+app-manual-section + app-manual-section { margin-top: 2rem; padding-top: 1.5rem; border-top: 1px solid var(--surface-border); }
+
+.lecma-manual { max-width: 46rem; line-height: 1.65; }
+.lecma-manual h2 { font-size: 1.5rem; font-weight: 700; line-height: 1.3; margin: 0 0 1rem; }
+.lecma-manual h3 { font-size: 1.05rem; font-weight: 600; margin: 1.25rem 0 0.5rem; }
+.lecma-manual p { margin: 0 0 1rem; }
+.lecma-manual ul, .lecma-manual ol { margin: 0 0 1rem; padding-left: 1.5rem; }
 .lecma-manual ul { list-style: disc; }
 .lecma-manual ol { list-style: decimal; }
-.lecma-manual li { margin-bottom: 0.25rem; }
-.lecma-manual table { width: 100%; border-collapse: collapse; margin: 0 0 1rem; font-size: 0.925rem; display: block; overflow-x: auto; }
-.lecma-manual th, .lecma-manual td { border: 1px solid var(--surface-border); padding: 0.4rem 0.6rem; text-align: left; vertical-align: top; }
+.lecma-manual li { margin-bottom: 0.4rem; padding-left: 0.2rem; }
+.lecma-manual table { width: 100%; border-collapse: collapse; margin: 0.25rem 0 1.25rem; font-size: 0.9rem; line-height: 1.45; display: block; overflow-x: auto; }
+.lecma-manual th, .lecma-manual td { border: 1px solid var(--surface-border); padding: 0.5rem 0.7rem; text-align: left; vertical-align: top; }
 .lecma-manual th { background: var(--surface-ground); font-weight: 600; }
-.lecma-manual blockquote { margin: 0 0 1rem; padding: 0.5rem 1rem; border-left: 4px solid var(--primary-color); background: var(--surface-ground); }
+.lecma-manual blockquote { margin: 0 0 1rem; padding: 0.6rem 1rem; border-left: 4px solid var(--primary-color); background: var(--surface-ground); border-radius: 0 6px 6px 0; }
+.lecma-manual blockquote p:last-child { margin-bottom: 0; }
 .lecma-manual code { font-size: 0.875em; }
+
+// Subtemas ("### …") plegados: una fila por subtema con una flecha que gira al abrirlo.
+.lecma-manual-subs { margin-top: 1.25rem; border-top: 1px solid var(--surface-border); }
+.lecma-manual-subs details { border-bottom: 1px solid var(--surface-border); }
+.lecma-manual-subs summary {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.8rem 0.25rem;
+    font-weight: 600;
+    cursor: pointer;
+    list-style: none;
+    border-radius: 6px;
+}
+.lecma-manual-subs summary::-webkit-details-marker { display: none; }
+.lecma-manual-subs summary::before {
+    content: '';
+    flex-shrink: 0;
+    width: 0.45rem;
+    height: 0.45rem;
+    margin-left: 0.15rem;
+    border-right: 2px solid var(--text-color-secondary);
+    border-bottom: 2px solid var(--text-color-secondary);
+    transform: rotate(-45deg);
+    transition: transform 0.15s ease;
+}
+.lecma-manual-subs details[open] > summary::before { transform: rotate(45deg); }
+.lecma-manual-subs summary:hover { color: var(--primary-color); }
+.lecma-manual-subs summary:focus-visible { outline: 2px solid var(--primary-color); outline-offset: 2px; }
+.lecma-manual-sub-body { padding: 0 0.25rem 0.75rem 1.6rem; }

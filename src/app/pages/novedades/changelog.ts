@@ -25,6 +25,21 @@ export interface Release {
 
 export const RELEASES: Release[] = [
     {
+        version: '2.3.0',
+        date: '2026-10-27',
+        title: 'Cargar la semana de un cliente desde una foto',
+        changes: [
+            { kind: 'nuevo', text: 'Asistente: le pasás la foto o planilla con los viajes de la semana de un cliente y arma todos los servicios juntos en una tabla, para confirmar con un solo botón.' },
+            { kind: 'nuevo', text: 'El chofer, el auto y los km se completan según cómo se vienen cargando los viajes de ese cliente, y cada viaje dura 1 hora salvo que la planilla diga otra cosa. Si cambia el chofer habitual, el sistema lo propone solo, y en la tabla se puede cambiar el chofer de cada viaje o destildar los que no van.' },
+            { kind: 'mejora', text: 'Los viajes que ya están cargados se marcan y no se duplican, aunque la planilla escriba los lugares distinto ("ROSARIO" y "Ros" cuentan como el mismo lugar).' },
+            { kind: 'mejora', text: 'Los servicios cargados así quedan escritos siempre igual (por ejemplo, "Ros → KCC · Vivi · 14 hs"), para encontrarlos y filtrarlos fácil.' },
+            { kind: 'mejora', text: 'Novedades: al abrir una versión, los cambios quedan separados del título y con márgenes parejos; en el celular, el tipo de cambio va arriba del texto.' },
+            { kind: 'mejora', text: 'Manual de usuario: se lee una sección por vez, con botones para pasar a la anterior o la siguiente (o "Todo el manual" de corrido), y cada subtema aparece plegado para abrir sólo lo que necesitás. Al buscar, se abren solos los subtemas que hablan de lo buscado. Lo mismo en el panel de ayuda (?).' },
+            { kind: 'correccion', text: 'Asistente: a veces no podía hacer consultas de datos ("no se pudo conectar") hasta que se reiniciaba el sistema. Ya no pasa.' },
+            { kind: 'mejora', text: 'Asistente: cuando algo falla, le avisa al usuario en palabras simples que quedó registrado, sin mostrarle detalles técnicos; el detalle completo queda en Preguntas sin responder para los administradores.' }
+        ]
+    },
+    {
         version: '2.2.0',
         date: '2026-10-27',
         title: 'Ayuda en cada pantalla, historial del sistema y control de ingresos',

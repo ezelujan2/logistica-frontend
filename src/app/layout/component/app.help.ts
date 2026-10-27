@@ -8,6 +8,7 @@ import { InputTextModule } from 'primeng/inputtext';
 import { TooltipModule } from 'primeng/tooltip';
 import { ManualService, ManualSection } from '../../service/manual.service';
 import { AuthService } from '../../service/auth.service';
+import { ManualSectionView } from '../../pages/novedades/manual-section';
 
 // Botón "?" de la barra superior: abre al costado la parte del manual que
 // explica la pantalla en la que está el usuario, con un buscador para el resto
@@ -15,7 +16,7 @@ import { AuthService } from '../../service/auth.service';
 @Component({
     selector: 'app-help',
     standalone: true,
-    imports: [CommonModule, FormsModule, RouterModule, DrawerModule, ButtonModule, InputTextModule, TooltipModule],
+    imports: [CommonModule, FormsModule, RouterModule, DrawerModule, ButtonModule, InputTextModule, TooltipModule, ManualSectionView],
     template: `
         <button type="button" class="layout-topbar-action" (click)="open()" pTooltip="Ayuda de esta pantalla" tooltipPosition="bottom">
             <i class="pi pi-question-circle"></i>
@@ -31,7 +32,7 @@ import { AuthService } from '../../service/auth.service';
                 <ng-container *ngIf="!loading && !error">
                     <div *ngIf="query.trim()" class="text-xs text-muted-color">{{ shown().length }} secciones del manual mencionan "{{ query }}"</div>
                     <div *ngIf="!shown().length" class="text-muted-color">No encontré nada sobre eso en el manual.</div>
-                    <section *ngFor="let s of shown()" class="lecma-manual" [innerHTML]="s.html"></section>
+                    <app-manual-section *ngFor="let s of shown()" [section]="s" [query]="query" />
                 </ng-container>
             </div>
 

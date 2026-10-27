@@ -11,8 +11,27 @@ export interface ToolCall {
     result: string;
 }
 
+/** Una fila de una carga por lotes (CREATE_SERVICES), tal como la armó el backend. */
+export interface BatchRow {
+    inicio: string;
+    fin: string;
+    origen: string;
+    destino: string;
+    pasajeros: string | null;
+    detalle: string;
+    choferId: number | null;
+    chofer: string | null;
+    vehiculo: string | null;
+    km: number | null;
+    incluir: boolean;
+    duplicadoDe: number | null;
+    aviso: string | null;
+}
+
 export interface AssistantAction {
     id: number;
+    type?: string;
+    payload?: any;
     summary: string;
     status: 'PENDING' | 'CONFIRMED' | 'CANCELLED' | 'FAILED';
     result: string | null;
@@ -114,8 +133,8 @@ export class AssistantService {
         throw new Error('La conexión se cortó antes de terminar. Probá de nuevo.');
     }
 
-    async confirmAction(id: number): Promise<AssistantAction> {
-        return await firstValueFrom(this.http.post<AssistantAction>(`${this.apiUrl}assistant/actions/${id}/confirm`, {}));
+    async confirmAction(id: number, edits?: { filas: { incluir: boolean; choferId: number | null }[] }): Promise<AssistantAction> {
+        return await firstValueFrom(this.http.post<AssistantAction>(`${this.apiUrl}assistant/actions/${id}/confirm`, edits ?? {}));
     }
 
     async cancelAction(id: number): Promise<AssistantAction> {

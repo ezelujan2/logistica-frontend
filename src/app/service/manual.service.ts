@@ -4,10 +4,19 @@ import { DomSanitizer, SafeHtml } from '@angular/platform-browser';
 import { firstValueFrom } from 'rxjs';
 import { marked } from 'marked';
 
+/** Un subtema "### …" de una sección; en pantalla se muestra plegado. */
+export interface ManualSubsection {
+    title: string;
+    html: SafeHtml;
+    searchText: string;
+}
+
 export interface ManualSection {
     id: string;
     title: string;
-    html: SafeHtml;
+    /** Lo que va antes del primer subtema (incluye el título "## …"). */
+    intro: SafeHtml;
+    subsections: ManualSubsection[];
     searchText: string;
 }
 
@@ -73,21 +82,34 @@ export class ManualService {
         return q ? sections.filter((s) => s.searchText.includes(q)) : sections;
     }
 
-    /** Parte el manual en sus secciones "## …" para armar índices y buscar. */
+    /** Parte el manual en secciones "## …" y, dentro de cada una, en subtemas "### …". */
     private split(markdown: string): ManualSection[] {
         return markdown
             .split(/^(?=## )/m)
             .filter((c) => c.trim())
             .map((chunk, i) => {
                 const title = (chunk.match(/^## (.+)$/m)?.[1] ?? 'Introducción').trim();
-                const html = marked.parse(chunk, { async: false }) as string;
-                const safe = this.sanitizer.sanitize(SecurityContext.HTML, html) ?? '';
+                const [intro, ...parts] = chunk.split(/^(?=### )/m);
                 return {
                     id: `manual-${i}`,
                     title,
-                    html: this.sanitizer.bypassSecurityTrustHtml(safe),
-                    searchText: normalizeText(chunk.replace(/[#*|`>_-]/g, ' '))
+                    intro: this.render(intro ?? ''),
+                    subsections: parts.map((part) => ({
+                        title: (part.match(/^### (.+)$/m)?.[1] ?? '').trim(),
+                        html: this.render(part.replace(/^### .+$/m, '')),
+                        searchText: this.searchable(part)
+                    })),
+                    searchText: this.searchable(chunk)
                 };
             });
+    }
+
+    private render(markdown: string): SafeHtml {
+        const html = marked.parse(markdown, { async: false }) as string;
+        return this.sanitizer.bypassSecurityTrustHtml(this.sanitizer.sanitize(SecurityContext.HTML, html) ?? '');
+    }
+
+    private searchable(markdown: string): string {
+        return normalizeText(markdown.replace(/[#*|`>_-]/g, ' '));
     }
 }

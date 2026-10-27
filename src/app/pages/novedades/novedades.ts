@@ -1,4 +1,4 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, ElementRef, OnInit, ViewChild } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { HttpClient } from '@angular/common/http';
@@ -9,12 +9,12 @@ import { TagModule } from 'primeng/tag';
 import { TooltipModule } from 'primeng/tooltip';
 import { InputTextModule } from 'primeng/inputtext';
 import { SelectButtonModule } from 'primeng/selectbutton';
-import { SelectModule } from 'primeng/select';
 import { ButtonModule } from 'primeng/button';
 import { environment } from '../../../environments/environment';
 import { RELEASES, CURRENT_RELEASE, ChangeKind, Release } from './changelog';
 import { markReleaseSeen } from './release-notice';
 import { ManualService, ManualSection, normalizeText as normalize } from '../../service/manual.service';
+import { ManualSectionView } from './manual-section';
 
 const KIND_LABELS: Record<ChangeKind, string> = {
     importante: 'Importante',
@@ -41,7 +41,7 @@ const RELEASES_SHOWN = 10;
 @Component({
     selector: 'app-novedades',
     standalone: true,
-    imports: [CommonModule, FormsModule, TabsModule, TagModule, TooltipModule, InputTextModule, SelectButtonModule, SelectModule, ButtonModule],
+    imports: [CommonModule, FormsModule, TabsModule, TagModule, TooltipModule, InputTextModule, SelectButtonModule, ButtonModule, ManualSectionView],
     template: `
         <div class="card">
             <div class="flex flex-wrap items-center justify-between gap-3 mb-4">
@@ -69,8 +69,13 @@ const RELEASES_SHOWN = 10;
                         <div *ngIf="filtering() && !visibleReleases().length" class="text-muted-color">Ningún cambio coincide con la búsqueda.</div>
                         <div *ngIf="filtering() && visibleReleases().length" class="text-sm text-muted-color mb-3">{{ matchCount() }} cambios en {{ visibleReleases().length }} versiones</div>
 
-                        <div *ngFor="let release of shownReleases()" class="border border-surface-200 dark:border-surface-700 rounded-lg mb-3">
-                            <button type="button" class="w-full flex flex-wrap items-center gap-x-3 gap-y-1 p-3 text-left" (click)="toggle(release.version)">
+                        <div *ngFor="let release of shownReleases()" class="border border-surface-200 dark:border-surface-700 rounded-lg mb-3 overflow-hidden">
+                            <button
+                                type="button"
+                                class="w-full flex flex-wrap items-center gap-x-3 gap-y-1 px-4 py-3 text-left hover:bg-surface-50 dark:hover:bg-surface-800 transition-colors"
+                                [attr.aria-expanded]="isOpen(release.version)"
+                                (click)="toggle(release.version)"
+                            >
                                 <i class="pi text-muted-color" [ngClass]="isOpen(release.version) ? 'pi-chevron-down' : 'pi-chevron-right'"></i>
                                 <span class="text-lg font-bold">{{ release.version }}</span>
                                 <span class="text-sm text-muted-color">{{ formatDate(release.date) }}</span>
@@ -80,10 +85,12 @@ const RELEASES_SHOWN = 10;
                                     <p-tag *ngFor="let c of kindCounts(release)" [value]="c.count + ' ' + c.label" [severity]="c.severity" styleClass="text-xs" />
                                 </span>
                             </button>
-                            <ul *ngIf="isOpen(release.version)" class="flex flex-col gap-2 pl-0 list-none px-3 pb-3 m-0">
-                                <li *ngFor="let change of filteredChanges(release)" class="flex items-start gap-3">
-                                    <p-tag [value]="kindLabel(change.kind)" [severity]="kindSeverity(change.kind)" styleClass="shrink-0 w-28 justify-center" />
-                                    <span class="leading-relaxed">{{ change.text }}</span>
+                            <!-- Contenido separado del título por una línea; en pantallas anchas
+                                 queda alineado con el título (después de la flecha). -->
+                            <ul *ngIf="isOpen(release.version)" class="list-none m-0 px-4 pt-4 pb-5 sm:pl-11 flex flex-col gap-4 border-t border-surface-200 dark:border-surface-700">
+                                <li *ngFor="let change of filteredChanges(release)" class="flex flex-col sm:flex-row sm:items-start gap-1.5 sm:gap-4">
+                                    <p-tag [value]="kindLabel(change.kind)" [severity]="kindSeverity(change.kind)" styleClass="shrink-0 self-start sm:w-28 justify-center" />
+                                    <span class="leading-relaxed sm:pt-0.5">{{ change.text }}</span>
                                 </li>
                             </ul>
                         </div>
@@ -91,8 +98,9 @@ const RELEASES_SHOWN = 10;
                         <p-button *ngIf="hiddenCount() > 0" [label]="'Ver ' + hiddenCount() + ' versiones anteriores'" icon="pi pi-angle-down" [text]="true" (click)="showAll = true" />
                     </p-tabpanel>
 
-                    <!-- Manual: índice fijo al costado (desplegable en el celular) y un
-                         buscador que deja sólo las secciones que mencionan lo buscado. -->
+                    <!-- Manual: una sección por vez, elegida en el índice, con sus subtemas
+                         plegados; o "Todo el manual" seguido y abierto. El buscador achica el
+                         índice y abre los subtemas que mencionan lo buscado. -->
                     <p-tabpanel value="manual">
                         <div *ngIf="manualError" class="text-muted-color">No se pudo cargar el manual. Probá recargar la página.</div>
                         <div *ngIf="!sections.length && !manualError" class="text-muted-color">Cargando el manual…</div>
@@ -100,17 +108,42 @@ const RELEASES_SHOWN = 10;
                         <div *ngIf="sections.length" class="grid grid-cols-12 gap-6">
                             <aside class="col-span-12 lg:col-span-3">
                                 <div class="lg:sticky lg:top-24 flex flex-col gap-3">
-                                    <input pInputText type="text" class="w-full" placeholder="Buscar en el manual…" [(ngModel)]="manualSearch" />
+                                    <input pInputText type="text" class="w-full" placeholder="Buscar en el manual…" [(ngModel)]="manualSearch" (ngModelChange)="onManualSearch()" />
                                     <div *ngIf="manualSearch.trim()" class="text-xs text-muted-color">{{ visibleSections().length }} de {{ sections.length }} secciones</div>
-                                    <p-select class="lg:hidden" [options]="visibleSections()" optionLabel="title" optionValue="id" placeholder="Ir a una sección…" (onChange)="goTo($event.value)" styleClass="w-full" appendTo="body" />
-                                    <nav class="hidden lg:flex flex-col gap-0.5 max-h-[70vh] overflow-y-auto pr-1">
-                                        <button *ngFor="let s of visibleSections()" type="button" class="text-left text-sm px-2 py-1 rounded hover:bg-surface-100 dark:hover:bg-surface-800" (click)="goTo(s.id)">{{ s.title }}</button>
+                                    <nav class="flex flex-col gap-0.5 max-h-60 lg:max-h-[70vh] overflow-y-auto pr-1">
+                                        <button
+                                            type="button"
+                                            class="text-left text-sm px-2 py-1.5 rounded mb-1"
+                                            [ngClass]="selectedId === ALL ? 'bg-primary-50 dark:bg-primary-900/40 text-primary font-medium' : 'hover:bg-surface-100 dark:hover:bg-surface-800'"
+                                            (click)="select(ALL)"
+                                        >
+                                            <i class="pi pi-book mr-1"></i> Todo el manual
+                                        </button>
+                                        <button
+                                            *ngFor="let s of visibleSections()"
+                                            type="button"
+                                            class="text-left text-sm px-2 py-1.5 rounded"
+                                            [ngClass]="s.id === selectedId ? 'bg-primary-50 dark:bg-primary-900/40 text-primary font-medium' : 'hover:bg-surface-100 dark:hover:bg-surface-800'"
+                                            (click)="select(s.id)"
+                                        >
+                                            {{ s.title }}
+                                        </button>
                                     </nav>
                                 </div>
                             </aside>
-                            <div class="col-span-12 lg:col-span-9">
+                            <div class="col-span-12 lg:col-span-9" #manualTop>
                                 <div *ngIf="!visibleSections().length" class="text-muted-color">Ninguna sección del manual menciona "{{ manualSearch }}".</div>
-                                <section *ngFor="let s of visibleSections()" [id]="s.id" class="lecma-manual scroll-mt-24" [innerHTML]="s.html"></section>
+                                <ng-container *ngIf="selectedId === ALL">
+                                    <app-manual-section *ngFor="let s of visibleSections()" [section]="s" [query]="manualSearch" [expandAll]="true" />
+                                </ng-container>
+                                <ng-container *ngIf="selected() as current">
+                                    <app-manual-section [section]="current" [query]="manualSearch" />
+                                    <div class="flex justify-between gap-3 mt-8 pt-4 border-t border-surface-200 dark:border-surface-700">
+                                        <p-button *ngIf="neighbor(-1) as prev" [label]="prev.title" icon="pi pi-arrow-left" [text]="true" size="small" (click)="select(prev.id)" />
+                                        <span></span>
+                                        <p-button *ngIf="neighbor(1) as next" [label]="next.title" icon="pi pi-arrow-right" iconPos="right" [text]="true" size="small" (click)="select(next.id)" />
+                                    </div>
+                                </ng-container>
                             </div>
                         </div>
                     </p-tabpanel>
@@ -136,6 +169,9 @@ export class Novedades implements OnInit {
     sections: ManualSection[] = [];
     manualSearch = '';
     manualError = false;
+    selectedId: string | null = null;
+    readonly ALL = 'todo';
+    @ViewChild('manualTop') manualTop?: ElementRef<HTMLElement>;
 
     constructor(
         private http: HttpClient,
@@ -214,6 +250,7 @@ export class Novedades implements OnInit {
     private async loadManual() {
         try {
             this.sections = await this.manual.getSections();
+            this.selectedId = this.sections[0]?.id ?? null;
         } catch {
             this.manualError = true;
         }
@@ -223,9 +260,31 @@ export class Novedades implements OnInit {
         return this.manual.search(this.sections, this.manualSearch);
     }
 
-    goTo(id: string | null) {
+    selected(): ManualSection | null {
+        return this.visibleSections().find((s) => s.id === this.selectedId) ?? null;
+    }
+
+    /** La sección anterior o siguiente dentro de las que se ven (respeta la búsqueda). */
+    neighbor(step: 1 | -1): ManualSection | null {
+        const list = this.visibleSections();
+        const i = list.findIndex((s) => s.id === this.selectedId);
+        return i < 0 ? null : (list[i + step] ?? null);
+    }
+
+    select(id: string | null) {
         if (!id) return;
-        document.getElementById(id)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        this.selectedId = id;
+        // En el celular el índice queda arriba: llevar la vista al comienzo de la sección.
+        setTimeout(() => {
+            const top = this.manualTop?.nativeElement;
+            if (top && top.getBoundingClientRect().top < 0) top.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        });
+    }
+
+    /** Si la sección elegida deja de coincidir con la búsqueda, se pasa a la primera que sí. */
+    onManualSearch() {
+        const list = this.visibleSections();
+        if (this.selectedId !== this.ALL && list.length && !list.some((s) => s.id === this.selectedId)) this.selectedId = list[0]!.id;
     }
 
     private async loadServerVersion() {

@@ -16,7 +16,9 @@ import { ConfirmDialogModule } from 'primeng/confirmdialog';
 import { ChartModule } from 'primeng/chart';
 import { TagModule } from 'primeng/tag';
 import { MessageService, ConfirmationService } from 'primeng/api';
-import { AssistantAction, AssistantService, ConversationSummary, ToolCall } from '../../service/assistant.service';
+import { CheckboxModule } from 'primeng/checkbox';
+import { AssistantAction, AssistantService, BatchRow, ConversationSummary, ToolCall } from '../../service/assistant.service';
+import { DriverService } from '../../service/driver.service';
 import { AuthService } from '../../service/auth.service';
 
 const CAPABILITIES = [
@@ -26,6 +28,7 @@ const CAPABILITIES = [
     'Mostrar los resultados como tabla (descargable en Excel) o como gráfico',
     'Leer una o varias órdenes de compra (PDF o foto) e identificar a qué servicio corresponde cada una',
     'Crear o editar servicios y cambiarles el estado: te propone el cambio y vos lo confirmás con un botón',
+    'Cargar de una vez los viajes de una planilla o una foto (por ejemplo, la semana de un cliente), sin duplicar los que ya están',
     'Recordar lo que hablaron en la conversación ("pasá el segundo a pagado")'
 ];
 
@@ -115,7 +118,7 @@ function actionIdsFrom(toolCalls?: ToolCall[]): number[] {
 @Component({
     selector: 'app-assistant-chat',
     standalone: true,
-    imports: [CommonModule, FormsModule, RouterModule, ButtonModule, InputTextModule, CardModule, ToastModule, TableModule, TooltipModule, SelectModule, DialogModule, ConfirmDialogModule, ChartModule, TagModule],
+    imports: [CommonModule, FormsModule, RouterModule, ButtonModule, InputTextModule, CardModule, ToastModule, TableModule, TooltipModule, SelectModule, DialogModule, ConfirmDialogModule, ChartModule, TagModule, CheckboxModule],
     providers: [MessageService, ConfirmationService],
     template: `
         <div class="card flex flex-col h-[78vh]">
@@ -177,9 +180,59 @@ function actionIdsFrom(toolCalls?: ToolCall[]): number[] {
 
                         <!-- Propuestas para confirmar -->
                         <div *ngFor="let action of bubble.actions" class="mt-3 p-3 rounded-lg border border-surface-300 dark:border-surface-600 bg-surface-0 dark:bg-surface-900">
-                            <div class="text-sm mb-2">{{ action.summary }}</div>
-                            <div *ngIf="action.status === 'PENDING'" class="flex gap-2">
-                                <p-button label="Confirmar" icon="pi pi-check" size="small" severity="success" [loading]="!!action.busy" (click)="resolveAction(action, true)" />
+                            <div *ngIf="!isBatch(action)" class="text-sm mb-2">{{ action.summary }}</div>
+
+                            <!-- Carga por lotes: tabla con chofer editable y filas para incluir o saltear -->
+                            <ng-container *ngIf="isBatch(action)">
+                                <div class="text-sm font-medium mb-1">Crear servicios para {{ action.payload.cliente }}</div>
+                                <div class="text-xs text-muted-color mb-2">Chofer, auto y km según sus viajes recientes. Podés cambiar el chofer o destildar un viaje antes de confirmar.</div>
+                                <div class="overflow-x-auto">
+                                    <table class="w-full text-sm">
+                                        <thead>
+                                            <tr class="text-left text-muted-color text-xs">
+                                                <th class="py-1 pr-2"></th>
+                                                <th class="py-1 pr-2">Fecha</th>
+                                                <th class="py-1 pr-2">Viaje</th>
+                                                <th class="py-1 pr-2">Chofer</th>
+                                                <th class="py-1 pr-2 text-right">Km</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            <tr *ngFor="let row of batchRows(action)" class="border-t border-surface-200 dark:border-surface-700" [class.opacity-60]="!row.incluir">
+                                                <td class="py-1 pr-2">
+                                                    <p-checkbox [(ngModel)]="row.incluir" [binary]="true" [disabled]="action.status !== 'PENDING'" />
+                                                </td>
+                                                <td class="py-1 pr-2 whitespace-nowrap">{{ rowDay(row) }}</td>
+                                                <td class="py-1 pr-2">
+                                                    {{ row.detalle }}
+                                                    <div *ngIf="row.aviso" class="text-xs text-orange-600 dark:text-orange-400"><i class="pi pi-info-circle"></i> {{ row.aviso }}</div>
+                                                </td>
+                                                <td class="py-1 pr-2 min-w-44">
+                                                    <p-select
+                                                        *ngIf="action.status === 'PENDING'; else driverName"
+                                                        [options]="drivers"
+                                                        [(ngModel)]="row.choferId"
+                                                        optionLabel="name"
+                                                        optionValue="id"
+                                                        placeholder="Sin chofer"
+                                                        [showClear]="true"
+                                                        [filter]="true"
+                                                        appendTo="body"
+                                                        size="small"
+                                                        styleClass="w-full"
+                                                    />
+                                                    <ng-template #driverName>{{ row.chofer || 'Sin chofer' }}</ng-template>
+                                                </td>
+                                                <td class="py-1 pr-2 text-right">{{ row.km ?? '—' }}</td>
+                                            </tr>
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </ng-container>
+
+                            <div *ngIf="action.status === 'PENDING'" class="flex gap-2" [class.mt-3]="isBatch(action)">
+                                <p-button *ngIf="isBatch(action)" [label]="batchLabel(action)" icon="pi pi-check" size="small" severity="success" [disabled]="!batchCount(action)" [loading]="!!action.busy" (click)="resolveAction(action, true)" />
+                                <p-button *ngIf="!isBatch(action)" label="Confirmar" icon="pi pi-check" size="small" severity="success" [loading]="!!action.busy" (click)="resolveAction(action, true)" />
                                 <p-button label="Cancelar" icon="pi pi-times" size="small" [text]="true" severity="secondary" [disabled]="!!action.busy" (click)="resolveAction(action, false)" />
                             </div>
                             <div *ngIf="action.status !== 'PENDING'" class="flex items-center gap-2 text-sm">
@@ -263,7 +316,8 @@ export class AssistantChat implements OnInit, AfterViewChecked {
         private authService: AuthService,
         private messageService: MessageService,
         private confirmationService: ConfirmationService,
-        private sanitizer: DomSanitizer
+        private sanitizer: DomSanitizer,
+        private driverService: DriverService
     ) {}
 
     ngOnInit() {
@@ -403,10 +457,43 @@ export class AssistantChat implements OnInit, AfterViewChecked {
         }
     }
 
+    // Choferes para el selector de las cargas por lotes; se piden una vez, cuando aparece la primera.
+    drivers: { id: number; name: string }[] = [];
+    private driversRequested = false;
+
+    isBatch(action: AssistantAction): boolean {
+        return action.type === 'CREATE_SERVICES' && Array.isArray(action.payload?.filas);
+    }
+
+    batchRows(action: AssistantAction): BatchRow[] {
+        if (!this.driversRequested && action.status === 'PENDING') {
+            this.driversRequested = true;
+            this.driverService
+                .getDrivers()
+                .then((list) => (this.drivers = list.filter((d) => d.id).map((d) => ({ id: d.id!, name: d.name })).sort((a, b) => a.name.localeCompare(b.name))))
+                .catch(() => (this.driversRequested = false));
+        }
+        return action.payload.filas;
+    }
+
+    rowDay(row: BatchRow): string {
+        return new Date(row.inicio).toLocaleDateString('es-AR', { timeZone: 'America/Argentina/Buenos_Aires', weekday: 'short', day: '2-digit', month: '2-digit' });
+    }
+
+    batchCount(action: AssistantAction): number {
+        return (action.payload?.filas ?? []).filter((r: BatchRow) => r.incluir).length;
+    }
+
+    batchLabel(action: AssistantAction): string {
+        const n = this.batchCount(action);
+        return n === 1 ? 'Crear 1 servicio' : `Crear ${n} servicios`;
+    }
+
     async resolveAction(action: AssistantAction & { busy?: boolean }, confirm: boolean) {
         action.busy = true;
         try {
-            const updated = confirm ? await this.assistantService.confirmAction(action.id) : await this.assistantService.cancelAction(action.id);
+            const edits = this.isBatch(action) ? { filas: (action.payload.filas as BatchRow[]).map((r) => ({ incluir: r.incluir, choferId: r.choferId ?? null })) } : undefined;
+            const updated = confirm ? await this.assistantService.confirmAction(action.id, edits) : await this.assistantService.cancelAction(action.id);
             Object.assign(action, updated);
             if (updated.status === 'FAILED') this.messageService.add({ severity: 'error', summary: 'No se pudo hacer', detail: updated.result ?? '' });
         } catch (err: any) {
