@@ -220,8 +220,10 @@ type Level = 'good' | 'warning' | 'critical';
                     <div *ngIf="status.googleCalendar.enabled && !status.googleCalendar.last" class="text-sm text-muted-color">Todavía no terminó la primera sincronización.</div>
                     <div *ngIf="status.googleCalendar.last as g" class="text-sm">
                         Última: {{ g.at | date: 'dd/MM HH:mm' }}
-                        <span *ngIf="g.ok" class="text-muted-color"> · {{ g.created }} nuevos, {{ g.updated }} actualizados, {{ g.deleted }} borrados</span>
-                        <div *ngIf="!g.ok" class="mt-1 font-mono text-xs break-all" [ngClass]="levelText('critical')">{{ g.error }}</div>
+                        <span class="text-muted-color"> · {{ g.created }} nuevos, {{ g.updated }} actualizados, {{ g.deleted }} borrados</span>
+                        <div *ngIf="!g.ok" class="mt-1 text-xs break-all" [ngClass]="levelText('critical')">
+                            <span *ngIf="g.failed">{{ g.failed }} no se pudieron escribir (el resto sí). </span><span class="font-mono">{{ g.error }}</span>
+                        </div>
                     </div>
                 </div>
 

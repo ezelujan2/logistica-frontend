@@ -25,6 +25,15 @@ export interface Release {
 
 export const RELEASES: Release[] = [
     {
+        version: '2.4.1',
+        date: '2026-10-27',
+        title: 'Arreglo de la copia a Google Calendar',
+        changes: [
+            { kind: 'correccion', text: 'Google Calendar: algunos vencimientos, servicios y entradas de la agenda no se copiaban (los de número más bajo). Ya se copian todos.' },
+            { kind: 'mejora', text: 'Google Calendar: si un evento no se puede copiar, los demás se copian igual, y Estado del sistema muestra cuántos fallaron.' }
+        ]
+    },
+    {
         version: '2.4.0',
         date: '2026-10-27',
         title: 'Agenda de autos y choferes y Google Calendar',

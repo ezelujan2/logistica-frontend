@@ -648,7 +648,7 @@ La pantalla Estado del sistema muestra de un vistazo si todo funciona y se actua
 | Base de datos | Tiempo de respuesta, tamaño y conexiones abiertas, y los pedidos más lentos |
 | Respaldos de la base de datos | Cuándo fue el último respaldo bueno, su tamaño (avisa si salió mucho más chico que el anterior, señal de que quedó incompleto) y los últimos 10 intentos |
 | Seguridad: ingresos al sistema | Para hoy, 7 o 30 días: ingresos correctos, intentos fallidos y por qué fallaron, usuarios bloqueados, las IPs y cuentas con más fallos, los ingresos desde un lugar nuevo (una IP que esa persona no usó en los 90 días anteriores) y la lista de intentos, con buscador y filtro "Sólo fallidos" |
-| Google Calendar | Si la copia a Google Calendar está activa, cuándo fue la última actualización y cuántos eventos creó, cambió o borró. Si falló, muestra el motivo |
+| Google Calendar | Si la copia a Google Calendar está activa, cuándo fue la última actualización y cuántos eventos creó, cambió o borró. Si falló, muestra el motivo y cuántos no se pudieron copiar |
 | Errores abiertos | Los errores de las últimas 24 horas registrados en Sentry, con cuántas veces pasaron, a cuántos usuarios y un enlace al detalle. Se pueden buscar, filtrar por proyecto y nivel, ordenar y paginar; "Ver todo en Sentry" abre la lista completa |
 
 En el historial de 24 horas, los pedidos se cuentan desde el último reinicio del servidor. Para períodos más largos se usa lo que se guarda una vez por hora desde la versión 2.2.0, que se conserva un año. Un ingreso "desde un lugar nuevo" no siempre es un problema (otra red de wifi, el celular): conviene revisarlo sólo si la persona no lo reconoce.
