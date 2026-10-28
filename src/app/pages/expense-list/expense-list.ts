@@ -19,6 +19,7 @@ import { CheckboxModule } from 'primeng/checkbox';
 import { ExpenseService } from '../../service/expense.service';
 import { DriverService } from '../../service/driver.service';
 import { VehicleService } from '../../service/vehicle.service';
+import { EXPENSE_TYPE_LABELS, labelOf, optionsOf } from '../../service/labels';
 
 @Component({
     selector: 'app-expense-list',
@@ -53,32 +54,13 @@ export class ExpenseList implements OnInit {
     drivers: any[] = [];
     vehicles: any[] = [];
 
+    expenseTypeLabel = (type: string) => labelOf(EXPENSE_TYPE_LABELS, type);
+
     expenseDialog: boolean = false;
     submitted: boolean = false;
     loading: boolean = true;
 
-    expenseTypes = [
-        { label: 'Combustible', value: 'FUEL' },
-        { label: 'Peaje', value: 'TOLL' },
-        { label: 'Lavado', value: 'WASH' },
-        { label: 'Viático', value: 'SNACK' },
-        { label: 'Taller / Mantenimiento', value: 'MAINTENANCE' },
-        { label: 'Seguros', value: 'INSURANCE' },
-        { label: 'Strix (Seguimiento Satelital)', value: 'STRIX' },
-        { label: 'Starlink', value: 'STARLINK' },
-        { label: 'Patentes', value: 'PATENTS' },
-        { label: 'Media Vuelta', value: 'HALF_ROUND' },
-        { label: 'Seguro Accidentes Personales', value: 'PERSONAL_ACCIDENT_INSURANCE' },
-        { label: 'Ingresos Brutos', value: 'GROSS_INCOME' },
-        { label: 'Contadores', value: 'ACCOUNTANTS' },
-        { label: 'Régimen Autónomos', value: 'AUTONOMOUS_REGIME' },
-        { label: 'Cocheras', value: 'PARKING' },
-        { label: 'Pasajes / Movilidad', value: 'TRAVEL_MOBILITY' },
-        { label: 'Mantenimiento Web', value: 'WEB_MAINTENANCE' },
-        { label: 'IVA', value: 'VAT' },
-        { label: 'Ganancias', value: 'PROFITS' },
-        { label: 'Otro', value: 'OTHER' }
-    ];
+    expenseTypes = optionsOf(EXPENSE_TYPE_LABELS);
 
 
     // Filters

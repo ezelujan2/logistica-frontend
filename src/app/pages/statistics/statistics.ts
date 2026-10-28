@@ -17,6 +17,7 @@ import { ToastModule } from 'primeng/toast';
 import { DialogModule } from 'primeng/dialog';
 import { MessageService } from 'primeng/api';
 import { StatsExportService, SheetData } from '../../service/stats-export.service';
+import { EXPENSE_TYPE_LABELS, SERVICE_TYPE_LABELS, labelOf, optionsOf } from '../../service/labels';
 
 @Component({
   selector: 'app-statistics',
@@ -453,13 +454,7 @@ export class StatisticsComponent implements OnInit {
   ];
 
   selectedServiceTypes: string[] = [];
-  serviceTypeOptions = [
-      { label: 'Servicio', value: 'SERVICE' },
-      { label: 'Mensajeria', value: 'MESSAGING' },
-      { label: 'Conducción', value: 'DRIVING' },
-      { label: 'Media Vuelta', value: 'HALF_ROUND' },
-      { label: 'Otro', value: 'OTHER' }
-  ];
+  serviceTypeOptions = optionsOf(SERVICE_TYPE_LABELS);
 
   selectedVehicleIds: number[] = [];
   vehicleOptions: { label: string; value: number }[] = [];
@@ -759,15 +754,7 @@ export class StatisticsComponent implements OnInit {
   }
 
   getExpenseLabel(type: string): string {
-      const map: any = {
-          'FUEL': 'Combustible',
-          'TOLL': 'Peajes',
-          'WASH': 'Lavadero',
-          'SNACK': 'Comida',
-          'OTHER': 'Otros',
-          'DRIVER_PAYMENT': 'Pago a Choferes'
-      };
-      return map[type] || type;
+      return type === 'DRIVER_PAYMENT' ? 'Pago a Choferes' : labelOf(EXPENSE_TYPE_LABELS, type);
   }
 
   initChartOptions() {

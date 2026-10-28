@@ -10,14 +10,7 @@ import { RatingModule } from 'primeng/rating';
 import { SelectButtonModule } from 'primeng/selectbutton';
 import { SelectModule } from 'primeng/select';
 import { StatisticsService, ClientDetailStats } from '../../service/statistics.service';
-
-const SERVICE_TYPE_LABELS: Record<string, string> = {
-    SERVICE: 'Servicio',
-    MESSAGING: 'Mensajería',
-    DRIVING: 'Conducción',
-    HALF_ROUND: 'Media Vuelta',
-    OTHER: 'Otro'
-};
+import { SERVICE_TYPE_LABELS } from '../../service/labels';
 
 @Component({
     selector: 'app-client-stats',

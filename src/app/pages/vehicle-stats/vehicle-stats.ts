@@ -5,26 +5,7 @@ import { ButtonModule } from 'primeng/button';
 import { TagModule } from 'primeng/tag';
 import { SkeletonModule } from 'primeng/skeleton';
 import { StatisticsService, VehicleDetailStats } from '../../service/statistics.service';
-
-const EXPENSE_TYPE_LABELS: Record<string, string> = {
-    FUEL: 'Combustible',
-    TOLL: 'Peajes',
-    WASH: 'Lavadero',
-    SNACK: 'Comida',
-    MAINTENANCE: 'Mantenimiento',
-    INSURANCE: 'Seguro',
-    STRIX: 'Strix',
-    STARLINK: 'Starlink',
-    PATENTS: 'Patente',
-    HALF_ROUND: 'Media Vuelta',
-    PERSONAL_ACCIDENT_INSURANCE: 'Seguro de accidentes',
-    GROSS_INCOME: 'Ingresos Brutos',
-    ACCOUNTANTS: 'Contador',
-    AUTONOMOUS_REGIME: 'Monotributo',
-    PARKING: 'Estacionamiento',
-    TRAVEL_MOBILITY: 'Movilidad',
-    OTHER: 'Otros'
-};
+import { EXPENSE_TYPE_LABELS } from '../../service/labels';
 
 @Component({
     selector: 'app-vehicle-stats',

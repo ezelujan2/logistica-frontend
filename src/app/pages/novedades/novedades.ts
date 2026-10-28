@@ -152,6 +152,7 @@ function groupReleases(releases: Release[]): ReleaseGroup[] {
                                 <div class="lg:sticky lg:top-24 flex flex-col gap-3">
                                     <input pInputText type="text" class="w-full" placeholder="Buscar en el manual…" [(ngModel)]="manualSearch" (ngModelChange)="onManualSearch()" />
                                     <div *ngIf="manualSearch.trim()" class="text-xs text-muted-color">{{ visibleSections().length }} de {{ sections.length }} secciones</div>
+                                    <p-button label="Descargar PDF" icon="pi pi-download" [outlined]="true" size="small" styleClass="w-full" pTooltip="Abre la impresión del manual completo: elegí «Guardar como PDF»" tooltipPosition="bottom" (click)="downloadManual()" />
                                     <nav class="flex flex-col gap-0.5 max-h-60 lg:max-h-[70vh] overflow-y-auto pr-1">
                                         <button
                                             type="button"
@@ -302,6 +303,10 @@ export class Novedades implements OnInit {
         } catch {
             this.manualError = true;
         }
+    }
+
+    downloadManual() {
+        this.manual.print(`Manual de usuario LECMA v${this.current.version}`);
     }
 
     visibleSections(): ManualSection[] {

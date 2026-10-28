@@ -17,6 +17,7 @@ import { DividerModule } from 'primeng/divider';
 import { CheckboxModule } from 'primeng/checkbox';
 import { InputTextModule } from 'primeng/inputtext';
 import { TooltipModule } from 'primeng/tooltip';
+import { EXPENSE_TYPE_LABELS, SERVICE_TYPE_LABELS, SETTLEMENT_STATUS_LABELS, labelOf, optionsOf } from '../../service/labels';
 
 @Component({
     selector: 'app-settlement-list',
@@ -49,7 +50,7 @@ import { TooltipModule } from 'primeng/tooltip';
                             <td>{{ settlement.startDate | date:'dd/MM' }} - {{ settlement.endDate | date:'dd/MM' }}</td>
                             <td class="font-bold">{{ settlement.totalAmount | currency:'USD' }}</td>
                             <td>
-                                <p-tag [value]="settlement.status" severity="success"></p-tag>
+                                <p-tag [value]="settlementStatusLabel(settlement.status)" severity="success"></p-tag>
                             </td>
                             <td>
                                 <p-button icon="pi pi-eye" [text]="true" [rounded]="true" (click)="viewDetails(settlement)"></p-button>
@@ -166,7 +167,7 @@ import { TooltipModule } from 'primeng/tooltip';
                                           <p-checkbox [(ngModel)]="expense.selected" [binary]="true" (onChange)="checkIfAllExpensesSelected()"></p-checkbox>
                                       </td>
                                       <td>{{ expense.date | date:'dd/MM/yy' }}</td>
-                                      <td><p-tag [value]="expense.type" severity="warn"></p-tag></td>
+                                      <td><p-tag [value]="expenseTypeLabel(expense.type)" severity="warn"></p-tag></td>
                                       <td>{{ expense.description }}</td>
                                       <td class="font-bold text-green-600">+ {{ expense.amount | currency:'USD' }}</td>
                                   </tr>
@@ -209,7 +210,7 @@ import { TooltipModule } from 'primeng/tooltip';
                               </ng-template>
                               <ng-template pTemplate="body" let-expense>
                                   <tr>
-                                      <td><p-tag [value]="expense.type" severity="info"></p-tag></td>
+                                      <td><p-tag [value]="expenseTypeLabel(expense.type)" severity="info"></p-tag></td>
                                       <td>{{ expense.description }}</td>
                                       <td class="font-bold text-green-600">
                                           + {{ expense.amount | currency:'USD' }}
@@ -293,28 +294,7 @@ export class SettlementList implements OnInit {
     addedExpenses: any[] = [];
     newExpense: any = { description: '', amount: null, type: 'OTHER', isDriverExpense: false };
 
-    expenseTypes = [
-        { label: 'Combustible', value: 'FUEL' },
-        { label: 'Peaje', value: 'TOLL' },
-        { label: 'Lavado', value: 'WASH' },
-        { label: 'Viático', value: 'SNACK' },
-        { label: 'Taller / Mantenimiento', value: 'MAINTENANCE' },
-        { label: 'Seguros', value: 'INSURANCE' },
-        { label: 'Strix (Seguimiento Satelital)', value: 'STRIX' },
-        { label: 'Starlink', value: 'STARLINK' },
-        { label: 'Patentes', value: 'PATENTS' },
-        { label: 'Media Vuelta', value: 'HALF_ROUND' },
-        { label: 'Seguro Accidentes Personales', value: 'PERSONAL_ACCIDENT_INSURANCE' },
-        { label: 'Ingresos Brutos', value: 'GROSS_INCOME' },
-        { label: 'Contadores', value: 'ACCOUNTANTS' },
-        { label: 'Régimen Autónomos', value: 'AUTONOMOUS_REGIME' },
-        { label: 'Cocheras', value: 'PARKING' },
-        { label: 'Pasajes / Movilidad', value: 'TRAVEL_MOBILITY' },
-        { label: 'Mantenimiento Web', value: 'WEB_MAINTENANCE' },
-        { label: 'IVA', value: 'VAT' },
-        { label: 'Ganancias', value: 'PROFITS' },
-        { label: 'Otro', value: 'OTHER' }
-    ];
+    expenseTypes = optionsOf(EXPENSE_TYPE_LABELS);
 
     // Calculated Totals
     totalServices: number = 0;
@@ -618,12 +598,14 @@ export class SettlementList implements OnInit {
     }
 
     getServiceTypeLabel(type: string) {
-        const types = [
-            { label: 'Servicio', value: 'SERVICE' },
-            { label: 'Mensajeria', value: 'MESSAGING' },
-            { label: 'Conducción', value: 'DRIVING' }
-        ];
-        const found = types.find(t => t.value === type);
-        return found ? found.label : type;
+        return labelOf(SERVICE_TYPE_LABELS, type);
+    }
+
+    expenseTypeLabel(type: string) {
+        return labelOf(EXPENSE_TYPE_LABELS, type);
+    }
+
+    settlementStatusLabel(status: string) {
+        return labelOf(SETTLEMENT_STATUS_LABELS, status);
     }
 }

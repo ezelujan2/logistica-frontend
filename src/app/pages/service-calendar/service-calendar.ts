@@ -9,6 +9,7 @@ import { TagModule } from 'primeng/tag';
 import { FormsModule } from '@angular/forms';
 import { Service } from '../../service/service.service';
 import { AgendaEntry, agendaLabel, agendaIcon } from '../../service/agenda.service';
+import { SERVICE_STATUS_LABELS, labelOf } from '../../service/labels';
 
 interface CalendarDay {
     date: Date;
@@ -799,16 +800,7 @@ export class ServiceCalendar implements OnInit, OnChanges {
     }
 
     translateStatus(status: string): string {
-        const map: any = {
-            'CREATED': 'Creado',
-            'PENDING': 'Pendiente',
-            'PENDING_DETAILS': 'Pendiente Detalles',
-            'PENDING_INVOICE': 'Pendiente Facturar',
-            'PAYMENT_PENDING': 'Pendiente de Pago',
-            'PAID': 'Pagado',
-            'CANCELLED': 'Cancelado'
-        };
-        return map[status] || status;
+        return labelOf(SERVICE_STATUS_LABELS, status);
     }
 
     get weekGridColumns(): string {

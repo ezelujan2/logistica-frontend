@@ -48,10 +48,27 @@ const HELP_BY_ROUTE: Array<[RegExp, string[]]> = [
     [/.*/, ['menu y la pantalla de inicio']]
 ];
 
+const PRINT_CSS = `
+    @page { margin: 18mm 16mm; }
+    body { font-family: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif; font-size: 11pt; line-height: 1.5; color: #1f2937; }
+    h1 { font-size: 22pt; margin: 0 0 12pt; }
+    h2 { font-size: 15pt; margin: 22pt 0 8pt; padding-bottom: 4pt; border-bottom: 1px solid #d1d5db; break-after: avoid; }
+    h2:not(:first-of-type) { break-before: page; }
+    h3 { font-size: 12pt; margin: 14pt 0 6pt; break-after: avoid; }
+    table { border-collapse: collapse; width: 100%; margin: 8pt 0; font-size: 10pt; }
+    th, td { border: 1px solid #d1d5db; padding: 4pt 6pt; text-align: left; vertical-align: top; }
+    th { background: #f3f4f6; }
+    tr, img, blockquote { break-inside: avoid; }
+    blockquote { margin: 8pt 0; padding: 4pt 10pt; border-left: 3px solid #9ca3af; color: #4b5563; }
+    code { font-size: 9.5pt; background: #f3f4f6; padding: 0 3pt; border-radius: 3pt; }
+    a { color: inherit; text-decoration: none; }
+`;
+
 // El manual viaja con cada versión de las pantallas (public/manual-usuario.md),
 // así que siempre describe lo que está instalado. Se baja una vez por sesión.
 @Injectable({ providedIn: 'root' })
 export class ManualService {
+    private markdown?: Promise<string>;
     private sections?: Promise<ManualSection[]>;
 
     constructor(
@@ -59,12 +76,36 @@ export class ManualService {
         private sanitizer: DomSanitizer
     ) {}
 
+    private getMarkdown(): Promise<string> {
+        if (!this.markdown) {
+            this.markdown = firstValueFrom(this.http.get('/manual-usuario.md', { responseType: 'text' }));
+            this.markdown.catch(() => (this.markdown = undefined));
+        }
+        return this.markdown;
+    }
+
     getSections(): Promise<ManualSection[]> {
         if (!this.sections) {
-            this.sections = firstValueFrom(this.http.get('/manual-usuario.md', { responseType: 'text' })).then((md) => this.split(md));
+            this.sections = this.getMarkdown().then((md) => this.split(md));
             this.sections.catch(() => (this.sections = undefined));
         }
         return this.sections;
+    }
+
+    /**
+     * Abre el diálogo de impresión con el manual entero, armado para papel: ahí
+     * se elige "Guardar como PDF". El título pasa a ser el nombre del archivo.
+     */
+    async print(title: string): Promise<void> {
+        const body = marked.parse(await this.getMarkdown(), { async: false }) as string;
+        const frame = document.createElement('iframe');
+        frame.style.cssText = 'position:fixed;width:0;height:0;border:0;';
+        frame.srcdoc = `<!doctype html><html lang="es"><head><meta charset="utf-8"><title>${title}</title><style>${PRINT_CSS}</style></head><body><h1>${title}</h1>${body}</body></html>`;
+        frame.onload = () => {
+            frame.contentWindow!.addEventListener('afterprint', () => frame.remove());
+            frame.contentWindow!.print();
+        };
+        document.body.appendChild(frame);
     }
 
     /** Las secciones que explican la pantalla de esa dirección, más las preguntas frecuentes. */

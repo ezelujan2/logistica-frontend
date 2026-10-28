@@ -365,7 +365,7 @@ type Level = 'good' | 'warning' | 'critical';
                                     <td class="max-w-[36rem]">
                                         <div class="flex items-center gap-2">
                                             <p-tag [value]="i.project" severity="secondary" styleClass="text-xs shrink-0" />
-                                            <p-tag *ngIf="i.level !== 'error'" [value]="i.level" [severity]="i.level === 'fatal' ? 'danger' : 'warn'" styleClass="text-xs shrink-0" />
+                                            <p-tag *ngIf="i.level !== 'error'" [value]="i.level === 'fatal' ? 'Crítico' : i.level === 'warning' ? 'Aviso' : i.level" [severity]="i.level === 'fatal' ? 'danger' : 'warn'" styleClass="text-xs shrink-0" />
                                             <span class="truncate" [pTooltip]="i.title">{{ i.title }}</span>
                                         </div>
                                         <div class="text-xs text-muted-color truncate" [pTooltip]="i.where">{{ i.where }}</div>

@@ -40,7 +40,7 @@
         <ng-template pTemplate="body" let-expense>
             <tr>
                 <td class="text-center">{{expense.date | date: 'dd/MM/yyyy'}}</td>
-                <td class="text-center">{{expense.type}}</td>
+                <td class="text-center">{{ expenseTypeLabel(expense.type) }}</td>
                 <td class="text-right">{{expense.amount | currency:'ARS':'symbol-narrow'}}</td>
                 <td>{{expense.description}}</td>
                 <td class="text-center">{{expense.driver?.name || '-'}}</td>

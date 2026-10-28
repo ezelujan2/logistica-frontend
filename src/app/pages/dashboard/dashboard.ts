@@ -20,6 +20,7 @@ import { DialogModule } from 'primeng/dialog';
 import { InputTextModule } from 'primeng/inputtext';
 import { SelectModule } from 'primeng/select';
 import { FormsModule } from '@angular/forms';
+import { BILLING_TYPE_LABELS, EXPENSE_TYPE_LABELS, SERVICE_TYPE_LABELS, labelOf } from '../../service/labels';
 import { CheckboxModule } from 'primeng/checkbox';
 
 @Component({
@@ -336,12 +337,12 @@ import { CheckboxModule } from 'primeng/checkbox';
 
         </div>
 
-        <p-dialog *ngIf="authService.hasPermission('viewAudits')" [(visible)]="displayAuditDialog" [header]="'Detalles de Auditoría - ' + selectedAudit?.entity + ' #' + selectedAudit?.entityId" [modal]="true" [style]="{width: '50vw'}" [breakpoints]="{'960px': '75vw', '640px': '100vw'}" [draggable]="false" [resizable]="false">
+        <p-dialog *ngIf="authService.hasPermission('viewAudits')" [(visible)]="displayAuditDialog" [header]="'Detalles de Auditoría - ' + getEntityLabel(selectedAudit?.entity ?? '') + ' #' + selectedAudit?.entityId" [modal]="true" [style]="{width: '50vw'}" [breakpoints]="{'960px': '75vw', '640px': '100vw'}" [draggable]="false" [resizable]="false">
             <div *ngIf="selectedAudit">
                 <div class="grid grid-cols-2 gap-4 mb-4">
                     <div>
                         <span class="font-bold text-gray-700 block mb-1">Acción</span>
-                        <p-tag [value]="selectedAudit.action" [severity]="getAuditActionSeverity(selectedAudit.action)"></p-tag>
+                        <p-tag [value]="getAuditActionLabel(selectedAudit.action)" [severity]="getAuditActionSeverity(selectedAudit.action)"></p-tag>
                     </div>
                     <div>
                         <span class="font-bold text-gray-700 block mb-1">Usuario</span>
@@ -790,6 +791,11 @@ export class Dashboard implements OnInit {
         }
         if (typeof value === 'boolean') return value ? 'Sí' : 'No';
         if (typeof value === 'object') return JSON.stringify(value);
+        const k = key.replace(/_/g, '').toLowerCase();
+        if (k === 'servicetype') return labelOf(SERVICE_TYPE_LABELS, value);
+        if (k === 'billingtype') return labelOf(BILLING_TYPE_LABELS, value);
+        if (k === 'type') return labelOf(EXPENSE_TYPE_LABELS, value);
+        if (k === 'ownership') return value === 'OWN' ? 'Propio' : value === 'THIRD_PARTY' ? 'De terceros' : String(value);
         return String(value);
     }
 

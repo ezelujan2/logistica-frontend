@@ -12,6 +12,10 @@ También podés preguntarle al asistente cómo se hace algo ("¿cómo corrijo el
 
 El manual describe el sistema con las mejoras de octubre de 2026 (asistente de IA nuevo, historial de estados, selector de período y nuevas validaciones). Si alguna pantalla todavía no coincide, esa mejora aún no se instaló.
 
+### Descargar el manual
+
+En "Novedades y ayuda", pestaña "Manual de usuario", el botón "Descargar PDF" (debajo del buscador) abre la impresión del manual completo. Elegí "Guardar como PDF" como impresora y queda un archivo con la versión en el nombre, para leerlo sin conexión o pasárselo a alguien.
+
 ### Qué ve cada usuario
 
 Lo que aparece en el menú depende de tu rol. Si no ves una opción que figura en este manual, tu usuario no tiene permiso para usarla.
@@ -120,6 +124,7 @@ Un servicio se carga desde cualquier lista de Servicios con "Nuevo Servicio". El
 | Conducción | El chofer maneja el auto del cliente o uno que el cliente propone. |
 | Mediavuelta | Viaje para un cliente de un colega, que nos pasa la media vuelta porque combina con un viaje nuestro. |
 | Mensajería | Envío de un paquete. |
+| Flete | Traslado de carga o mercadería. Se cobra por km y horas, igual que un servicio. |
 | Otro | Casos especiales que no entran en los anteriores. |
 
 El resumen del formulario muestra el neto, el IVA y el total al cliente, y el monto para el chofer, mientras cargás.

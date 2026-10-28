@@ -25,6 +25,16 @@ export interface Release {
 
 export const RELEASES: Release[] = [
     {
+        version: '2.5.0',
+        date: '2026-10-28',
+        title: 'Flete, manual en PDF y nombres en castellano',
+        changes: [
+            { kind: 'nuevo', text: 'Servicios: nuevo tipo "Flete" para traslados de carga. Se cobra por km y horas como un servicio común, y aparece en los filtros, las estadísticas, las liquidaciones y el asistente.' },
+            { kind: 'nuevo', text: 'Manual de usuario: botón "Descargar PDF" para guardarlo completo y leerlo sin conexión o compartirlo.' },
+            { kind: 'correccion', text: 'Estados y tipos se ven con su nombre en castellano en todo el sistema: liquidaciones, gastos, auditoría, buscador, estadísticas y mensajes de error ya no muestran nombres internos como "PROCESSED" o "STRIX".' }
+        ]
+    },
+    {
         version: '2.4.3',
         date: '2026-10-27',
         title: 'Orden de las novedades e historial del sistema',

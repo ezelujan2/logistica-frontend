@@ -37,6 +37,7 @@ import { environment } from '../../../environments/environment';
 import { ServiceCalendar } from '../service-calendar/service-calendar';
 import { AuthService } from '../../service/auth.service';
 import { AgendaService, AgendaEntry, AvailabilityWarning } from '../../service/agenda.service';
+import { EXPENSE_TYPE_LABELS, GROUP_STATUS_LABELS, SERVICE_STATUS_LABELS, SERVICE_TYPE_LABELS, labelOf, optionsOf } from '../../service/labels';
 
 @Component({
     selector: 'app-service-list',
@@ -1269,15 +1270,7 @@ export class ServiceList implements OnInit {
     invoiceServices: any[] = [];
     selectedInvoiceServices: any[] = [];
 
-    statuses = [
-        { label: 'Creado', value: 'CREATED' },
-        { label: 'Pendiente', value: 'PENDING' },
-        { label: 'Pendiente Detalles', value: 'PENDING_DETAILS' },
-        { label: 'A Facturar', value: 'PENDING_INVOICE' },
-        { label: 'Pendiente Pago', value: 'PAYMENT_PENDING' },
-        { label: 'Pagado', value: 'PAID' },
-        { label: 'Cancelado', value: 'CANCELLED' }
-    ];
+    statuses = optionsOf(SERVICE_STATUS_LABELS);
 
     // Estados que un admin puede forzar a mano sobre un grupo entero. Espeja
     // GROUP_SELECTABLE_STATUSES del backend: GENERATED sólo existe a nivel grupo.
@@ -1295,36 +1288,9 @@ export class ServiceList implements OnInit {
         { label: 'Informal', value: 'INFORMAL' }
     ];
 
-    expenseTypes = [
-         { label: 'Combustible', value: 'FUEL' },
-         { label: 'Peaje', value: 'TOLL' },
-         { label: 'Lavadero', value: 'WASH' },
-         { label: 'Comida', value: 'SNACK' },
-         { label: 'Taller / Mantenimiento', value: 'MAINTENANCE' },
-         { label: 'Seguros', value: 'INSURANCE' },
-         { label: 'Strix (Seguimiento Satelital)', value: 'STRIX' },
-         { label: 'Starlink', value: 'STARLINK' },
-         { label: 'Patentes', value: 'PATENTS' },
-         { label: 'Media Vuelta', value: 'HALF_ROUND' },
-         { label: 'Seguro Accidentes Personales', value: 'PERSONAL_ACCIDENT_INSURANCE' },
-         { label: 'Ingresos Brutos', value: 'GROSS_INCOME' },
-         { label: 'Contadores', value: 'ACCOUNTANTS' },
-         { label: 'Régimen Autónomos', value: 'AUTONOMOUS_REGIME' },
-         { label: 'Cocheras', value: 'PARKING' },
-         { label: 'Pasajes / Movilidad', value: 'TRAVEL_MOBILITY' },
-         { label: 'Mantenimiento Web', value: 'WEB_MAINTENANCE' },
-         { label: 'IVA', value: 'VAT' },
-         { label: 'Ganancias', value: 'PROFITS' },
-         { label: 'Otro', value: 'OTHER' }
-    ];
+    expenseTypes = optionsOf(EXPENSE_TYPE_LABELS);
 
-    serviceTypes = [
-        { label: 'Servicio', value: 'SERVICE' },
-        { label: 'Mensajeria', value: 'MESSAGING' },
-        { label: 'Conducción', value: 'DRIVING' },
-        { label: 'Media Vuelta', value: 'HALF_ROUND' },
-        { label: 'Otro', value: 'OTHER' }
-    ];
+    serviceTypes = optionsOf(SERVICE_TYPE_LABELS);
 
     // Voucher: tipo de vehículo solicitado, independiente de la unidad real asignada
     vehicleTypes = ['Sedán', 'Ejecutiva Van', 'Van/Combi', 'SUV'];
@@ -2900,9 +2866,7 @@ export class ServiceList implements OnInit {
     }
 
     getGroupStatusLabel(status: string): string {
-        if (status === 'GENERATED') return 'Generado';
-        if (status === 'INVOICED') return 'Facturado';
-        return this.getMmStatusLabel(status);
+        return labelOf(GROUP_STATUS_LABELS, status);
     }
 
     // --- Historial de estados ---
