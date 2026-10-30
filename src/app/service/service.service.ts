@@ -112,8 +112,8 @@ export class ServiceService {
         return await firstValueFrom(this.http.patch<ServiceTask>(`${this.apiUrl}/tasks/${taskId}`, { done }));
     }
 
-    async createGroup(serviceIds: number[], clientId: number, notes?: string) {
-        return firstValueFrom(this.http.post<any>(environment.apiUrl + 'groups', { serviceIds, clientId, notes }));
+    async createGroup(serviceIds: number[], clientId: number, notes?: string, purchaseOrder?: string) {
+        return firstValueFrom(this.http.post<any>(environment.apiUrl + 'groups', { serviceIds, clientId, notes, purchaseOrder }));
     }
 
     async getGroups(params?: any) {
@@ -136,7 +136,8 @@ export class ServiceService {
         return firstValueFrom(this.http.get<any[]>(environment.apiUrl + 'groups/' + id + '/status-history'));
     }
 
-    async updateGroupNotes(id: number, notes: string) {
-        return firstValueFrom(this.http.patch(environment.apiUrl + 'groups/' + id, { notes }));
+    /** Notas del reporte y la orden de compra del cliente (sale en la fila de la factura). */
+    async updateGroupNotes(id: number, notes: string, purchaseOrder?: string) {
+        return firstValueFrom(this.http.patch(environment.apiUrl + 'groups/' + id, { notes, ...(purchaseOrder !== undefined ? { purchaseOrder } : {}) }));
     }
 }

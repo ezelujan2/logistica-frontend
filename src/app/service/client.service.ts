@@ -7,7 +7,15 @@ import { environment } from '../../environments/environment';
 export interface Client {
     id?: number;
     name: string;
+    /** Razón social: la que sale en la factura. Vacía = el nombre. */
+    legal_name?: string | null;
     cuit?: string;
+    /** Inscripto o Monotributo → Factura A; Exento o Consumidor Final → Factura B, con el IVA incluido sin discriminar. */
+    iva_condition?: 'RESPONSABLE_INSCRIPTO' | 'MONOTRIBUTO' | 'EXENTO' | 'CONSUMIDOR_FINAL' | null;
+    /** Manda orden de compra (ej. Sidersa): la OC es obligatoria en cada reporte para facturar. */
+    requires_purchase_order?: boolean;
+    /** Empresa del registro de FCE: desde el monto mínimo se le factura con FCE A. */
+    receives_fce?: boolean;
     address?: string;
     phone?: string;
     email?: string;

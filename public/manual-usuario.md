@@ -85,6 +85,7 @@ La pantalla de inicio muestra de un vistazo qué hay que hacer hoy; el menú de 
 | Inicio | Pantalla de inicio |
 | Servicios › Creados, Pendientes, Env. Detalles, A Facturar, Pendiente Pago, Pagados, Cancelados | Lista de servicios filtrada por estado, cada una con lo que hay que hacer en ese paso |
 | Servicios › General | Todos los servicios y el calendario |
+| Facturas | Todas las facturas y notas; emitir, descargar y corregir |
 | Gastos | Gastos de la empresa, de autos y de choferes |
 | Clientes | Datos y tarifas de cada cliente |
 | Choferes › Listado/Config, Adelantos, Liquidaciones | Datos de choferes, dinero adelantado y pagos |
@@ -212,8 +213,9 @@ Un reporte junta los servicios de un cliente en un PDF para enviarle el detalle 
 2. Marcá con las casillas los servicios del mismo cliente que van en el reporte.
 3. Tocá "Ver Resumen": muestra la lista elegida con el subtotal, el IVA y el total.
 4. Si querés, escribí comentarios para el cliente; salen en el PDF.
-5. Tocá "Generar Reporte". El reporte recibe su código (por ejemplo REP-0042) y se genera el PDF.
-6. Abrí el PDF con el ícono azul de cualquiera de sus servicios y enviáselo al cliente.
+5. Si el cliente mandó orden de compra, cargala en "Orden de compra" (por ejemplo "OC3196"). Para los clientes con "Pide orden de compra" es obligatoria antes de facturar; si todavía no la tenés, se puede cargar después.
+6. Tocá "Generar Reporte". El reporte recibe su código (por ejemplo REP-0042) y se genera el PDF.
+7. Abrí el PDF con el ícono azul de cualquiera de sus servicios y enviáselo al cliente.
 
 Después de armarlo, los servicios a facturar pasan a A Facturar y los informales a Pendiente Pago.
 
@@ -227,34 +229,111 @@ El mensaje indica qué servicio es el problema. Si mezclás servicios a facturar
 
 ### Corregir un reporte
 
-- Los comentarios del reporte se editan con el lápiz de su cabecera en la vista agrupada; el PDF se vuelve a generar.
+- Los comentarios y la orden de compra del reporte se editan con el lápiz de su cabecera en la vista agrupada; el PDF se vuelve a generar.
 - Si editás un servicio del reporte, el PDF se actualiza solo.
 
 ## 7. Facturar
 
-La factura se emite fuera del sistema (en AFIP o el sistema de facturación que uses); en el sistema se registra su número y se eligen los reportes que cubre.
+La factura se emite en ARCA desde el sistema: ARCA da el número y el código de autorización (CAE), y el sistema arma el PDF con el código QR. También se puede registrar una factura que se hizo a mano en la página de ARCA.
 
-### Registrar una factura
+### Pantalla Facturas
 
-1. Andá a Servicios › A Facturar y tocá "Facturar".
-2. En "Cliente a Facturar" elegí el cliente. Aparecen sus reportes listos para facturar, con código, cantidad de viajes y total estimado.
-3. Escribí el "Número de Factura" que emitiste. Es obligatorio y no se puede repetir.
-4. Marcá los reportes que incluye esa factura.
-5. Tocá "Confirmar Factura".
+En el menú, "Facturas" muestra todas las facturas y notas: las emitidas desde el sistema, las registradas a mano y las históricas (a título personal, de antes de octubre de 2026).
 
-Los servicios facturados pasan a Pendiente Pago. Los servicios cancelados de esos reportes no se facturan ni suman al total.
+- Filtros: buscar por número, CAE, orden de compra o código de reporte; cliente; período; estado (emitida sin cobrar, pagada, anulada); facturas o notas; de LECMA o históricas.
+- Arriba se ve cuántos comprobantes hay y el total facturado del filtro.
+- La flecha de cada fila despliega sus reportes con sus servicios. El código del reporte abre su PDF. Una factura figura "Pagada" cuando todos sus servicios están cobrados.
+- Las facturas anuladas muestran con qué nota se anularon y qué servicios tenían.
+- Botones de cada fila: descargar el PDF (las emitidas desde el sistema y las registradas a mano con el PDF adjunto) y hacer una nota de crédito o débito (sólo las emitidas desde el sistema).
+- "Nueva factura" abre el mismo cuadro que "Facturar" en Servicios › A Facturar.
 
-### Corregir un número de factura
+### Antes de facturar: los datos del cliente
 
-1. En la lista de servicios, tocá el lápiz al lado del número de factura.
-2. Escribí el "Nuevo Número de Factura".
-3. En "Servicios a incluir en esta factura", dejá marcados los servicios a los que les cambia el número. Si desmarcás algunos, la factura se divide en dos: los marcados pasan al número nuevo y los demás quedan con el anterior, y los totales de ambas se recalculan.
+En Clientes, cada cliente al que se le factura necesita:
+
+- **CUIT** válido. Con el botón "Buscar en ARCA" se traen la razón social, el domicilio y la condición frente al IVA; revisalos y guardá.
+- **Razón social**: es el nombre que sale en la factura. Si está vacía, sale el nombre del cliente.
+- **Domicilio**: obligatorio para emitir en ARCA.
+- **Condición frente al IVA**: define la letra de la factura (ver más abajo).
+- **Pide orden de compra**: si está marcado, cada reporte necesita su OC para facturar.
+- **Empresa del registro de FCE**: para las grandes empresas del listado de ARCA (como Sidersa).
+
+### Qué factura corresponde
+
+| Condición del cliente | Comprobante |
+| --- | --- |
+| Responsable Inscripto o Monotributo | Factura A |
+| Responsable Inscripto marcado como "Empresa del registro de FCE", cuando el total llega al monto mínimo de ARCA | Factura de Crédito Electrónica A (FCE) |
+| Exento o Consumidor Final | Factura B: mismo precio, con el IVA incluido sin discriminar (en el reporte también) |
+
+El sistema no deja emitir una letra que no corresponda y explica por qué. Los servicios informales no se facturan.
+
+### Emitir una factura en ARCA
+
+1. Tocá "Nueva factura" en Facturas, o "Facturar" en Servicios › A Facturar.
+2. En "Cliente" elegí el cliente. Aparecen sus reportes listos para facturar, con código, cantidad de viajes y total. Si en A Facturar seleccionaste servicios de un solo cliente, ya viene elegido.
+3. Dejá elegido "Emitir en ARCA" y completá:
+   - "Comprobante": Factura A, Factura B o FCE. Se propone el que corresponde al cliente.
+   - "Fecha de emisión": hoy, salvo que haga falta otra.
+   - "Actividad": la de LECMA que se informa a ARCA. Casi siempre queda la que viene (523090, gestión y logística).
+   - "Vencimiento del pago": viene a 30 días (o el plazo del cliente). Se puede cambiar.
+   - "Texto adicional" (opcional): se agrega a cada fila, por ejemplo "Traslados de personal octubre".
+4. Marcá los reportes que incluye esa factura y, en la columna "OC del cliente", la orden de compra de cada uno si la tiene (con asterisco: obligatoria).
+5. Revisá "Así salen las filas de la factura": una fila por reporte, "Honorarios por servicios según Reporte REP-… OC…".
+6. Tocá "Emitir en ARCA" y confirmá.
+
+Aparecen los reportes en "Generado" y también los que quedaron en "A Facturar". Si un reporte tiene servicios ya facturados, se factura sólo lo que falta.
+
+La factura queda con su número (por ejemplo "FA 0002-00000015") y se descarga el PDF para mandarle al cliente. Los servicios pasan a Pendiente Pago. Los servicios cancelados de esos reportes no se facturan ni suman al total.
+
+Avisos que pueden aparecer en el cuadro:
+
+- **"En ARCA figura como …"**: la condición frente al IVA de la ficha no coincide con la de ARCA. Revisala en Clientes antes de emitir.
+- **"Hay fletes con IVA al 10,5%"**: el transporte de carga suele ir al 21%. Revisá el IVA de esos servicios.
+- **"Corresponde FCE A"**: el cliente es del registro de FCE y el total llega al mínimo.
+
+Si aparece "ARCA de prueba: sin validez fiscal", el sistema está conectado al entorno de prueba de ARCA: las facturas no valen.
+
+### Descargar una factura
+
+En Facturas, o en la lista de servicios al lado del número de factura, el botón del PDF la descarga de nuevo. Las notas y las facturas anuladas se descargan desde Facturas.
+
+### Notas de crédito y débito
+
+Una factura emitida en ARCA no se edita: se corrige con una nota.
+
+1. En Facturas (o en la lista de servicios, al lado del número de factura), tocá el botón de nota.
+2. Elegí "Nota de crédito" o "Nota de débito".
+3. Para crédito, elegí:
+   - "Anular la factura": la anula entera y sus servicios vuelven a A Facturar para facturarlos de nuevo.
+   - "Por un importe": cargá el importe neto, el IVA y el motivo.
+4. Tocá "Emitir en ARCA" y confirmá. Se descarga el PDF de la nota.
+
+### Registrar una factura hecha a mano
+
+Si la factura se hizo en la página de ARCA ("Comprobantes en línea"), por ejemplo porque el sistema no pudo emitirla, en el cuadro de facturar elegí "Registrar una hecha a mano", completá lo siguiente y tocá "Registrar factura":
+
+- "Comprobante", "Pto. venta" y "Número": el sistema propone el que sigue según la última cargada; revisá que coincida con el de ARCA. El punto de venta que usa el sistema para emitir no se puede cargar a mano.
+- "Fecha de emisión".
+- "CAE" (opcional): el código de 14 números que está al pie de la factura de ARCA.
+- "PDF de la factura" (opcional): adjuntá el PDF que descargaste de ARCA (hasta 5 MB). Después se descarga desde el sistema como las demás.
+- La OC de cada reporte, igual que al emitir.
+
+### Facturas anteriores y facturas personales
+
+Las facturas de antes de octubre de 2026 se hicieron a título personal y quedan con el número tal como se cargó (por ejemplo "F270 OC3196"). Si alguna vez hay que registrar una factura que no es de LECMA, tocá "¿Es una factura personal?" debajo de los datos del comprobante y escribí el número como texto libre. También se le puede adjuntar el PDF.
+
+### Corregir una factura hecha a mano
+
+1. En la lista de servicios, tocá el lápiz al lado del número de factura (sólo aparece en las registradas a mano).
+2. Corregí los datos del comprobante, el CAE o el PDF adjunto.
+3. En "Servicios a incluir en esta factura", dejá marcados los servicios de esa factura. Si desmarcás algunos, la factura se divide en dos: los marcados pasan a una factura nueva con los datos que cargaste y los demás quedan en la anterior, y los totales de ambas se recalculan.
 4. Guardá.
 
 ### Atención
 
 - Un servicio que ya tiene factura no se puede volver a facturar.
-- Si editás los importes de un servicio ya facturado, la factura registrada no se actualiza: avisá al administrador para corregirla.
+- Si editás los importes de un servicio ya facturado, la factura no se actualiza: corregila con una nota de crédito o débito, o avisá al administrador si es una registrada a mano.
 - Las facturas deben guardarse en las carpetas compartidas de la empresa.
 
 ## 8. Registrar cobros
@@ -382,7 +461,13 @@ Estas pantallas guardan los datos que se usan al cargar servicios. Todas funcion
 
 | Campo | Para qué sirve |
 | --- | --- |
-| Nombre, CUIT, Dirección, Teléfono, Email | Datos del cliente. El CUIT no se puede repetir |
+| Nombre, Teléfono, Email | Datos del cliente. El nombre puede ser un apodo o una cuenta ("Sidersa - Corporativo") |
+| Razón social | La que sale en la factura. Si está vacía, sale el nombre |
+| CUIT y "Buscar en ARCA" | El botón trae razón social, domicilio y condición frente al IVA de ARCA para revisar y guardar. Varias cuentas de un mismo cliente pueden compartir CUIT |
+| Domicilio | Obligatorio para emitir facturas en ARCA |
+| Condición frente al IVA | Define la letra de la factura (sección 7). Exento y Consumidor Final: Factura B con el IVA incluido sin discriminar |
+| Pide orden de compra | Cada reporte necesita su OC para facturar |
+| Empresa del registro de FCE | Desde el monto mínimo de ARCA se le factura con FCE A |
 | Precio KM Default, Precio KM Extra Default y precio por hora | Tarifa propia del cliente, que se copia a cada servicio nuevo |
 | Enviar detalles | Marcalo si el cliente pide el detalle de los viajes antes de facturar: sus servicios pasan por Env. Detalles |
 | Enviar facturas | Marcalo si al cliente se le factura |
@@ -685,6 +770,14 @@ El historial se arma con lo que se guarda una vez por hora desde la versión 2.2
 | El servicio queda en Creado | Falta un dato obligatorio: cliente, fechas, origen, destino, chofer, auto o un total mayor que cero |
 | Edité un servicio ya facturado | La factura registrada no cambia: avisá al administrador |
 | "Hay servicios que ya están facturados" | Esos servicios ya tienen factura; para cambiarles el número usá el lápiz del número de factura |
+| "Ya hay una factura cargada con ese número" | Ese comprobante ya está registrado en otro servicio: revisá tipo, punto de venta y número |
+| "El cliente no tiene un CUIT válido" | Corregí el CUIT en Clientes (11 números, con o sin guiones) y volvé a emitir |
+| "Falta el domicilio del cliente" | Cargalo en Clientes (o tocá "Buscar en ARCA") y volvé a emitir |
+| "Le corresponde Factura B" / "Factura A" | La letra no coincide con la condición frente al IVA del cliente: cambiá el comprobante o corregí la condición en Clientes |
+| "Falta la orden de compra" | El cliente pide OC: cargala en la columna "OC del cliente" de cada reporte |
+| "ARCA no tiene ese CUIT" al buscar | Revisá el CUIT; si está bien, cargá los datos a mano |
+| "ARCA rechazó el comprobante: …" | Leé el motivo que da ARCA; si no se entiende, avisá al administrador. No se emitió nada |
+| "ARCA tiene el comprobante … que no está en LECMA" | Se cortó una emisión anterior a la mitad: avisá al administrador antes de seguir facturando |
 | El PDF no se abre | Permití las ventanas emergentes del sitio en el navegador y probá de nuevo |
 | "Tu sesión venció" | Volvé a ingresar la contraseña; lo que estabas haciendo se completa |
 | El asistente dio un número raro | Abrí "Ver cómo lo resolvió" para ver la consulta que hizo, y repreguntá aclarando el período o el filtro |

@@ -33,6 +33,7 @@ const HELP_BY_ROUTE: Array<[RegExp, string[]]> = [
     [/^\/app\/services\/pending_invoice/, ['facturar', 'lista de servicios']],
     [/^\/app\/services\/payment_pending/, ['registrar cobros', 'lista de servicios']],
     [/^\/app\/services/, ['lista de servicios', 'cargar un servicio']],
+    [/^\/app\/invoices/, ['facturar', 'registrar cobros']],
     [/^\/app\/expenses/, ['gastos y reintegros']],
     [/^\/app\/(advances|settlements)/, ['liquidar a un chofer']],
     [/^\/app\/(clients|vehicles)\/\d+\/stats/, ['estadisticas']],

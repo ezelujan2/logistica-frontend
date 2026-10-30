@@ -1,6 +1,9 @@
 import { Component, HostListener, OnInit, ViewChild } from '@angular/core';
 import { FileService } from '../../service/file.service';
-import { InvoiceService } from '../../service/invoice.service';
+import { InvoiceService, InvoiceForm, emptyInvoiceForm, invoiceFormFrom, isInvoiceFormComplete, isArcaInvoice, hasInvoicePdf } from '../../service/invoice.service';
+import { InvoiceBillingDialog } from '../invoices/invoice-billing-dialog';
+import { InvoiceNoteDialog } from '../invoices/invoice-note-dialog';
+import { InvoiceFields } from './invoice-fields';
 import { VoucherService } from '../../service/voucher.service';
 import { SurveyService } from '../../service/survey.service';
 import { CommonModule } from '@angular/common';
@@ -226,7 +229,7 @@ import { EXPENSE_TYPE_LABELS, GROUP_STATUS_LABELS, SERVICE_STATUS_LABELS, SERVIC
                                           optionLabel="label" optionValue="value" appendTo="body"
                                           size="small" styleClass="ml-2" pTooltip="Estado del grupo" tooltipPosition="top"></p-select>
                                 <p-tag *ngIf="service.serviceGroup && !authService.hasPermission('forceServiceStatus')" [value]="getGroupStatusLabel(service.serviceGroup.status)" severity="info" class="ml-2"></p-tag>
-                                <p-button *ngIf="service.serviceGroup" icon="pi pi-pencil" [rounded]="true" [text]="true" size="small" severity="secondary" (click)="openEditGroupNotes(service.serviceGroup)" pTooltip="Editar Notas del Reporte" tooltipPosition="top" styleClass="p-0 w-8 h-8 ml-2"></p-button>
+                                <p-button *ngIf="service.serviceGroup" icon="pi pi-pencil" [rounded]="true" [text]="true" size="small" severity="secondary" (click)="openEditGroupNotes(service.serviceGroup)" pTooltip="Editar notas y OC del reporte" tooltipPosition="top" styleClass="p-0 w-8 h-8 ml-2"></p-button>
                                 <p-button *ngIf="service.serviceGroup && authService.hasPermission('viewServiceHistory')" icon="pi pi-history" [rounded]="true" [text]="true" size="small" severity="secondary" (click)="openGroupHistory(service.serviceGroup)" pTooltip="Historial de estados del reporte" tooltipPosition="top" styleClass="p-0 w-8 h-8"></p-button>
 
                                 <!-- Los botones dependen del estado del REPORTE, que es contra lo que
@@ -361,15 +364,22 @@ import { EXPENSE_TYPE_LABELS, GROUP_STATUS_LABELS, SERVICE_STATUS_LABELS, SERVIC
                         <td>
                             <div *ngIf="service.serviceGroup" class="flex align-items-center gap-2">
                                 <p-tag [value]="service.serviceGroup.code" severity="warn" styleClass="cursor-pointer hover:bg-orange-600 transition-colors" (click)="openReport(service)" pTooltip="Ver Reporte (PDF)" tooltipPosition="top"></p-tag>
-                                <p-button icon="pi pi-pencil" [rounded]="true" [text]="true" size="small" (click)="openEditGroupNotes(service.serviceGroup)" pTooltip="Editar Notas del Reporte" tooltipPosition="top" styleClass="p-0 w-8 h-8"></p-button>
+                                <p-button icon="pi pi-pencil" [rounded]="true" [text]="true" size="small" (click)="openEditGroupNotes(service.serviceGroup)" pTooltip="Editar notas y OC del reporte" tooltipPosition="top" styleClass="p-0 w-8 h-8"></p-button>
                             </div>
                             <span *ngIf="!service.serviceGroup" class="text-gray-400">-</span>
                         </td>
                         <td>
                             <div class="flex items-center gap-2">
-                                <span *ngIf="service.invoiceNumber" class="font-semibold text-purple-600 dark:text-purple-400">{{ service.invoiceNumber }}</span>
+                                <div *ngIf="service.invoiceNumber" class="flex flex-col">
+                                    <span class="font-semibold text-purple-600 dark:text-purple-400 whitespace-nowrap">{{ service.invoiceNumber }}</span>
+                                    <span *ngIf="service.invoice?.clientReference" class="text-xs text-muted-color">{{ service.invoice.clientReference }}</span>
+                                </div>
                                 <span *ngIf="!service.invoiceNumber" class="text-gray-400">-</span>
-                                <p-button *ngIf="service.invoiceId" icon="pi pi-pencil" [rounded]="true" [text]="true" size="small" (click)="openEditInvoice(service)" pTooltip="Editar Nro Factura" tooltipPosition="top" styleClass="p-0 w-8 h-8"></p-button>
+                                <p-button *ngIf="service.invoiceId && !isArcaInvoice(service.invoice)" icon="pi pi-pencil" [rounded]="true" [text]="true" size="small" (click)="openEditInvoice(service)" pTooltip="Editar factura" tooltipPosition="top" styleClass="p-0 w-8 h-8"></p-button>
+                                <p-button *ngIf="hasInvoicePdf(service.invoice)" icon="pi pi-file-pdf" [rounded]="true" [text]="true" size="small" (click)="downloadInvoicePdf(service.invoice)" pTooltip="Descargar factura (PDF)" tooltipPosition="top" styleClass="p-0 w-8 h-8"></p-button>
+                                <ng-container *ngIf="isArcaInvoice(service.invoice)">
+                                    <p-button icon="pi pi-file-edit" [rounded]="true" [text]="true" size="small" (click)="openNote(service.invoice)" pTooltip="Nota de crédito o débito" tooltipPosition="top" styleClass="p-0 w-8 h-8"></p-button>
+                                </ng-container>
                             </div>
                         </td>
                         <td>
@@ -569,11 +579,15 @@ import { EXPENSE_TYPE_LABELS, GROUP_STATUS_LABELS, SERVICE_STATUS_LABELS, SERVIC
                                         <label>Descuento (%)</label>
                                         <p-inputNumber [(ngModel)]="service.discountPercentage" suffix="%" styleClass="w-full"></p-inputNumber>
                                     </div>
-                                    <div class="flex items-center gap-2 pt-2">
-                                        <p-checkbox [(ngModel)]="service.isVatExempt" [binary]="true" inputId="isVatExempt"></p-checkbox>
-                                        <label for="isVatExempt" class="cursor-pointer font-bold text-blue-700 dark:text-blue-300">¿Es IVA Exento?</label>
+                                    <div *ngIf="vatIncludedClient" class="flex items-start gap-2 pt-2 text-sm text-blue-700 dark:text-blue-300">
+                                        <i class="pi pi-lock mt-1"></i>
+                                        <span><b>IVA incluido sin discriminar.</b> El cliente es {{ firstClientIvaLabel }}: se le hace Factura B, al mismo precio, con el IVA incluido.</span>
                                     </div>
-                                    <div class="flex flex-col gap-2" *ngIf="!service.isVatExempt">
+                                    <div *ngIf="legacyNoVat" class="flex items-start gap-2 pt-2 text-sm text-gray-600 dark:text-gray-300">
+                                        <i class="pi pi-info-circle mt-1"></i>
+                                        <span>Servicio exento de antes de octubre 2026: se cobró sin IVA y así queda.</span>
+                                    </div>
+                                    <div class="flex flex-col gap-2" *ngIf="!legacyNoVat">
                                         <label>% de IVA a aplicar</label>
                                         <div class="flex items-center flex-wrap gap-2">
                                             <button
@@ -622,7 +636,8 @@ import { EXPENSE_TYPE_LABELS, GROUP_STATUS_LABELS, SERVICE_STATUS_LABELS, SERVIC
                                         <span class="text-sm text-gray-600 dark:text-gray-300">Neto Total: {{ calculateClientNet | currency:'USD' }}</span>
 
                                         <!-- Tax -->
-                                        <span *ngIf="calculateClientTax > 0" class="text-xs text-blue-600 font-bold">+ IVA ({{ service.taxRatePercentage ?? 21 }}%): {{ calculateClientTax | currency:'USD' }}</span>
+                                        <span *ngIf="calculateClientTax > 0 && !vatIncludedClient" class="text-xs text-blue-600 font-bold">+ IVA ({{ service.taxRatePercentage ?? 21 }}%): {{ calculateClientTax | currency:'USD' }}</span>
+                                        <span *ngIf="calculateClientTax > 0 && vatIncludedClient" class="text-xs text-blue-600 font-bold">IVA incluido, sin discriminar ({{ service.taxRatePercentage ?? 21 }}%)</span>
 
                                         <span class="text-2xl font-bold text-gray-800 dark:text-white mt-1">{{ calculateClientTotal | currency:'USD' }}</span>
                                     </div>
@@ -986,6 +1001,11 @@ import { EXPENSE_TYPE_LABELS, GROUP_STATUS_LABELS, SERVICE_STATUS_LABELS, SERVIC
                              * El IVA se calcula automáticamente según el tipo de facturación de cada servicio.
                         </div>
 
+                        <div class="flex flex-col gap-2 mt-2">
+                            <label class="font-bold text-sm">OC del cliente <span *ngIf="!summaryClientRequiresPo" class="font-normal">(Opcional)</span><span *ngIf="summaryClientRequiresPo" class="text-orange-600"> (este cliente la pide para facturar)</span></label>
+                            <input pInputText [(ngModel)]="reportPurchaseOrder" maxlength="60" placeholder="Ej: OC3196" class="w-full" />
+                        </div>
+
                         <!-- Add Notes Field -->
                         <div class="flex flex-col gap-2 mt-2">
                             <label class="font-bold text-sm">Comentarios / Observaciones (Opcional)</label>
@@ -1019,8 +1039,13 @@ import { EXPENSE_TYPE_LABELS, GROUP_STATUS_LABELS, SERVICE_STATUS_LABELS, SERVIC
             </p-dialog>
 
             <!-- Dialogo de Edición de Comentarios Grupales -->
-            <p-dialog [(visible)]="groupNotesDialogVisible" header="Editar Comentarios del Reporte" [modal]="true" [style]="{width: '500px'}">
+            <p-dialog [(visible)]="groupNotesDialogVisible" header="Editar Reporte" [modal]="true" [style]="{width: '500px'}">
                 <div class="flex flex-col gap-4">
+                    <div class="flex flex-col gap-2">
+                        <label for="groupPurchaseOrder">OC del cliente <span class="text-muted-color font-normal">(opcional)</span></label>
+                        <input pInputText id="groupPurchaseOrder" [(ngModel)]="editingGroupPurchaseOrder" maxlength="60" placeholder="Ej: OC3196" class="w-full" />
+                        <small class="text-muted-color">Sale en la fila de la factura: "Honorarios por servicios según Reporte … OC3196".</small>
+                    </div>
                     <div class="flex flex-col gap-2">
                         <label for="groupNotes">Comentarios / Observaciones</label>
                         <textarea pTextarea [(ngModel)]="editingGroupNotes" rows="5" class="w-full" placeholder="Estos comentarios reemplazarán los actuales y se visualizarán en el PDF..."></textarea>
@@ -1095,50 +1120,7 @@ import { EXPENSE_TYPE_LABELS, GROUP_STATUS_LABELS, SERVICE_STATUS_LABELS, SERVIC
                 </p-table>
             </p-dialog>
 
-            <!-- Dialogo de Facturacion -->
-            <p-dialog [(visible)]="billingDialogVisible" header="Facturar Servicios" [modal]="true" [style]="{width: '800px'}" [maximizable]="true">
-                <div class="flex flex-col gap-4">
-                     <div class="flex flex-col gap-2">
-                         <label class="font-bold">Cliente a Facturar</label>
-                         <p-select [options]="clientsList" [(ngModel)]="billingClient" optionLabel="name" (onChange)="onBillingClientChange()" placeholder="Seleccione Cliente" appendTo="body" styleClass="w-full" [filter]="true" filterBy="name"></p-select>
-                     </div>
-
-                     <div class="flex flex-col gap-2">
-                         <label class="font-bold">Número de Factura</label>
-                         <input pInputText [(ngModel)]="billingInvoiceNumber" placeholder="Ej: FC-A-00001234" class="w-full" />
-                         <small class="text-gray-500"><i class="pi pi-info-circle mr-1"></i>Ingresá el número de la factura que generaste (obligatorio).</small>
-                     </div>
-
-                     <div *ngIf="billingClient" class="animate-fadein">
-                         <h3 class="font-bold text-lg mb-2">Grupos Pendientes de Facturación</h3>
-                         <p-table [value]="billingGroups" [(selection)]="selectedBillingGroups" dataKey="id" [scrollable]="true" scrollHeight="300px">
-                            <ng-template pTemplate="header">
-                               <tr>
-                                   <th style="width: 3rem"><p-tableHeaderCheckbox></p-tableHeaderCheckbox></th>
-                                   <th>Código Reporte</th>
-                                   <th>Cant. Viajes</th>
-                                   <th>Total Estimado</th>
-                               </tr>
-                            </ng-template>
-                            <ng-template pTemplate="body" let-group>
-                               <tr>
-                                   <td><p-tableCheckbox [value]="group"></p-tableCheckbox></td>
-                                   <td>{{group.code}}</td>
-                                   <td>{{group.serviceCount}}</td>
-                                   <td>{{group.totalAmount | currency}}</td>
-                               </tr>
-                            </ng-template>
-                             <ng-template pTemplate="emptymessage">
-                                <tr><td colspan="4" class="text-center p-4">No hay reportes ni grupos pendientes para este cliente.</td></tr>
-                            </ng-template>
-                         </p-table>
-                     </div>
-                </div>
-                <ng-template pTemplate="footer">
-                    <p-button label="Cancelar" icon="pi pi-times" [text]="true" (click)="billingDialogVisible = false"></p-button>
-                    <p-button label="Confirmar Factura" icon="pi pi-check" severity="success" (click)="confirmBilling()" [disabled]="!billingClient || selectedBillingGroups.length === 0 || !billingInvoiceNumber.trim()"></p-button>
-                </ng-template>
-            </p-dialog>
+            <app-invoice-billing-dialog [(visible)]="billingDialogVisible" [presetClientId]="billingPresetClientId" (invoiced)="loadAllData()" />
 
             <p-dialog [(visible)]="surveyDialog" [style]="{ width: '500px', 'max-width': '95vw' }" header="Encuesta de Satisfacción" [modal]="true">
                 <ng-template pTemplate="content">
@@ -1155,13 +1137,10 @@ import { EXPENSE_TYPE_LABELS, GROUP_STATUS_LABELS, SERVICE_STATUS_LABELS, SERVIC
                 </ng-template>
             </p-dialog>
 
-            <p-dialog [(visible)]="editInvoiceDialog" [style]="{ width: '600px' }" header="Editar Número de Factura" [modal]="true" styleClass="p-fluid">
+            <p-dialog [(visible)]="editInvoiceDialog" [style]="{ width: '600px' }" header="Editar Factura" [modal]="true" styleClass="p-fluid">
                 <ng-template pTemplate="content">
                     <div class="flex flex-col gap-4 mt-4">
-                        <div class="flex flex-col gap-2">
-                            <label for="editInvoiceNum" class="font-bold">Nuevo Número de Factura</label>
-                            <input id="editInvoiceNum" type="text" pInputText [(ngModel)]="editingInvoice.number" placeholder="Ej: FC-0001" autofocus />
-                        </div>
+                        <app-invoice-fields *ngIf="editInvoiceDialog" [form]="editingInvoice.form" [clientId]="editingInvoice.clientId" />
 
                         <div class="flex flex-col gap-2">
                             <label class="font-bold">Servicios a incluir en esta factura</label>
@@ -1183,19 +1162,21 @@ import { EXPENSE_TYPE_LABELS, GROUP_STATUS_LABELS, SERVICE_STATUS_LABELS, SERVIC
                                     </tr>
                                 </ng-template>
                             </p-table>
-                            <small class="text-gray-500">Desmarque los servicios que no deben cambiar de factura.</small>
+                            <small class="text-gray-500">Si desmarcás servicios, los marcados pasan a una factura nueva con estos datos y los demás quedan en la actual.</small>
                         </div>
                     </div>
                 </ng-template>
                 <ng-template pTemplate="footer">
                     <p-button label="Cancelar" icon="pi pi-times" [text]="true" (click)="hideEditInvoiceDialog()"></p-button>
-                    <p-button label="Guardar" icon="pi pi-check" severity="success" (click)="saveInvoiceNumber()" [disabled]="!editingInvoice.number.trim() || selectedInvoiceServices.length === 0"></p-button>
+                    <p-button label="Guardar" icon="pi pi-check" severity="success" (click)="saveInvoiceNumber()" [disabled]="!invoiceComplete(editingInvoice.form) || selectedInvoiceServices.length === 0"></p-button>
                 </ng-template>
             </p-dialog>
         </div>
+
+            <app-invoice-note-dialog [invoice]="noteInvoice" (closed)="noteInvoice = null" (emitted)="loadAllData()" />
     `,
     standalone: true,
-    imports: [CommonModule, TableModule, ButtonModule, InputTextModule, IconFieldModule, InputIconModule, TagModule, DialogModule, FormsModule, SelectModule, MultiSelectModule, InputNumberModule, TextareaModule, DatePickerModule, ToastModule, PanelModule, DividerModule, CheckboxModule, TooltipModule, ToggleButtonModule, ConfirmDialogModule, ServiceCalendar],
+    imports: [CommonModule, TableModule, ButtonModule, InputTextModule, IconFieldModule, InputIconModule, TagModule, DialogModule, FormsModule, SelectModule, MultiSelectModule, InputNumberModule, TextareaModule, DatePickerModule, ToastModule, PanelModule, DividerModule, CheckboxModule, TooltipModule, ToggleButtonModule, ConfirmDialogModule, ServiceCalendar, InvoiceFields, InvoiceBillingDialog, InvoiceNoteDialog],
 
     providers: [MessageService, ConfirmationService, ServiceService, ClientService, DriverService, VehicleService, ConfigurationService]
 })
@@ -1264,9 +1245,13 @@ export class ServiceList implements OnInit {
     increaseRates = { clientKmInc: 0, clientExtraKmInc: 0, clientHourInc: 0, driverKmInc: 0, driverHourInc: 0 };
     submitted: boolean = false;
     activeStatusFilter: string | undefined = undefined;
-    billingInvoiceNumber: string = '';
     editInvoiceDialog: boolean = false;
-    editingInvoice: { id: number, number: string } = { id: 0, number: '' };
+    editingInvoice: { id: number; clientId: number | null; form: InvoiceForm } = { id: 0, clientId: null, form: emptyInvoiceForm() };
+    readonly invoiceComplete = isInvoiceFormComplete;
+    readonly isArcaInvoice = isArcaInvoice;
+    readonly hasInvoicePdf = hasInvoicePdf;
+
+    noteInvoice: any = null;
     invoiceServices: any[] = [];
     selectedInvoiceServices: any[] = [];
 
@@ -1359,53 +1344,6 @@ export class ServiceList implements OnInit {
     }
 
 
-
-    // Summary Actions
-    async generateInvoice() {
-        if (!this.selectedServices.length) return;
-
-        // Validate same client (Invoice usually per client)
-        // Validate same client (Invoice usually per client)
-        const firstService = this.selectedServices[0];
-        const firstClientId = (firstService.clientIds && firstService.clientIds.length > 0) ? firstService.clientIds[0] : null;
-
-        if (!firstClientId) {
-             // Fallback: Check if client object exists in service
-             const clientObj = (firstService as any).clients && (firstService as any).clients.length > 0 ? (firstService as any).clients[0] : null;
-             if (!clientObj) {
-                this.messageService.add({ severity: 'error', summary: 'Error', detail: 'Los servicios deben tener cliente asignado' });
-                return;
-             }
-        }
-
-        // Check mix
-        const currentClientId = firstClientId || (firstService as any).clients[0].id;
-        const mixed = this.selectedServices.some(s => {
-             const cId = (s.clientIds && s.clientIds.length > 0) ? s.clientIds[0] : ((s as any).clients?.[0]?.id);
-             return cId !== currentClientId;
-        });
-        if (mixed) {
-             this.messageService.add({ severity: 'warn', summary: 'Atención', detail: 'Se generará factura para el cliente del primer servicio seleccionado. Asegúrese de seleccionar servicios del mismo cliente.' });
-             // proceed? or block? Let's proceed with firstClientId.
-        }
-
-        try {
-            this.loading = true;
-            await this.invoiceService.createInvoice(
-                this.selectedServices.map(s => s.id as number),
-                currentClientId as number
-            );
-            this.messageService.add({ severity: 'success', summary: 'Factura Generada', detail: 'La factura ha sido creada correctamente.' });
-            this.summaryDialog = false;
-            this.selectedServices = [];
-            this.loadAllData();
-        } catch (error: any) {
-            console.error(error);
-            this.messageService.add({ severity: 'error', summary: 'Error', detail: error.message || 'Error generando factura' });
-        } finally {
-            this.loading = false;
-        }
-    }
 
     // Voucher: standalone, no persistence — just generates a PDF on the fly and
     // triggers a browser download. No status/schema coupling beyond the
@@ -1678,7 +1616,8 @@ export class ServiceList implements OnInit {
                 driverNames: s.drivers ? s.drivers.map((d: any) => d.name).join(', ') : '',
                 route: `${s.origin} -> ${s.destination}`,
                 invoiceNumber: s.invoice?.invoiceNumber || '',
-                invoiceId: s.invoiceId
+                invoiceId: s.invoiceId,
+                invoice: s.invoice ?? null
             }));
 
             console.log(`[ServiceList] Services loaded: ${this.services.length} services.`);
@@ -2378,7 +2317,7 @@ export class ServiceList implements OnInit {
     get calculateClientTotal(): number {
         let total = this.calculateClientNet;
 
-        if (!this.service.isVatExempt && (this.service.billingType === 'OFFICIAL_A' || this.service.billingType === 'MONOTRIBUTO')) {
+        if (!this.legacyNoVat && (this.service.billingType === 'OFFICIAL_A' || this.service.billingType === 'MONOTRIBUTO')) {
              const rate = this.service.taxRatePercentage ?? 21;
              total = total * (1 + rate / 100);
         }
@@ -2390,8 +2329,32 @@ export class ServiceList implements OnInit {
         return this.service.clientReimbursables.reduce((sum: number, r: any) => sum + Number(r.amount || 0), 0);
     }
 
+    /**
+     * Cliente exento o consumidor final con servicio formal: el IVA va incluido
+     * en el precio pero no se discrimina (Factura B). Lo decide el cliente, no
+     * se marca a mano; el backend hace la misma cuenta.
+     */
+    get vatIncludedClient(): boolean {
+        const id = this.service?.clientIds?.[0];
+        const client: any = id ? this.clientsList.find((c) => c.id === id) : null;
+        const formal = this.service?.billingType === 'OFFICIAL_A' || this.service?.billingType === 'MONOTRIBUTO';
+        return formal && (client?.iva_condition === 'EXENTO' || client?.iva_condition === 'CONSUMIDOR_FINAL');
+    }
+
+    get firstClientIvaLabel(): string {
+        const id = this.service?.clientIds?.[0];
+        const client: any = id ? this.clientsList.find((c) => c.id === id) : null;
+        return client?.iva_condition === 'EXENTO' ? 'exento' : 'consumidor final';
+    }
+
+    /** Exentos de antes de octubre 2026: se guardaron sin IVA y así quedan. */
+    get legacyNoVat(): boolean {
+        const s: any = this.service;
+        return !!s?.id && !!s.isVatExempt && Number(s.tax_amount) === 0 && Number(s.net_amount) > 0;
+    }
+
     get calculateClientTax(): number {
-        if (!this.service.isVatExempt && (this.service.billingType === 'OFFICIAL_A' || this.service.billingType === 'MONOTRIBUTO')) {
+        if (!this.legacyNoVat && (this.service.billingType === 'OFFICIAL_A' || this.service.billingType === 'MONOTRIBUTO')) {
             const rate = this.service.taxRatePercentage ?? 21;
             return this.calculateClientNet * (rate / 100);
         }
@@ -2426,10 +2389,18 @@ export class ServiceList implements OnInit {
     summaryDialog: boolean = false;
     summaryConfig: any = { subtotal: 0, tax: 0, total: 0 };
     reportNotes: string = '';
+    reportPurchaseOrder: string = '';
+
+    /** Si el cliente de los servicios seleccionados pide orden de compra. */
+    get summaryClientRequiresPo(): boolean {
+        const id = this.selectedServices[0]?.clientIds?.[0];
+        return !!(id && (this.clientsList.find((c) => c.id === id) as any)?.requires_purchase_order);
+    }
 
     // Group Notes Editing State
     groupNotesDialogVisible: boolean = false;
     editingGroupNotes: string = '';
+    editingGroupPurchaseOrder: string = '';
     editingGroupId: number | null = null;
     savingGroupNotes: boolean = false;
 
@@ -2437,6 +2408,7 @@ export class ServiceList implements OnInit {
         if (!group) return;
         this.editingGroupId = group.id;
         this.editingGroupNotes = group.notes || '';
+        this.editingGroupPurchaseOrder = group.purchaseOrder || '';
         this.groupNotesDialogVisible = true;
     }
 
@@ -2444,8 +2416,8 @@ export class ServiceList implements OnInit {
         if (!this.editingGroupId) return;
         this.savingGroupNotes = true;
         try {
-            await this.serviceService.updateGroupNotes(this.editingGroupId, this.editingGroupNotes);
-            this.messageService.add({severity: 'success', summary: 'Éxito', detail: 'Comentarios del grupo actualizados.'});
+            await this.serviceService.updateGroupNotes(this.editingGroupId, this.editingGroupNotes, this.editingGroupPurchaseOrder);
+            this.messageService.add({severity: 'success', summary: 'Éxito', detail: 'Reporte actualizado.'});
             this.groupNotesDialogVisible = false;
             this.loadAllData();
         } catch(error) {
@@ -2459,6 +2431,7 @@ export class ServiceList implements OnInit {
     openSummary() {
         if (!this.selectedServices.length) return;
         this.reportNotes = '';
+        this.reportPurchaseOrder = '';
         this.calculateSummaryTotal();
         this.summaryDialog = true;
     }
@@ -2669,12 +2642,13 @@ export class ServiceList implements OnInit {
     private async executeGenerateReport(currentClientId: number) {
         try {
             this.loading = true;
-            await this.serviceService.createGroup(this.selectedServices.map(s => s.id!), currentClientId, this.reportNotes);
+            await this.serviceService.createGroup(this.selectedServices.map(s => s.id!), currentClientId, this.reportNotes, this.reportPurchaseOrder);
 
             this.messageService.add({ severity: 'success', summary: 'Éxito', detail: 'Reporte generado y servicios agrupados.' });
             this.summaryDialog = false;
             this.selectedServices = [];
             this.reportNotes = ''; // Reset notes
+            this.reportPurchaseOrder = '';
             this.loadAllData(); // Refresh to move them to next status
         } catch (error: any) {
             console.error(error);
@@ -2686,91 +2660,24 @@ export class ServiceList implements OnInit {
 
     // --- Billing Dialog ---
     billingDialogVisible: boolean = false;
-    billingClient: any = null;
-    billingGroups: any[] = [];
-    selectedBillingGroups: any[] = [];
+    billingPresetClientId: number | null = null;
 
+    /** Abre Facturar; si los servicios elegidos son todos del mismo cliente, ya viene elegido. */
     openBilling() {
+        const ids = this.selectedServices.map((s) => s.clientIds?.[0]);
+        this.billingPresetClientId = ids.length && ids.every((id) => id === ids[0]) ? (ids[0] ?? null) : null;
         this.billingDialogVisible = true;
-        this.billingClient = null;
-        this.billingGroups = [];
-        this.selectedBillingGroups = [];
-        this.billingInvoiceNumber = '';
-
-        // Pre-select if single client
-        if (this.selectedServices.length > 0) {
-            const firstId = this.selectedServices[0].clientIds?.[0];
-            const allSame = this.selectedServices.every(s => s.clientIds && s.clientIds.length > 0 && s.clientIds[0] === firstId);
-            if (!allSame) {
-                this.billingClient = this.clientsList.find(c => c.id === firstId);
-                if (this.billingClient) {
-                    this.onBillingClientChange();
-                }
-            }
-        }
     }
 
-    async onBillingClientChange() {
-        if (!this.billingClient) return;
-
-        this.loading = true;
-        try {
-            // Fetch Groups for this client (Status GENERATED = ready to invoice)
-            const groups = await this.serviceService.getGroups({ clientId: this.billingClient.id, status: 'GENERATED' });
-
-            // Transform/enrich if needed
-            // Los cancelados no se facturan (el backend los deja afuera), así que
-            // tampoco cuentan en el total ni en la cantidad que se muestra acá.
-            this.billingGroups = groups.map(g => {
-                const billable = (g.services ?? []).filter((s: any) => s.status !== 'CANCELLED');
-                return {
-                    ...g,
-                    totalAmount: billable.reduce((sum: number, s: any) => sum + Number(s.total_amount || 0), 0),
-                    serviceCount: billable.length
-                };
-            });
-
-        } catch (error) {
-            console.error(error);
-            this.messageService.add({ severity: 'error', summary: 'Error', detail: 'Error cargando grupos.' });
-        } finally {
-            this.loading = false;
-        }
+    downloadInvoicePdf(invoice: any) {
+        this.invoiceService.downloadPdf(invoice.id, invoice.invoiceNumber).catch(() =>
+            this.messageService.add({ severity: 'error', summary: 'Error', detail: 'No se pudo descargar la factura.' })
+        );
     }
 
-    async confirmBilling() {
-        if (!this.billingClient) return;
-        if (this.selectedBillingGroups.length === 0) {
-             this.messageService.add({ severity: 'warn', summary: 'Atención', detail: 'Seleccione al menos un grupo para facturar.' });
-             return;
-        }
-
-        try {
-            this.loading = true;
-
-            // Gather all Service IDs from selected groups
-            const allServiceIds: number[] = [];
-            this.selectedBillingGroups.forEach(g => {
-                if (g.services) {
-                    g.services.forEach((s: any) => allServiceIds.push(s.id));
-                }
-            });
-
-            // Create Invoice
-            await this.invoiceService.createInvoice(allServiceIds, this.billingClient.id, this.billingInvoiceNumber || undefined);
-
-            this.billingDialogVisible = false;
-            this.messageService.add({ severity: 'success', summary: 'Éxito', detail: 'Factura creada correctamente.' });
-            this.loadAllData(); // Refresh list
-        } catch (error: any) {
-            console.error(error);
-            this.messageService.add({ severity: 'error', summary: 'Error', detail: error?.error?.error ?? 'Error al crear la factura.' });
-        } finally {
-            this.loading = false;
-        }
+    openNote(invoice: any) {
+        this.noteInvoice = invoice;
     }
-
-
 
     // --- Grouped View ---
     isGroupedView: boolean = true;
@@ -2938,7 +2845,7 @@ export class ServiceList implements OnInit {
     }
 
     openEditInvoice(service: any) {
-        this.editingInvoice = { id: service.invoiceId, number: service.invoiceNumber || '' };
+        this.editingInvoice = { id: service.invoiceId, clientId: service.clientIds?.[0] ?? null, form: invoiceFormFrom(service.invoice) };
         this.invoiceServices = this.services.filter(s => s.invoiceId === service.invoiceId);
         this.selectedInvoiceServices = [...this.invoiceServices];
         this.editInvoiceDialog = true;
@@ -2949,7 +2856,7 @@ export class ServiceList implements OnInit {
     }
 
     async saveInvoiceNumber() {
-        if (!this.editingInvoice.id || !this.editingInvoice.number.trim()) return;
+        if (!this.editingInvoice.id || !isInvoiceFormComplete(this.editingInvoice.form)) return;
         if (this.selectedInvoiceServices.length === 0) {
             this.messageService.add({ severity: 'error', summary: 'Error', detail: 'Debe seleccionar al menos un servicio' });
             return;
@@ -2957,13 +2864,13 @@ export class ServiceList implements OnInit {
 
         try {
             const serviceIds = this.selectedInvoiceServices.map(s => s.id);
-            await this.invoiceService.updateInvoiceNumber(this.editingInvoice.id, this.editingInvoice.number, serviceIds);
-            this.messageService.add({ severity: 'success', summary: 'Éxito', detail: 'Número de factura actualizado' });
+            await this.invoiceService.updateInvoice(this.editingInvoice.id, this.editingInvoice.form, serviceIds);
+            this.messageService.add({ severity: 'success', summary: 'Éxito', detail: 'Factura actualizada' });
             this.hideEditInvoiceDialog();
             this.loadAllData();
-        } catch (error) {
+        } catch (error: any) {
             console.error(error);
-            this.messageService.add({ severity: 'error', summary: 'Error', detail: 'No se pudo actualizar el número de factura' });
+            this.messageService.add({ severity: 'error', summary: 'Error', detail: error?.error?.error ?? 'No se pudo actualizar la factura' });
         }
     }
 }

@@ -25,6 +25,27 @@ export interface Release {
 
 export const RELEASES: Release[] = [
     {
+        version: '2.6.0',
+        date: '2026-10-30',
+        title: 'Facturación con ARCA',
+        changes: [
+            { kind: 'importante', text: 'Facturar: ahora se emite directo en ARCA desde LECMA ("Emitir en ARCA"). ARCA da el número y el CAE, y se descarga la factura en PDF con el código QR. Si dos personas facturan a la vez, cada una recibe su número, sin repetir.' },
+            { kind: 'nuevo', text: 'Pantalla "Facturas" en el menú: todas las facturas y notas en un lugar, con filtros por cliente, período, estado y número, CAE, OC o reporte. Cada fila se despliega con sus reportes y servicios, y el código del reporte abre su PDF. Desde ahí se factura, se descarga el PDF y se hacen notas.' },
+            { kind: 'nuevo', text: 'La factura lleva una fila por reporte: "Honorarios por servicios según Reporte REP-…" con la OC del reporte, más un texto adicional opcional. Antes de emitir se ve cómo quedan las filas.' },
+            { kind: 'nuevo', text: 'Factura A, Factura B y Factura de Crédito Electrónica (FCE). Notas de crédito (anular la factura entera o por un importe) y de débito desde el botón de nota al lado de la factura. Al anularla, sus servicios vuelven a "A Facturar".' },
+            { kind: 'nuevo', text: 'Al emitir se elige la actividad de LECMA que se informa a ARCA (por defecto 523090, gestión y logística) y el vencimiento del pago (viene a 30 días o el plazo del cliente, y se puede cambiar).' },
+            { kind: 'nuevo', text: 'Orden de compra por reporte: se carga al generar el reporte, al editarlo o al facturar. Los clientes con "Pide orden de compra" (como Sidersa) no se pueden facturar sin la OC de cada reporte.' },
+            { kind: 'nuevo', text: 'Clientes: condición frente al IVA (Responsable Inscripto, Monotributo, Exento o Consumidor Final). A los exentos y consumidores finales se les hace Factura B, con el mismo precio y el IVA incluido sin discriminar, también en el reporte.' },
+            { kind: 'nuevo', text: 'Clientes: botón "Buscar en ARCA" al lado del CUIT, que trae razón social, domicilio y condición frente al IVA para revisar y guardar. Nuevo campo "Razón social": es la que sale en la factura.' },
+            { kind: 'nuevo', text: 'Clientes: opción "Empresa del registro de FCE". Si el total llega al monto mínimo de ARCA, el sistema pide FCE en lugar de Factura A.' },
+            { kind: 'mejora', text: 'Avisos al facturar: si la condición frente al IVA del cliente no coincide con la de ARCA, si hay fletes con IVA al 10,5% o si le falta el domicilio (obligatorio para emitir).' },
+            { kind: 'mejora', text: 'Las facturas hechas a mano en ARCA se siguen pudiendo registrar ("Registrar una hecha a mano"), con tipo, punto de venta, número, CAE y el PDF de ARCA adjunto para descargarlo desde el sistema. Las de LECMA de octubre quedaron con sus datos de ARCA; las anteriores, a título personal, se mantienen como se cargaron.' },
+            { kind: 'correccion', text: 'Facturar: aparecen también los reportes que quedaron en "A Facturar" (antes sólo los "Generados", y algunos no se encontraban). Si los servicios seleccionados son de un solo cliente, ya viene elegido.' },
+            { kind: 'mejora', text: 'Clientes: varias cuentas de un mismo cliente (como Sidersa Corporativo, Proveedores y Acería) pueden tener el mismo CUIT.' },
+            { kind: 'mejora', text: 'Asistente: conoce las facturas con sus datos de ARCA, la OC de cada reporte y la condición frente al IVA de cada cliente. Al buscar a qué servicio corresponde una orden de pago, también reconoce el número de OC.' }
+        ]
+    },
+    {
         version: '2.5.0',
         date: '2026-10-28',
         title: 'Flete, manual en PDF y nombres en castellano',

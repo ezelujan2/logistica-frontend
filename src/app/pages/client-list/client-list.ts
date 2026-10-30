@@ -1,3 +1,5 @@
+import { SelectModule } from 'primeng/select';
+import { IVA_CONDITION_LABELS, optionsOf } from '../../service/labels';
 import { Component, OnInit } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
 import { CommonModule } from '@angular/common';
@@ -12,6 +14,7 @@ import { TextareaModule } from 'primeng/textarea';
 import { CheckboxModule } from 'primeng/checkbox';
 import { InputNumberModule } from 'primeng/inputnumber';
 import { Client, ClientService } from '../../service/client.service';
+import { InvoiceService } from '../../service/invoice.service';
 import { ToastModule } from 'primeng/toast';
 import { MessageService } from 'primeng/api';
 import { TooltipModule } from 'primeng/tooltip';
@@ -68,10 +71,23 @@ import { AuthService } from '../../service/auth.service';
                             <input type="text" pInputText id="name" [(ngModel)]="client.name" required autofocus />
                             <small class="p-error" *ngIf="submitted && !client.name">El nombre es obligatorio.</small>
                         </div>
+                        <div class="flex flex-col gap-2">
+                            <label for="legal_name">Razón social <span class="text-muted-color font-normal">(la que sale en la factura; vacía = el nombre)</span></label>
+                            <input type="text" pInputText id="legal_name" [(ngModel)]="client.legal_name" />
+                        </div>
                         <div class="grid grid-cols-12 gap-4">
                             <div class="col-span-12 md:col-span-6 flex flex-col gap-2">
                                 <label for="cuit">CUIT</label>
-                                <input type="text" pInputText id="cuit" [(ngModel)]="client.cuit" />
+                                <div class="flex gap-2">
+                                    <input type="text" pInputText id="cuit" [(ngModel)]="client.cuit" class="flex-1" />
+                                    <p-button icon="pi pi-search" label="Buscar en ARCA" [outlined]="true" size="small" [disabled]="!client.cuit || !cuitOk(client.cuit)" [loading]="padronLoading" (click)="lookupPadron()" pTooltip="Completa razón social, domicilio y condición frente al IVA" />
+                                </div>
+                                <small *ngIf="client.cuit && !cuitOk(client.cuit)" class="text-orange-600">No parece un CUIT válido: ARCA va a rechazar sus facturas A.</small>
+                            </div>
+                            <div class="col-span-12 md:col-span-6 flex flex-col gap-2">
+                                <label for="iva_condition">Condición frente al IVA</label>
+                                <p-select inputId="iva_condition" [options]="ivaConditions" [(ngModel)]="client.iva_condition" optionLabel="label" optionValue="value" placeholder="Según el tipo de facturación" [showClear]="true" appendTo="body" styleClass="w-full" />
+                                <small class="text-muted-color" *ngIf="client.iva_condition === 'EXENTO' || client.iva_condition === 'CONSUMIDOR_FINAL'">Factura B: mismo precio, con el IVA incluido sin discriminar.</small>
                             </div>
                             <div class="col-span-12 md:col-span-6 flex flex-col gap-2">
                                 <label for="phone">Teléfono</label>
@@ -84,7 +100,7 @@ import { AuthService } from '../../service/auth.service';
                                 <input type="text" pInputText id="email" [(ngModel)]="client.email" />
                             </div>
                             <div class="col-span-12 md:col-span-6 flex flex-col gap-2">
-                                <label for="address">Dirección</label>
+                                <label for="address">Domicilio</label>
                                 <input type="text" pInputText id="address" [(ngModel)]="client.address" />
                             </div>
                         </div>
@@ -97,6 +113,14 @@ import { AuthService } from '../../service/auth.service';
                             <div class="col-span-6 flex items-center gap-2">
                                 <p-checkbox [(ngModel)]="client.send_invoices" [binary]="true" inputId="send_invoices"></p-checkbox>
                                 <label for="send_invoices">Enviar facturas</label>
+                            </div>
+                            <div class="col-span-12 flex items-center gap-2">
+                                <p-checkbox [(ngModel)]="client.requires_purchase_order" [binary]="true" inputId="requires_purchase_order"></p-checkbox>
+                                <label for="requires_purchase_order">Pide orden de compra (OC obligatoria en cada reporte para facturar)</label>
+                            </div>
+                            <div class="col-span-12 flex items-center gap-2">
+                                <p-checkbox [(ngModel)]="client.receives_fce" [binary]="true" inputId="receives_fce"></p-checkbox>
+                                <label for="receives_fce">Empresa del registro de FCE (desde el monto mínimo se le factura con FCE A)</label>
                             </div>
                         </div>
 
@@ -141,10 +165,43 @@ import { AuthService } from '../../service/auth.service';
         </div>
     `,
     standalone: true,
-    imports: [CommonModule, TableModule, ButtonModule, InputTextModule, IconFieldModule, InputIconModule, DialogModule, FormsModule, TextareaModule, CheckboxModule, InputNumberModule, ToastModule, TooltipModule],
+    imports: [CommonModule, TableModule, ButtonModule, InputTextModule, IconFieldModule, InputIconModule, DialogModule, FormsModule, TextareaModule, CheckboxModule, InputNumberModule, ToastModule, TooltipModule, SelectModule],
     providers: [MessageService]
 })
 export class ClientList implements OnInit {
+    readonly ivaConditions = optionsOf(IVA_CONDITION_LABELS);
+
+    /** Mismo control que hace ARCA: 11 dígitos con el verificador correcto. */
+    cuitOk(text: string): boolean {
+        const d = (text ?? '').replace(/\D/g, '');
+        if (d.length !== 11) return false;
+        const sum = [5, 4, 3, 2, 7, 6, 5, 4, 3, 2].reduce((acc, w, i) => acc + w * Number(d[i]), 0);
+        const check = 11 - (sum % 11);
+        return (check === 11 ? 0 : check === 10 ? 9 : check) === Number(d[10]);
+    }
+
+    padronLoading = false;
+
+    /** Trae de ARCA razón social, domicilio fiscal y condición frente al IVA. */
+    async lookupPadron() {
+        if (!this.client.cuit) return;
+        this.padronLoading = true;
+        try {
+            const p = await this.invoiceService.padron(this.client.cuit);
+            if (p.legalName) this.client.legal_name = p.legalName;
+            if (p.address) this.client.address = p.address;
+            if (p.ivaCondition) this.client.iva_condition = p.ivaCondition as Client['iva_condition'];
+            if (p.legalName || p.address || p.ivaCondition) {
+                this.messageService.add({ severity: 'success', summary: 'Datos de ARCA', detail: 'Se completaron razón social, domicilio y condición frente al IVA. Revisalos y guardá.', life: 5000 });
+            }
+            if (p.warning) this.messageService.add({ severity: 'warn', summary: 'Aviso de ARCA', detail: p.warning, life: 8000 });
+        } catch (e: any) {
+            this.messageService.add({ severity: 'error', summary: 'ARCA', detail: e?.error?.error ?? 'No se pudo consultar ARCA.' });
+        } finally {
+            this.padronLoading = false;
+        }
+    }
+
     clients: Client[] = [];
     client: Client = { name: '' };
     loading: boolean = true;
@@ -153,7 +210,7 @@ export class ClientList implements OnInit {
 
     canViewStats = false;
 
-    constructor(private clientService: ClientService, private messageService: MessageService, private route: ActivatedRoute, private router: Router, private authService: AuthService) {
+    constructor(private clientService: ClientService, private invoiceService: InvoiceService, private messageService: MessageService, private route: ActivatedRoute, private router: Router, private authService: AuthService) {
         this.canViewStats = this.authService.hasPermission('viewStatistics');
     }
 
