@@ -10,14 +10,14 @@ import { AuthService } from '../../service/auth.service';
     standalone: true,
     imports: [FormsModule],
     styles: [`
-        @import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;600;800;900&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;700&display=swap');
 
         * { box-sizing: border-box; margin: 0; padding: 0; }
 
         .lp {
-            font-family: 'Montserrat', sans-serif;
-            background: #F7F5F2;
-            color: #1A1A1A;
+            font-family: 'DM Sans', sans-serif;
+            background: #EFEDE8;
+            color: #15224D;
             overflow-x: hidden;
         }
 
@@ -54,22 +54,23 @@ import { AuthService } from '../../service/auth.service';
             position: sticky;
             top: 0;
             z-index: 100;
-            background: #0C2340;
+            background: #15224D;
             padding: 0 48px;
             display: flex;
             align-items: center;
             justify-content: space-between;
             height: 64px;
-            border-bottom: 1px solid rgba(201,168,76,0.25);
+            border-bottom: 1px solid rgba(194,162,98,0.25);
         }
         .nav-logo {
-            font-size: 22px;
+            font-family: 'Dovens', 'Montserrat', sans-serif;
+            font-size: 26px;
             font-weight: 900;
             color: #fff;
             letter-spacing: 0.08em;
             flex-shrink: 0;
         }
-        .nav-logo span { color: #C9A84C; }
+        .nav-logo span { color: #C2A262; }
 
         .nav-links {
             display: flex;
@@ -85,12 +86,12 @@ import { AuthService } from '../../service/auth.service';
             text-transform: uppercase;
             transition: color 0.2s;
         }
-        .nav-links a:hover { color: #C9A84C; }
+        .nav-links a:hover { color: #C2A262; }
 
         .nav-cta {
             background: transparent;
-            border: 1px solid #C9A84C;
-            color: #C9A84C;
+            border: 1px solid #C2A262;
+            color: #C2A262;
             padding: 8px 20px;
             font-size: 11px;
             font-weight: 700;
@@ -98,10 +99,10 @@ import { AuthService } from '../../service/auth.service';
             text-transform: uppercase;
             cursor: pointer;
             transition: background 0.2s, color 0.2s;
-            font-family: 'Montserrat', sans-serif;
+            font-family: 'DM Sans', sans-serif;
             flex-shrink: 0;
         }
-        .nav-cta:hover { background: #C9A84C; color: #0C2340; }
+        .nav-cta:hover { background: #C2A262; color: #15224D; }
 
         .nav-burger {
             display: none;
@@ -127,7 +128,7 @@ import { AuthService } from '../../service/auth.service';
 
         /* ── HERO ── */
         .hero {
-            background: #0C2340;
+            background: #15224D;
             min-height: 100vh;
             display: flex;
             align-items: center;
@@ -139,7 +140,7 @@ import { AuthService } from '../../service/auth.service';
             content: '';
             position: absolute;
             inset: 0;
-            background: radial-gradient(ellipse at 70% 50%, rgba(201,168,76,0.06) 0%, transparent 70%);
+            background: radial-gradient(ellipse at 70% 50%, rgba(194,162,98,0.06) 0%, transparent 70%);
             pointer-events: none;
         }
         .hero-content { position: relative; z-index: 2; max-width: 600px; }
@@ -148,8 +149,8 @@ import { AuthService } from '../../service/auth.service';
             display: inline-flex;
             align-items: center;
             gap: 8px;
-            background: rgba(201,168,76,0.1);
-            border: 1px solid rgba(201,168,76,0.3);
+            background: rgba(194,162,98,0.1);
+            border: 1px solid rgba(194,162,98,0.3);
             padding: 6px 16px;
             margin-bottom: 32px;
         }
@@ -157,7 +158,7 @@ import { AuthService } from '../../service/auth.service';
             width: 6px;
             height: 6px;
             border-radius: 50%;
-            background: #C9A84C;
+            background: #C2A262;
             animation: pulse 2s infinite;
             flex-shrink: 0;
         }
@@ -166,7 +167,7 @@ import { AuthService } from '../../service/auth.service';
             font-weight: 700;
             letter-spacing: 0.14em;
             text-transform: uppercase;
-            color: #C9A84C;
+            color: #C2A262;
         }
 
         .hero-eyebrow {
@@ -174,7 +175,7 @@ import { AuthService } from '../../service/auth.service';
             font-weight: 700;
             letter-spacing: 0.18em;
             text-transform: uppercase;
-            color: #C9A84C;
+            color: #C2A262;
             margin-bottom: 24px;
         }
         .hero-title {
@@ -187,7 +188,7 @@ import { AuthService } from '../../service/auth.service';
         }
         .hero-title em {
             font-style: normal;
-            color: #C9A84C;
+            color: #C2A262;
         }
         .hero-subtitle {
             font-size: 16px;
@@ -202,8 +203,8 @@ import { AuthService } from '../../service/auth.service';
         .hero-actions { display: flex; gap: 16px; align-items: center; flex-wrap: wrap; }
 
         .btn-primary {
-            background: #C9A84C;
-            color: #0C2340;
+            background: #C2A262;
+            color: #15224D;
             border: none;
             padding: 16px 36px;
             font-size: 12px;
@@ -211,7 +212,7 @@ import { AuthService } from '../../service/auth.service';
             letter-spacing: 0.1em;
             text-transform: uppercase;
             cursor: pointer;
-            font-family: 'Montserrat', sans-serif;
+            font-family: 'DM Sans', sans-serif;
             transition: opacity 0.2s, transform 0.2s;
         }
         .btn-primary:hover { opacity: 0.88; transform: translateY(-2px); }
@@ -224,7 +225,7 @@ import { AuthService } from '../../service/auth.service';
             font-weight: 600;
             letter-spacing: 0.08em;
             cursor: pointer;
-            font-family: 'Montserrat', sans-serif;
+            font-family: 'DM Sans', sans-serif;
             display: flex;
             align-items: center;
             gap: 8px;
@@ -254,14 +255,14 @@ import { AuthService } from '../../service/auth.service';
         /* ── STATS ── */
         .stats {
             background: #fff;
-            border-top: 3px solid #C9A84C;
+            border-top: 3px solid #C2A262;
             padding: 40px 48px;
             display: grid;
             grid-template-columns: repeat(4, 1fr);
         }
         .stat-item {
             padding: 0 32px;
-            border-right: 1px solid #E8E6E1;
+            border-right: 1px solid #D7CDC1;
             text-align: center;
         }
         .stat-item:first-child { padding-left: 16px; }
@@ -269,12 +270,12 @@ import { AuthService } from '../../service/auth.service';
         .stat-number {
             font-size: 34px;
             font-weight: 900;
-            color: #0C2340;
+            color: #15224D;
             letter-spacing: -0.02em;
             line-height: 1;
             margin-bottom: 8px;
         }
-        .stat-number span { color: #C9A84C; }
+        .stat-number span { color: #C2A262; }
         .stat-label {
             font-size: 11px;
             font-weight: 600;
@@ -286,7 +287,7 @@ import { AuthService } from '../../service/auth.service';
         /* ── SECTIONS ── */
         .section { padding: 96px 48px; }
         .section-alt { background: #fff; }
-        .section-dark { background: #0C2340; }
+        .section-dark { background: #15224D; }
 
         .section-header { margin-bottom: 60px; }
         .section-eyebrow {
@@ -294,7 +295,7 @@ import { AuthService } from '../../service/auth.service';
             font-weight: 700;
             letter-spacing: 0.18em;
             text-transform: uppercase;
-            color: #C9A84C;
+            color: #C2A262;
             margin-bottom: 16px;
         }
         .section-eyebrow-light {
@@ -302,13 +303,13 @@ import { AuthService } from '../../service/auth.service';
             font-weight: 700;
             letter-spacing: 0.18em;
             text-transform: uppercase;
-            color: #C9A84C;
+            color: #C2A262;
             margin-bottom: 16px;
         }
         .section-title {
             font-size: 36px;
             font-weight: 900;
-            color: #0C2340;
+            color: #15224D;
             letter-spacing: -0.02em;
             line-height: 1.1;
             max-width: 520px;
@@ -327,11 +328,11 @@ import { AuthService } from '../../service/auth.service';
             display: grid;
             grid-template-columns: repeat(3, 1fr);
             gap: 2px;
-            background: #E8E6E1;
-            border: 2px solid #E8E6E1;
+            background: #D7CDC1;
+            border: 2px solid #D7CDC1;
         }
         .service-card {
-            background: #F7F5F2;
+            background: #EFEDE8;
             padding: 40px 32px;
             transition: background 0.25s, transform 0.25s;
             cursor: default;
@@ -341,7 +342,7 @@ import { AuthService } from '../../service/auth.service';
         .service-name {
             font-size: 17px;
             font-weight: 800;
-            color: #0C2340;
+            color: #15224D;
             margin-bottom: 12px;
             letter-spacing: -0.01em;
         }
@@ -362,8 +363,8 @@ import { AuthService } from '../../service/auth.service';
             font-weight: 700;
             letter-spacing: 0.08em;
             text-transform: uppercase;
-            color: #0C2340;
-            background: #E8E6E1;
+            color: #15224D;
+            background: #D7CDC1;
             padding: 3px 10px;
         }
         .service-tag {
@@ -373,7 +374,7 @@ import { AuthService } from '../../service/auth.service';
             font-weight: 700;
             letter-spacing: 0.12em;
             text-transform: uppercase;
-            color: #C9A84C;
+            color: #C2A262;
         }
 
         /* ── FLOTA ── */
@@ -383,19 +384,19 @@ import { AuthService } from '../../service/auth.service';
             gap: 16px;
         }
         .fleet-card {
-            background: #F7F5F2;
-            border: 1px solid #E8E6E1;
+            background: #EFEDE8;
+            border: 1px solid #D7CDC1;
             padding: 36px 24px 28px;
             text-align: center;
             transition: background 0.25s, border-color 0.25s, transform 0.25s;
             cursor: default;
         }
-        .fleet-card:hover { background: #fff; border-color: #C9A84C; transform: translateY(-4px); }
+        .fleet-card:hover { background: #fff; border-color: #C2A262; transform: translateY(-4px); }
         .fleet-car-icon { margin: 0 auto 20px; display: block; }
         .fleet-model {
             font-size: 15px;
             font-weight: 800;
-            color: #0C2340;
+            color: #15224D;
             margin-bottom: 4px;
             letter-spacing: -0.01em;
         }
@@ -408,11 +409,11 @@ import { AuthService } from '../../service/auth.service';
         .fleet-cap {
             font-size: 10px;
             font-weight: 700;
-            color: #C9A84C;
+            color: #C2A262;
             letter-spacing: 0.12em;
             text-transform: uppercase;
             padding-top: 16px;
-            border-top: 1px solid #E8E6E1;
+            border-top: 1px solid #D7CDC1;
         }
 
         /* ── WHY ── */
@@ -423,7 +424,7 @@ import { AuthService } from '../../service/auth.service';
             align-items: center;
         }
         .why-visual {
-            background: #0C2340;
+            background: #15224D;
             padding: 48px;
             display: flex;
             align-items: center;
@@ -435,7 +436,7 @@ import { AuthService } from '../../service/auth.service';
         .why-number {
             font-size: 11px;
             font-weight: 900;
-            color: #C9A84C;
+            color: #C2A262;
             letter-spacing: 0.1em;
             min-width: 28px;
             padding-top: 2px;
@@ -443,7 +444,7 @@ import { AuthService } from '../../service/auth.service';
         .why-point-title {
             font-size: 14px;
             font-weight: 800;
-            color: #0C2340;
+            color: #15224D;
             margin-bottom: 6px;
         }
         .why-point-text {
@@ -455,7 +456,7 @@ import { AuthService } from '../../service/auth.service';
 
         /* Coverage visual SVG text classes */
         .city-label {
-            font-family: 'Montserrat', sans-serif;
+            font-family: 'DM Sans', sans-serif;
             font-size: 10px;
             font-weight: 700;
             fill: rgba(255,255,255,0.5);
@@ -463,19 +464,19 @@ import { AuthService } from '../../service/auth.service';
             text-transform: uppercase;
         }
         .city-name {
-            font-family: 'Montserrat', sans-serif;
+            font-family: 'DM Sans', sans-serif;
             font-size: 12px;
             font-weight: 800;
             fill: #fff;
         }
         .km-number {
-            font-family: 'Montserrat', sans-serif;
+            font-family: 'DM Sans', sans-serif;
             font-size: 32px;
             font-weight: 900;
-            fill: #C9A84C;
+            fill: #C2A262;
         }
         .km-label {
-            font-family: 'Montserrat', sans-serif;
+            font-family: 'DM Sans', sans-serif;
             font-size: 9px;
             font-weight: 600;
             fill: rgba(255,255,255,0.4);
@@ -484,7 +485,7 @@ import { AuthService } from '../../service/auth.service';
 
         /* ── CTA ── */
         .cta-section {
-            background: #0C2340;
+            background: #15224D;
             padding: 96px 48px;
             text-align: center;
             position: relative;
@@ -494,7 +495,7 @@ import { AuthService } from '../../service/auth.service';
             content: '';
             position: absolute;
             inset: 0;
-            background: radial-gradient(ellipse at 50% 0%, rgba(201,168,76,0.08) 0%, transparent 60%);
+            background: radial-gradient(ellipse at 50% 0%, rgba(194,162,98,0.08) 0%, transparent 60%);
             pointer-events: none;
         }
         .cta-eyebrow {
@@ -502,7 +503,7 @@ import { AuthService } from '../../service/auth.service';
             font-weight: 700;
             letter-spacing: 0.18em;
             text-transform: uppercase;
-            color: #C9A84C;
+            color: #C2A262;
             margin-bottom: 20px;
         }
         .cta-title {
@@ -533,7 +534,7 @@ import { AuthService } from '../../service/auth.service';
             letter-spacing: 0.1em;
             text-transform: uppercase;
             cursor: pointer;
-            font-family: 'Montserrat', sans-serif;
+            font-family: 'DM Sans', sans-serif;
             transition: border-color 0.2s, color 0.2s;
         }
         .btn-outline:hover { border-color: rgba(255,255,255,0.6); color: #fff; }
@@ -545,17 +546,18 @@ import { AuthService } from '../../service/auth.service';
             display: flex;
             align-items: center;
             justify-content: space-between;
-            border-top: 1px solid rgba(201,168,76,0.15);
+            border-top: 1px solid rgba(194,162,98,0.15);
             flex-wrap: wrap;
             gap: 16px;
         }
         .footer-logo {
-            font-size: 18px;
+            font-family: 'Dovens', 'Montserrat', sans-serif;
+            font-size: 22px;
             font-weight: 900;
             color: rgba(255,255,255,0.4);
             letter-spacing: 0.08em;
         }
-        .footer-logo span { color: #C9A84C; }
+        .footer-logo span { color: #C2A262; }
         .footer-copy {
             font-size: 11px;
             color: rgba(255,255,255,0.25);
@@ -599,7 +601,7 @@ import { AuthService } from '../../service/auth.service';
 
         /* ── COVERAGE STRIP ── */
         .coverage-header {
-            background: #0C2340;
+            background: #15224D;
             padding: 20px 48px 0;
         }
         .coverage-header-label {
@@ -611,7 +613,7 @@ import { AuthService } from '../../service/auth.service';
             display: block;
         }
         .coverage-strip {
-            background: #0C2340;
+            background: #15224D;
             padding: 12px 0 20px;
             display: flex;
             align-items: center;
@@ -632,7 +634,7 @@ import { AuthService } from '../../service/auth.service';
             flex-shrink: 0;
         }
         .coverage-sep {
-            color: #C9A84C;
+            color: #C2A262;
             font-size: 10px;
             flex-shrink: 0;
             opacity: 0.5;
@@ -645,7 +647,7 @@ import { AuthService } from '../../service/auth.service';
         /* ── DIVIDER ── */
         .gold-line {
             height: 1px;
-            background: linear-gradient(to right, transparent, rgba(201,168,76,0.5), transparent);
+            background: linear-gradient(to right, transparent, rgba(194,162,98,0.5), transparent);
             margin: 0 48px;
         }
 
@@ -661,8 +663,8 @@ import { AuthService } from '../../service/auth.service';
             .why-visual { min-height: 260px; }
             .stats { grid-template-columns: repeat(2, 1fr); padding: 32px 24px; }
             .stat-item:nth-child(2) { border-right: none; }
-            .stat-item:nth-child(3) { border-right: 1px solid #E8E6E1; border-top: 1px solid #E8E6E1; }
-            .stat-item:nth-child(4) { border-top: 1px solid #E8E6E1; }
+            .stat-item:nth-child(3) { border-right: 1px solid #D7CDC1; border-top: 1px solid #D7CDC1; }
+            .stat-item:nth-child(4) { border-top: 1px solid #D7CDC1; }
             .stat-item { padding: 24px 16px; }
         }
 
@@ -680,12 +682,12 @@ import { AuthService } from '../../service/auth.service';
                 overflow: hidden;
                 transition: max-height 0.35s ease, padding 0.35s ease;
                 padding: 0;
-                border-bottom: 0px solid rgba(201,168,76,0.25);
+                border-bottom: 0px solid rgba(194,162,98,0.25);
             }
             .nav-links.open {
                 max-height: 320px;
                 padding: 8px 0 16px;
-                border-bottom: 1px solid rgba(201,168,76,0.25);
+                border-bottom: 1px solid rgba(194,162,98,0.25);
             }
             .nav-links li { padding: 12px 24px; }
             .nav-links a { font-size: 13px; }
@@ -725,7 +727,7 @@ import { AuthService } from '../../service/auth.service';
             .btn-ghost { justify-content: center; }
             .fleet-grid { grid-template-columns: 1fr; }
             .stats { grid-template-columns: 1fr; }
-            .stat-item { border-right: none !important; border-bottom: 1px solid #E8E6E1; padding: 20px 16px; }
+            .stat-item { border-right: none !important; border-bottom: 1px solid #D7CDC1; padding: 20px 16px; }
             .stat-item:last-child { border-bottom: none; }
             .services-grid { gap: 0; }
         }
@@ -751,7 +753,7 @@ import { AuthService } from '../../service/auth.service';
             max-width: 680px;
             max-height: 90vh;
             overflow-y: auto;
-            border-top: 4px solid #C9A84C;
+            border-top: 4px solid #C2A262;
             animation: modalIn 0.25s ease;
             scrollbar-width: thin;
         }
@@ -759,7 +761,7 @@ import { AuthService } from '../../service/auth.service';
         @keyframes modalIn { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
 
         .modal-header {
-            background: #0C2340;
+            background: #15224D;
             padding: 24px 28px;
             display: flex;
             align-items: flex-start;
@@ -771,7 +773,7 @@ import { AuthService } from '../../service/auth.service';
             font-weight: 700;
             letter-spacing: 0.16em;
             text-transform: uppercase;
-            color: #C9A84C;
+            color: #C2A262;
             margin-bottom: 4px;
         }
         .modal-title {
@@ -808,22 +810,22 @@ import { AuthService } from '../../service/auth.service';
             font-weight: 700;
             letter-spacing: 0.1em;
             text-transform: uppercase;
-            color: #0C2340;
+            color: #15224D;
         }
-        .req { color: #C9A84C; }
+        .req { color: #C2A262; }
 
         .form-input {
-            border: 1px solid #E8E6E1;
-            background: #F7F5F2;
+            border: 1px solid #D7CDC1;
+            background: #EFEDE8;
             padding: 11px 14px;
             font-size: 13px;
-            font-family: 'Montserrat', sans-serif;
-            color: #1A1A1A;
+            font-family: 'DM Sans', sans-serif;
+            color: #15224D;
             outline: none;
             transition: border-color 0.2s, background 0.2s;
             width: 100%;
         }
-        .form-input:focus { border-color: #C9A84C; background: #fff; }
+        .form-input:focus { border-color: #C2A262; background: #fff; }
         .form-input::placeholder { color: #B0B0B0; }
 
         .form-select { cursor: pointer; appearance: none; background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%238A8D8F' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: right 14px center; padding-right: 36px; }
@@ -862,8 +864,8 @@ import { AuthService } from '../../service/auth.service';
         .success-icon {
             width: 56px;
             height: 56px;
-            background: #C9A84C;
-            color: #0C2340;
+            background: #C2A262;
+            color: #15224D;
             font-size: 22px;
             font-weight: 900;
             display: flex;
@@ -874,7 +876,7 @@ import { AuthService } from '../../service/auth.service';
         .modal-success h4 {
             font-size: 20px;
             font-weight: 900;
-            color: #0C2340;
+            color: #15224D;
             margin-bottom: 10px;
         }
         .modal-success p {
@@ -890,13 +892,150 @@ import { AuthService } from '../../service/auth.service';
             .form-row { grid-template-columns: 1fr; }
             .modal-form { padding: 20px; }
         }
+        /* ════════ IDENTIDAD "PROPUESTA B-2" ════════
+           Azul #15224D · dorado #E3C97D → #967945 · blanco · beige #D7CDC1
+           Dovens (títulos y destacados), Dovens itálica (logotipo), DM Sans (texto). */
+        .lp { --navy: #15224D; --navy-2: #1B2A5C; --gold-1: #E3C97D; --gold-2: #967945; --gold: #C2A262; --beige: #D7CDC1; --paper: #EFEDE8;
+              --gold-grad: linear-gradient(135deg, var(--gold-1) 0%, var(--gold-2) 100%); }
+
+        .hero-title, .section-title, .section-title-light, .cta-title, .modal-title {
+            font-family: 'Dovens', 'DM Sans', sans-serif;
+            font-weight: 800;
+            letter-spacing: 0.01em;
+        }
+        /* La versión de prueba de Dovens no trae números (pone su firma): las cifras van en DM Sans. */
+        .stat-number, .why-number, .km-number { font-family: 'DM Sans', sans-serif; font-weight: 700; letter-spacing: -0.01em; }
+        .hero-title { font-size: 50px; line-height: 1.08; text-transform: uppercase; }
+        .section-title, .section-title-light { font-size: 30px; line-height: 1.15; text-transform: uppercase; }
+        .cta-title { font-size: 38px; text-transform: uppercase; }
+        .hero-title em, .stat-number, .why-number, .km-number {
+            background: var(--gold-grad);
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+        }
+        .hero-eyebrow, .section-eyebrow, .section-eyebrow-light, .cta-eyebrow, .modal-eyebrow { letter-spacing: 0.32em; }
+        .hero-subtitle, .cta-sub { font-weight: 300; }
+
+        /* Botones: dorado en degradé y esquinas redondeadas, como las piezas del manual. */
+        .btn-primary, .nav-cta, .btn-outline, .btn-ghost { border-radius: 999px; }
+        .btn-primary { background: var(--gold-grad); color: var(--navy); font-weight: 700; box-shadow: 0 10px 30px -12px rgba(150,121,69,0.7); }
+        .nav-cta { border-color: rgba(227,201,125,0.55) !important; }
+        .nav-cta:hover { background: var(--gold-grad) !important; color: var(--navy) !important; }
+
+        /* Tarjetas con las esquinas grandes del sistema, separadas (sin la grilla de fondo). */
+        .services-grid { gap: 20px; background: transparent; border: 0; }
+        .service-card { background: #FFFFFF; border: 1px solid rgba(21,34,77,0.06); }
+        .service-card, .fleet-card, .modal-box { border-radius: 20px; overflow: hidden; }
+        .fleet-card { background: #FFFFFF; }
+        @media (max-width: 1024px) { .services-grid { gap: 16px; } }
+
+        /* Logo: isotipo + LECMA en Dovens itálica, dorado. */
+        .brand-lockup { display: inline-flex; align-items: center; gap: 12px; text-decoration: none; }
+        .brand-lockup svg { height: 34px; width: auto; flex-shrink: 0; }
+        .brand-lockup .brand-word {
+            font-family: 'Dovens Slanted', 'Dovens', sans-serif;
+            font-weight: 600;
+            font-size: 22px;
+            letter-spacing: 0.08em;
+            background: var(--gold-grad);
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+            line-height: 1;
+        }
+        .footer .brand-lockup svg { height: 26px; }
+        .footer .brand-lockup .brand-word { font-size: 17px; }
+        .iso-fill { fill: url(#lecma-gold); }
+
+        /* Marco de línea dorada fina con esquinas redondeadas (portada, CTA). */
+        .brand-frame {
+            position: absolute;
+            inset: 36px;
+            border: 1px solid rgba(227,201,125,0.35);
+            border-radius: 48px;
+            pointer-events: none;
+            z-index: 1;
+        }
+        /* Isotipo grande y tenue de fondo, como en las aplicaciones de marca. */
+        .brand-watermark {
+            position: absolute;
+            pointer-events: none;
+            z-index: 0;
+            opacity: 0.07;
+        }
+        .brand-watermark path { fill: #FFFFFF; }
+        .hero .brand-watermark { right: -40px; bottom: -60px; width: 620px; }
+        .cta-section .brand-watermark { left: -80px; top: -40px; width: 420px; opacity: 0.06; }
+        .hero-content, .cta-section > *:not(.brand-watermark):not(.brand-frame):not(.iso-fragment) { position: relative; z-index: 2; }
+
+        .footer { background: #0F1838; }
+
+        /* Trama de isotipos de la portada (como la tapa del cuaderno del manual): vive adentro del
+           marco redondeado, que hace de borde, y se desvanece hacia la derecha antes del mapa. */
+        .hero .brand-frame { overflow: hidden; }
+        .hero .brand-frame::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            pointer-events: none;
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='96' height='84' viewBox='0 0 96 84'%3E%3Cg transform='translate%2818 20%29 scale%280.5%29'%3E%3Cpath fill='%23E3C97D' fill-rule='evenodd' transform='translate%2819.85 0%29 skewX%28-13%29' d='M12,0 H24 A12,12 0 0 1 36,12 V62 H12 A12,12 0 0 1 0,50 V12 A12,12 0 0 1 12,0 Z M13,10 H23 A3,3 0 0 1 26,13 V49 A3,3 0 0 1 23,52 H13 A3,3 0 0 1 10,49 V13 A3,3 0 0 1 13,10 Z M26,52 H74 A12,12 0 0 1 86,64 V74 A12,12 0 0 1 74,86 H38 A12,12 0 0 1 26,74 V52 Z M39,62 H73 A3,3 0 0 1 76,65 V73 A3,3 0 0 1 73,76 H39 A3,3 0 0 1 36,73 V65 A3,3 0 0 1 39,62 Z'/%3E%3C/g%3E%3C/svg%3E"), url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='96' height='84' viewBox='0 0 96 84'%3E%3Cg transform='translate%2818 20%29 scale%280.5%29'%3E%3Cpath fill='%23E3C97D' fill-rule='evenodd' transform='translate%2819.85 0%29 skewX%28-13%29' d='M12,0 H24 A12,12 0 0 1 36,12 V62 H12 A12,12 0 0 1 0,50 V12 A12,12 0 0 1 12,0 Z M13,10 H23 A3,3 0 0 1 26,13 V49 A3,3 0 0 1 23,52 H13 A3,3 0 0 1 10,49 V13 A3,3 0 0 1 13,10 Z M26,52 H74 A12,12 0 0 1 86,64 V74 A12,12 0 0 1 74,86 H38 A12,12 0 0 1 26,74 V52 Z M39,62 H73 A3,3 0 0 1 76,65 V73 A3,3 0 0 1 73,76 H39 A3,3 0 0 1 36,73 V65 A3,3 0 0 1 39,62 Z'/%3E%3C/g%3E%3C/svg%3E");
+            background-size: 96px 84px, 96px 84px;
+            background-position: 0 0, 48px 42px;
+            opacity: 0.085;
+            -webkit-mask-image: linear-gradient(90deg, #000 0%, #000 28%, rgba(0,0,0,0.35) 45%, transparent 62%);
+            mask-image: linear-gradient(90deg, #000 0%, #000 28%, rgba(0,0,0,0.35) 45%, transparent 62%);
+        }
+        @media (max-width: 768px) {
+            .hero .brand-frame::before {
+                background-size: 72px 63px, 72px 63px;
+                background-position: 0 0, 36px 31px;
+                -webkit-mask-image: linear-gradient(180deg, #000 0%, #000 45%, transparent 85%);
+                mask-image: linear-gradient(180deg, #000 0%, #000 45%, transparent 85%);
+            }
+        }
+
+        /* Partes del isotipo, enormes y recortadas por el borde de la sección (como la camioneta,
+           la recepción y el cuaderno del manual). Cada sección muestra un pedazo distinto. */
+        .hero, .section, .cta-section { position: relative; overflow: hidden; }
+        .section > *:not(.iso-fragment) { position: relative; z-index: 1; }
+        .iso-fragment { position: absolute; pointer-events: none; z-index: 0; line-height: 0; }
+        .iso-fragment svg { width: 100%; height: auto; display: block; }
+        .iso-fragment path { fill: #FFFFFF; }
+        .frag-hero { width: 1250px; right: -330px; bottom: -560px; opacity: 0.06; }
+        .frag-cta { width: 1000px; left: -380px; bottom: -150px; opacity: 0.07; }
+        .frag-servicios { width: 760px; right: -170px; top: -260px; opacity: 0.05; }
+        .frag-servicios path { fill: #15224D; }
+        .frag-empresa { width: 900px; left: -330px; bottom: -110px; opacity: 0.08; }
+        .frag-empresa path { fill: #967945; }
+        @media (max-width: 768px) {
+            .frag-hero { width: 640px; right: -260px; bottom: -260px; }
+            .frag-cta { width: 560px; left: -240px; bottom: -90px; }
+            .frag-servicios { width: 420px; right: -170px; top: -150px; }
+            .frag-empresa { width: 520px; left: -220px; bottom: -70px; }
+        }
+
+        /* Patrón de isotipos en las secciones claras (como el cuaderno del manual). */
+        .section-alt { background-color: var(--paper); }
+
+        @media (max-width: 768px) {
+            .hero-title { font-size: 34px; }
+            .section-title, .section-title-light { font-size: 24px; }
+            .cta-title { font-size: 28px; }
+            .brand-frame { inset: 14px; border-radius: 28px; }
+            .brand-lockup svg { height: 28px; }
+            .brand-lockup .brand-word { font-size: 18px; }
+        }
+
     `],
     template: `
         <div class="lp">
+            <!-- Degradé dorado de la marca, para el isotipo -->
+            <svg width="0" height="0" style="position:absolute" aria-hidden="true"><defs><linearGradient id="lecma-gold" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#E3C97D"/><stop offset="1" stop-color="#967945"/></linearGradient></defs></svg>
 
             <!-- NAV -->
             <nav class="nav">
-                <div class="nav-logo">LEC<span>MA</span></div>
+                <div class="nav-logo"><a class="brand-lockup" aria-label="LECMA"><svg viewBox="0 0 108 86" aria-hidden="true"><path class="iso-fill" fill-rule="evenodd" transform="translate(19.85 0) skewX(-13)" d="M12,0 H24 A12,12 0 0 1 36,12 V62 H12 A12,12 0 0 1 0,50 V12 A12,12 0 0 1 12,0 Z M13,10 H23 A3,3 0 0 1 26,13 V49 A3,3 0 0 1 23,52 H13 A3,3 0 0 1 10,49 V13 A3,3 0 0 1 13,10 Z M26,52 H74 A12,12 0 0 1 86,64 V74 A12,12 0 0 1 74,86 H38 A12,12 0 0 1 26,74 V52 Z M39,62 H73 A3,3 0 0 1 76,65 V73 A3,3 0 0 1 73,76 H39 A3,3 0 0 1 36,73 V65 A3,3 0 0 1 39,62 Z"/></svg><span class="brand-word">LECMA</span></a></div>
 
                 <button class="nav-burger" [class.open]="menuOpen" (click)="toggleMenu()" aria-label="Menu">
                     <span></span><span></span><span></span>
@@ -914,6 +1053,8 @@ import { AuthService } from '../../service/auth.service';
 
             <!-- HERO -->
             <section class="hero">
+                <div class="brand-frame"></div>
+                <div class="iso-fragment frag-hero" aria-hidden="true"><svg viewBox="0 0 108 86"><path fill-rule="evenodd" transform="translate(19.85 0) skewX(-13)" d="M12,0 H24 A12,12 0 0 1 36,12 V62 H12 A12,12 0 0 1 0,50 V12 A12,12 0 0 1 12,0 Z M13,10 H23 A3,3 0 0 1 26,13 V49 A3,3 0 0 1 23,52 H13 A3,3 0 0 1 10,49 V13 A3,3 0 0 1 13,10 Z M26,52 H74 A12,12 0 0 1 86,64 V74 A12,12 0 0 1 74,86 H38 A12,12 0 0 1 26,74 V52 Z M39,62 H73 A3,3 0 0 1 76,65 V73 A3,3 0 0 1 73,76 H39 A3,3 0 0 1 36,73 V65 A3,3 0 0 1 39,62 Z"/></svg></div>
                 <div class="hero-content">
                     <div class="hero-badge">
                         <div class="hero-badge-dot"></div>
@@ -923,7 +1064,7 @@ import { AuthService } from '../../service/auth.service';
                     <h1 class="hero-title">
                         Movilidad ejecutiva<br>
                         <em>sin límites</em><br>
-                        ni fronteras.
+                        ni fronteras
                     </h1>
                     <p class="hero-subtitle">
                         Conectamos <strong>Buenos Aires</strong>, Rosario, San Nicolás y todo el país.
@@ -956,34 +1097,34 @@ import { AuthService } from '../../service/auth.service';
                         <!-- Main route: Buenos Aires → Rosario → San Nicolás → Córdoba -->
                         <path class="route-path"
                             d="M 80 420 C 100 380, 130 320, 160 270 C 190 220, 220 180, 260 140 C 300 100, 340 70, 390 50"
-                            stroke="#C9A84C" stroke-width="1.5" stroke-linecap="round" fill="none"/>
+                            stroke="#C2A262" stroke-width="1.5" stroke-linecap="round" fill="none"/>
 
                         <!-- Branch route to Mendoza/NOA -->
                         <path class="route-path-2"
                             d="M 260 140 C 300 130, 350 120, 420 90"
-                            stroke="rgba(201,168,76,0.5)" stroke-width="1" stroke-linecap="round" stroke-dasharray="4 4" fill="none"/>
+                            stroke="rgba(194,162,98,0.5)" stroke-width="1" stroke-linecap="round" stroke-dasharray="4 4" fill="none"/>
 
                         <!-- Branch route to coast -->
                         <path class="route-path-2"
                             d="M 160 270 C 180 290, 220 310, 260 330"
-                            stroke="rgba(201,168,76,0.5)" stroke-width="1" stroke-linecap="round" stroke-dasharray="4 4" fill="none"/>
+                            stroke="rgba(194,162,98,0.5)" stroke-width="1" stroke-linecap="round" stroke-dasharray="4 4" fill="none"/>
 
                         <!-- City dots -->
-                        <circle cx="80" cy="420" r="7" fill="#C9A84C" class="route-dot dot-a"/>
-                        <circle cx="80" cy="420" r="16" stroke="#C9A84C" stroke-width="1" opacity="0.3" class="route-dot dot-a"/>
-                        <text x="96" y="416" class="city-label" style="font-family:'Montserrat',sans-serif;font-size:10px;font-weight:700;fill:rgba(255,255,255,0.5);letter-spacing:0.08em;">BUENOS AIRES</text>
+                        <circle cx="80" cy="420" r="7" fill="#C2A262" class="route-dot dot-a"/>
+                        <circle cx="80" cy="420" r="16" stroke="#C2A262" stroke-width="1" opacity="0.3" class="route-dot dot-a"/>
+                        <text x="96" y="416" class="city-label" style="font-family:'DM Sans',sans-serif;font-size:10px;font-weight:700;fill:rgba(255,255,255,0.5);letter-spacing:0.08em;">BUENOS AIRES</text>
 
                         <circle cx="160" cy="270" r="5" fill="rgba(255,255,255,0.7)" class="route-dot dot-b"/>
                         <circle cx="160" cy="270" r="12" stroke="white" stroke-width="0.5" opacity="0.2" class="route-dot dot-b"/>
-                        <text x="172" y="266" class="city-label" style="font-family:'Montserrat',sans-serif;font-size:9px;font-weight:700;fill:rgba(255,255,255,0.4);letter-spacing:0.08em;">SAN NICOLÁS</text>
+                        <text x="172" y="266" class="city-label" style="font-family:'DM Sans',sans-serif;font-size:9px;font-weight:700;fill:rgba(255,255,255,0.4);letter-spacing:0.08em;">SAN NICOLÁS</text>
 
                         <circle cx="260" cy="140" r="5" fill="rgba(255,255,255,0.7)" class="route-dot dot-c"/>
                         <circle cx="260" cy="140" r="12" stroke="white" stroke-width="0.5" opacity="0.2" class="route-dot dot-c"/>
-                        <text x="272" y="136" class="city-label" style="font-family:'Montserrat',sans-serif;font-size:9px;font-weight:700;fill:rgba(255,255,255,0.4);letter-spacing:0.08em;">ROSARIO</text>
+                        <text x="272" y="136" class="city-label" style="font-family:'DM Sans',sans-serif;font-size:9px;font-weight:700;fill:rgba(255,255,255,0.4);letter-spacing:0.08em;">ROSARIO</text>
 
                         <circle cx="390" cy="50" r="6" fill="white" class="route-dot dot-d"/>
                         <circle cx="390" cy="50" r="14" stroke="white" stroke-width="0.5" opacity="0.15" class="route-dot dot-d"/>
-                        <text x="405" y="46" class="city-label" style="font-family:'Montserrat',sans-serif;font-size:9px;font-weight:700;fill:rgba(255,255,255,0.4);letter-spacing:0.08em;">CÓRDOBA</text>
+                        <text x="405" y="46" class="city-label" style="font-family:'DM Sans',sans-serif;font-size:9px;font-weight:700;fill:rgba(255,255,255,0.4);letter-spacing:0.08em;">CÓRDOBA</text>
                     </svg>
                 </div>
             </section>
@@ -1064,6 +1205,7 @@ import { AuthService } from '../../service/auth.service';
 
             <!-- SERVICIOS -->
             <section class="section" id="servicios">
+                <div class="iso-fragment frag-servicios" aria-hidden="true"><svg viewBox="0 0 108 86"><path fill-rule="evenodd" transform="translate(19.85 0) skewX(-13)" d="M12,0 H24 A12,12 0 0 1 36,12 V62 H12 A12,12 0 0 1 0,50 V12 A12,12 0 0 1 12,0 Z M13,10 H23 A3,3 0 0 1 26,13 V49 A3,3 0 0 1 23,52 H13 A3,3 0 0 1 10,49 V13 A3,3 0 0 1 13,10 Z"/></svg></div>
                 <div class="section-header aos">
                     <p class="section-eyebrow">Lo que ofrecemos</p>
                     <h2 class="section-title">Servicios diseñados para la operación corporativa</h2>
@@ -1073,22 +1215,22 @@ import { AuthService } from '../../service/auth.service';
                     <div class="service-card aos d1">
                         <svg class="service-icon" viewBox="0 0 44 44" fill="none">
                             <!-- Route indicator -->
-                            <circle cx="5" cy="9" r="2.5" fill="#C9A84C" opacity="0.9"/>
-                            <line x1="7.5" y1="9" x2="33.5" y2="9" stroke="#C9A84C" stroke-width="1" stroke-dasharray="3 2.5" opacity="0.5"/>
-                            <circle cx="37" cy="9" r="3" fill="#C9A84C"/>
+                            <circle cx="5" cy="9" r="2.5" fill="#C2A262" opacity="0.9"/>
+                            <line x1="7.5" y1="9" x2="33.5" y2="9" stroke="#C2A262" stroke-width="1" stroke-dasharray="3 2.5" opacity="0.5"/>
+                            <circle cx="37" cy="9" r="3" fill="#C2A262"/>
                             <circle cx="37" cy="9" r="1.2" fill="#fff"/>
                             <!-- Car body -->
-                            <path d="M3 32 L3 26 Q3.5 24.5 5.5 24.5 L9 24.5 L14 17 Q15.5 15 18 15 L26 15 Q28.5 15 30 17 L35 24.5 L39 24.5 Q41 24.5 41 26 L41 32 Z" stroke="#0C2340" stroke-width="1.5" fill="rgba(12,35,64,0.06)" stroke-linejoin="round"/>
+                            <path d="M3 32 L3 26 Q3.5 24.5 5.5 24.5 L9 24.5 L14 17 Q15.5 15 18 15 L26 15 Q28.5 15 30 17 L35 24.5 L39 24.5 Q41 24.5 41 26 L41 32 Z" stroke="#15224D" stroke-width="1.5" fill="rgba(21,34,77,0.06)" stroke-linejoin="round"/>
                             <!-- Windows -->
-                            <path d="M14 24.5 L17.5 17 L26.5 17 L30 24.5 Z" fill="rgba(201,168,76,0.13)" stroke="#0C2340" stroke-width="1"/>
+                            <path d="M14 24.5 L17.5 17 L26.5 17 L30 24.5 Z" fill="rgba(194,162,98,0.13)" stroke="#15224D" stroke-width="1"/>
                             <line x1="22" y1="17" x2="22" y2="24.5" stroke="#8A8D8F" stroke-width="0.9"/>
                             <!-- Wheels -->
-                            <circle cx="12.5" cy="34" r="4" stroke="#C9A84C" stroke-width="1.5" fill="rgba(201,168,76,0.08)"/>
-                            <circle cx="12.5" cy="34" r="1.6" fill="#C9A84C" opacity="0.8"/>
-                            <circle cx="31.5" cy="34" r="4" stroke="#C9A84C" stroke-width="1.5" fill="rgba(201,168,76,0.08)"/>
-                            <circle cx="31.5" cy="34" r="1.6" fill="#C9A84C" opacity="0.8"/>
+                            <circle cx="12.5" cy="34" r="4" stroke="#C2A262" stroke-width="1.5" fill="rgba(194,162,98,0.08)"/>
+                            <circle cx="12.5" cy="34" r="1.6" fill="#C2A262" opacity="0.8"/>
+                            <circle cx="31.5" cy="34" r="4" stroke="#C2A262" stroke-width="1.5" fill="rgba(194,162,98,0.08)"/>
+                            <circle cx="31.5" cy="34" r="1.6" fill="#C2A262" opacity="0.8"/>
                             <!-- Headlight -->
-                            <rect x="39.5" y="26" width="3" height="2.5" rx="0.8" fill="#C9A84C" opacity="0.75"/>
+                            <rect x="39.5" y="26" width="3" height="2.5" rx="0.8" fill="#C2A262" opacity="0.75"/>
                         </svg>
                         <div class="service-name">Traslados Buenos Aires (Principal)</div>
                         <div class="service-desc">Nuestro servicio más activo. AMBA, Rosario, San Nicolás y principales corredores industriales. Servicio diario con horarios acordados.</div>
@@ -1104,26 +1246,26 @@ import { AuthService } from '../../service/auth.service';
                     <div class="service-card aos d2">
                         <svg class="service-icon" viewBox="0 0 44 44" fill="none">
                             <!-- Hub center -->
-                            <circle cx="22" cy="22" r="4.5" fill="#C9A84C" opacity="0.9"/>
+                            <circle cx="22" cy="22" r="4.5" fill="#C2A262" opacity="0.9"/>
                             <circle cx="22" cy="22" r="2" fill="#fff"/>
                             <!-- Spokes -->
-                            <line x1="22" y1="5" x2="22" y2="17.5" stroke="#0C2340" stroke-width="1.2" stroke-dasharray="3 2"/>
-                            <line x1="22" y1="26.5" x2="22" y2="39" stroke="#0C2340" stroke-width="1.2" stroke-dasharray="3 2"/>
-                            <line x1="5" y1="22" x2="17.5" y2="22" stroke="#0C2340" stroke-width="1.2" stroke-dasharray="3 2"/>
-                            <line x1="26.5" y1="22" x2="39" y2="22" stroke="#0C2340" stroke-width="1.2" stroke-dasharray="3 2"/>
-                            <line x1="10" y1="10" x2="17.5" y2="17.5" stroke="#C9A84C" stroke-width="1" stroke-dasharray="2 2" opacity="0.5"/>
-                            <line x1="26.5" y1="26.5" x2="34" y2="34" stroke="#C9A84C" stroke-width="1" stroke-dasharray="2 2" opacity="0.5"/>
-                            <line x1="34" y1="10" x2="26.5" y2="17.5" stroke="#C9A84C" stroke-width="1" stroke-dasharray="2 2" opacity="0.5"/>
-                            <line x1="10" y1="34" x2="17.5" y2="26.5" stroke="#C9A84C" stroke-width="1" stroke-dasharray="2 2" opacity="0.5"/>
+                            <line x1="22" y1="5" x2="22" y2="17.5" stroke="#15224D" stroke-width="1.2" stroke-dasharray="3 2"/>
+                            <line x1="22" y1="26.5" x2="22" y2="39" stroke="#15224D" stroke-width="1.2" stroke-dasharray="3 2"/>
+                            <line x1="5" y1="22" x2="17.5" y2="22" stroke="#15224D" stroke-width="1.2" stroke-dasharray="3 2"/>
+                            <line x1="26.5" y1="22" x2="39" y2="22" stroke="#15224D" stroke-width="1.2" stroke-dasharray="3 2"/>
+                            <line x1="10" y1="10" x2="17.5" y2="17.5" stroke="#C2A262" stroke-width="1" stroke-dasharray="2 2" opacity="0.5"/>
+                            <line x1="26.5" y1="26.5" x2="34" y2="34" stroke="#C2A262" stroke-width="1" stroke-dasharray="2 2" opacity="0.5"/>
+                            <line x1="34" y1="10" x2="26.5" y2="17.5" stroke="#C2A262" stroke-width="1" stroke-dasharray="2 2" opacity="0.5"/>
+                            <line x1="10" y1="34" x2="17.5" y2="26.5" stroke="#C2A262" stroke-width="1" stroke-dasharray="2 2" opacity="0.5"/>
                             <!-- Peripheral nodes -->
-                            <circle cx="22" cy="5" r="2.5" stroke="#0C2340" stroke-width="1.2" fill="rgba(12,35,64,0.08)"/>
-                            <circle cx="22" cy="39" r="2.5" stroke="#0C2340" stroke-width="1.2" fill="rgba(12,35,64,0.08)"/>
-                            <circle cx="5" cy="22" r="2.5" stroke="#0C2340" stroke-width="1.2" fill="rgba(12,35,64,0.08)"/>
-                            <circle cx="39" cy="22" r="2.5" stroke="#0C2340" stroke-width="1.2" fill="rgba(12,35,64,0.08)"/>
-                            <circle cx="10" cy="10" r="2" stroke="#C9A84C" stroke-width="1" fill="rgba(201,168,76,0.08)" opacity="0.6"/>
-                            <circle cx="34" cy="34" r="2" stroke="#C9A84C" stroke-width="1" fill="rgba(201,168,76,0.08)" opacity="0.6"/>
-                            <circle cx="34" cy="10" r="2" stroke="#C9A84C" stroke-width="1" fill="rgba(201,168,76,0.08)" opacity="0.6"/>
-                            <circle cx="10" cy="34" r="2" stroke="#C9A84C" stroke-width="1" fill="rgba(201,168,76,0.08)" opacity="0.6"/>
+                            <circle cx="22" cy="5" r="2.5" stroke="#15224D" stroke-width="1.2" fill="rgba(21,34,77,0.08)"/>
+                            <circle cx="22" cy="39" r="2.5" stroke="#15224D" stroke-width="1.2" fill="rgba(21,34,77,0.08)"/>
+                            <circle cx="5" cy="22" r="2.5" stroke="#15224D" stroke-width="1.2" fill="rgba(21,34,77,0.08)"/>
+                            <circle cx="39" cy="22" r="2.5" stroke="#15224D" stroke-width="1.2" fill="rgba(21,34,77,0.08)"/>
+                            <circle cx="10" cy="10" r="2" stroke="#C2A262" stroke-width="1" fill="rgba(194,162,98,0.08)" opacity="0.6"/>
+                            <circle cx="34" cy="34" r="2" stroke="#C2A262" stroke-width="1" fill="rgba(194,162,98,0.08)" opacity="0.6"/>
+                            <circle cx="34" cy="10" r="2" stroke="#C2A262" stroke-width="1" fill="rgba(194,162,98,0.08)" opacity="0.6"/>
+                            <circle cx="10" cy="34" r="2" stroke="#C2A262" stroke-width="1" fill="rgba(194,162,98,0.08)" opacity="0.6"/>
                         </svg>
                         <div class="service-name">Cobertura nacional</div>
                         <div class="service-desc">Interior del país sin restricciones. NOA, NEA, Cuyo, Patagonia y todos los destinos corporativos. Planificamos el traslado que tu empresa necesite.</div>
@@ -1139,7 +1281,7 @@ import { AuthService } from '../../service/auth.service';
                     <div class="service-card aos d3">
                         <svg class="service-icon" viewBox="0 0 44 44" fill="none">
                             <!-- Globe outline -->
-                            <circle cx="22" cy="22" r="17" stroke="#0C2340" stroke-width="1.5"/>
+                            <circle cx="22" cy="22" r="17" stroke="#15224D" stroke-width="1.5"/>
                             <!-- Meridian ellipse -->
                             <ellipse cx="22" cy="22" rx="9" ry="17" stroke="#8A8D8F" stroke-width="0.8" opacity="0.45"/>
                             <!-- Vertical center line -->
@@ -1149,11 +1291,11 @@ import { AuthService } from '../../service/auth.service';
                             <line x1="5" y1="22" x2="39" y2="22" stroke="#8A8D8F" stroke-width="0.8" opacity="0.35"/>
                             <path d="M6.5 29 Q22 24.5 37.5 29" stroke="#8A8D8F" stroke-width="0.8" opacity="0.35" fill="none"/>
                             <!-- Route arc across globe -->
-                            <path d="M9 28 Q16 13 35 16" stroke="#C9A84C" stroke-width="1.6" stroke-linecap="round" fill="none"/>
+                            <path d="M9 28 Q16 13 35 16" stroke="#C2A262" stroke-width="1.6" stroke-linecap="round" fill="none"/>
                             <!-- Origin dot -->
-                            <circle cx="9" cy="28" r="2.8" fill="#C9A84C" opacity="0.85"/>
+                            <circle cx="9" cy="28" r="2.8" fill="#C2A262" opacity="0.85"/>
                             <!-- Destination dot -->
-                            <circle cx="35" cy="16" r="2.8" fill="#C9A84C" opacity="0.85"/>
+                            <circle cx="35" cy="16" r="2.8" fill="#C2A262" opacity="0.85"/>
                             <circle cx="35" cy="16" r="1.1" fill="#fff"/>
                         </svg>
                         <div class="service-name">Países limítrofes</div>
@@ -1184,31 +1326,31 @@ import { AuthService } from '../../service/auth.service';
                         <!-- Toyota Corolla sedan icon -->
                         <svg class="fleet-car-icon" width="80" height="40" viewBox="0 0 80 40" fill="none">
                             <!-- Body (filled) -->
-                            <path d="M7 30 L7 24 L13 24 L18 15 Q20 13 23 13 L55 13 Q58 13 60 15 L65 24 L73 24 L73 30 Z" fill="#0C2340"/>
+                            <path d="M7 30 L7 24 L13 24 L18 15 Q20 13 23 13 L55 13 Q58 13 60 15 L65 24 L73 24 L73 30 Z" fill="#15224D"/>
                             <!-- Glass area -->
-                            <path d="M19 24 L22 14.5 L54 14.5 L58 24 Z" fill="#1E3F6E"/>
+                            <path d="M19 24 L22 14.5 L54 14.5 L58 24 Z" fill="#24356E"/>
                             <!-- Front window -->
-                            <path d="M22 23 L24.5 15.5 L37 15.5 L37 23 Z" fill="rgba(201,168,76,0.15)"/>
+                            <path d="M22 23 L24.5 15.5 L37 15.5 L37 23 Z" fill="rgba(194,162,98,0.15)"/>
                             <!-- Rear window -->
-                            <path d="M39 15.5 L52.5 15.5 L56 23 L39 23 Z" fill="rgba(201,168,76,0.15)"/>
+                            <path d="M39 15.5 L52.5 15.5 L56 23 L39 23 Z" fill="rgba(194,162,98,0.15)"/>
                             <!-- B-pillar -->
-                            <rect x="37" y="15" width="2" height="8.5" fill="#0C2340"/>
+                            <rect x="37" y="15" width="2" height="8.5" fill="#15224D"/>
                             <!-- Door line -->
-                            <line x1="38" y1="24" x2="38" y2="30" stroke="#162d4d" stroke-width="1.5"/>
+                            <line x1="38" y1="24" x2="38" y2="30" stroke="#1B2A5C" stroke-width="1.5"/>
                             <!-- Wheel arch cutouts -->
-                            <circle cx="21" cy="31" r="8" fill="#F7F5F2"/>
-                            <circle cx="59" cy="31" r="8" fill="#F7F5F2"/>
+                            <circle cx="21" cy="31" r="8" fill="#EFEDE8"/>
+                            <circle cx="59" cy="31" r="8" fill="#EFEDE8"/>
                             <!-- Wheels -->
-                            <circle cx="21" cy="31" r="6.5" fill="#1a1a2e" stroke="#C9A84C" stroke-width="1.5"/>
-                            <circle cx="21" cy="31" r="3.5" stroke="#C9A84C" stroke-width="0.7" fill="none" opacity="0.4"/>
-                            <circle cx="21" cy="31" r="1.8" fill="#C9A84C" opacity="0.6"/>
-                            <circle cx="59" cy="31" r="6.5" fill="#1a1a2e" stroke="#C9A84C" stroke-width="1.5"/>
-                            <circle cx="59" cy="31" r="3.5" stroke="#C9A84C" stroke-width="0.7" fill="none" opacity="0.4"/>
-                            <circle cx="59" cy="31" r="1.8" fill="#C9A84C" opacity="0.6"/>
+                            <circle cx="21" cy="31" r="6.5" fill="#15224D" stroke="#C2A262" stroke-width="1.5"/>
+                            <circle cx="21" cy="31" r="3.5" stroke="#C2A262" stroke-width="0.7" fill="none" opacity="0.4"/>
+                            <circle cx="21" cy="31" r="1.8" fill="#C2A262" opacity="0.6"/>
+                            <circle cx="59" cy="31" r="6.5" fill="#15224D" stroke="#C2A262" stroke-width="1.5"/>
+                            <circle cx="59" cy="31" r="3.5" stroke="#C2A262" stroke-width="0.7" fill="none" opacity="0.4"/>
+                            <circle cx="59" cy="31" r="1.8" fill="#C2A262" opacity="0.6"/>
                             <!-- Headlight -->
-                            <rect x="71" y="25" width="3" height="2.5" rx="0.8" fill="#C9A84C" opacity="0.7"/>
+                            <rect x="71" y="25" width="3" height="2.5" rx="0.8" fill="#C2A262" opacity="0.7"/>
                             <!-- Taillight -->
-                            <rect x="6" y="25" width="2.5" height="2.5" rx="0.5" fill="#C9A84C" opacity="0.35"/>
+                            <rect x="6" y="25" width="2.5" height="2.5" rx="0.5" fill="#C2A262" opacity="0.35"/>
                         </svg>
                         <div class="fleet-model">Toyota Corolla</div>
                         <div class="fleet-type">Sedán ejecutivo</div>
@@ -1219,33 +1361,33 @@ import { AuthService } from '../../service/auth.service';
                         <!-- Honda Civic sedan icon (sportier profile) -->
                         <svg class="fleet-car-icon" width="80" height="40" viewBox="0 0 80 40" fill="none">
                             <!-- Body (lower/sportier roofline) -->
-                            <path d="M7 30 L7 24 L14 24 L20 13 Q22.5 11 26 11 L52 11 Q55.5 11 58 13 L65 24 L73 24 L73 30 Z" fill="#0C2340"/>
+                            <path d="M7 30 L7 24 L14 24 L20 13 Q22.5 11 26 11 L52 11 Q55.5 11 58 13 L65 24 L73 24 L73 30 Z" fill="#15224D"/>
                             <!-- Glass area -->
-                            <path d="M21 24 L25 12.5 L53 12.5 L58 24 Z" fill="#1E3F6E"/>
+                            <path d="M21 24 L25 12.5 L53 12.5 L58 24 Z" fill="#24356E"/>
                             <!-- Front window -->
-                            <path d="M25 23 L28 13.5 L39 13.5 L39 23 Z" fill="rgba(201,168,76,0.15)"/>
+                            <path d="M25 23 L28 13.5 L39 13.5 L39 23 Z" fill="rgba(194,162,98,0.15)"/>
                             <!-- Rear window -->
-                            <path d="M41 13.5 L51 13.5 L55.5 23 L41 23 Z" fill="rgba(201,168,76,0.15)"/>
+                            <path d="M41 13.5 L51 13.5 L55.5 23 L41 23 Z" fill="rgba(194,162,98,0.15)"/>
                             <!-- B-pillar -->
-                            <rect x="39" y="13" width="2" height="10.5" fill="#0C2340"/>
+                            <rect x="39" y="13" width="2" height="10.5" fill="#15224D"/>
                             <!-- Door line -->
-                            <line x1="40" y1="24" x2="40" y2="30" stroke="#162d4d" stroke-width="1.5"/>
+                            <line x1="40" y1="24" x2="40" y2="30" stroke="#1B2A5C" stroke-width="1.5"/>
                             <!-- Sport accent line -->
-                            <line x1="30" y1="27.5" x2="62" y2="27.5" stroke="#C9A84C" stroke-width="0.6" opacity="0.2"/>
+                            <line x1="30" y1="27.5" x2="62" y2="27.5" stroke="#C2A262" stroke-width="0.6" opacity="0.2"/>
                             <!-- Wheel arch cutouts -->
-                            <circle cx="22" cy="31" r="8" fill="#F7F5F2"/>
-                            <circle cx="59" cy="31" r="8" fill="#F7F5F2"/>
+                            <circle cx="22" cy="31" r="8" fill="#EFEDE8"/>
+                            <circle cx="59" cy="31" r="8" fill="#EFEDE8"/>
                             <!-- Wheels -->
-                            <circle cx="22" cy="31" r="6.5" fill="#1a1a2e" stroke="#C9A84C" stroke-width="1.5"/>
-                            <circle cx="22" cy="31" r="3.5" stroke="#C9A84C" stroke-width="0.7" fill="none" opacity="0.4"/>
-                            <circle cx="22" cy="31" r="1.8" fill="#C9A84C" opacity="0.6"/>
-                            <circle cx="59" cy="31" r="6.5" fill="#1a1a2e" stroke="#C9A84C" stroke-width="1.5"/>
-                            <circle cx="59" cy="31" r="3.5" stroke="#C9A84C" stroke-width="0.7" fill="none" opacity="0.4"/>
-                            <circle cx="59" cy="31" r="1.8" fill="#C9A84C" opacity="0.6"/>
+                            <circle cx="22" cy="31" r="6.5" fill="#15224D" stroke="#C2A262" stroke-width="1.5"/>
+                            <circle cx="22" cy="31" r="3.5" stroke="#C2A262" stroke-width="0.7" fill="none" opacity="0.4"/>
+                            <circle cx="22" cy="31" r="1.8" fill="#C2A262" opacity="0.6"/>
+                            <circle cx="59" cy="31" r="6.5" fill="#15224D" stroke="#C2A262" stroke-width="1.5"/>
+                            <circle cx="59" cy="31" r="3.5" stroke="#C2A262" stroke-width="0.7" fill="none" opacity="0.4"/>
+                            <circle cx="59" cy="31" r="1.8" fill="#C2A262" opacity="0.6"/>
                             <!-- Headlight -->
-                            <rect x="71" y="24.5" width="3" height="2.5" rx="0.8" fill="#C9A84C" opacity="0.7"/>
+                            <rect x="71" y="24.5" width="3" height="2.5" rx="0.8" fill="#C2A262" opacity="0.7"/>
                             <!-- Taillight -->
-                            <rect x="6" y="24.5" width="2.5" height="2.5" rx="0.5" fill="#C9A84C" opacity="0.35"/>
+                            <rect x="6" y="24.5" width="2.5" height="2.5" rx="0.5" fill="#C2A262" opacity="0.35"/>
                         </svg>
                         <div class="fleet-model">Honda Civic</div>
                         <div class="fleet-type">Sedán premium</div>
@@ -1256,33 +1398,33 @@ import { AuthService } from '../../service/auth.service';
                         <!-- Toyota Hiace van icon -->
                         <svg class="fleet-car-icon" width="80" height="40" viewBox="0 0 80 40" fill="none">
                             <!-- Van body (taller, boxy) -->
-                            <path d="M5 31 L5 11 Q5 10 6 10 L56 10 L63 10 L69 15 L75 15 L75 31 Z" fill="#0C2340"/>
+                            <path d="M5 31 L5 11 Q5 10 6 10 L56 10 L63 10 L69 15 L75 15 L75 31 Z" fill="#15224D"/>
                             <!-- Driver cabin glass -->
-                            <path d="M57 15 L63 10.5 L69 10.5 L69 15 Z" fill="#1E3F6E"/>
-                            <path d="M57.5 14.5 L63 11 L67.5 11 L67.5 14.5 Z" fill="rgba(201,168,76,0.15)"/>
+                            <path d="M57 15 L63 10.5 L69 10.5 L69 15 Z" fill="#24356E"/>
+                            <path d="M57.5 14.5 L63 11 L67.5 11 L67.5 14.5 Z" fill="rgba(194,162,98,0.15)"/>
                             <!-- Passenger windows -->
-                            <rect x="9" y="13.5" width="13" height="8" rx="0.8" fill="rgba(201,168,76,0.14)" stroke="#1E3F6E" stroke-width="0.8"/>
-                            <rect x="25" y="13.5" width="13" height="8" rx="0.8" fill="rgba(201,168,76,0.14)" stroke="#1E3F6E" stroke-width="0.8"/>
-                            <rect x="41" y="13.5" width="12" height="8" rx="0.8" fill="rgba(201,168,76,0.14)" stroke="#1E3F6E" stroke-width="0.8"/>
+                            <rect x="9" y="13.5" width="13" height="8" rx="0.8" fill="rgba(194,162,98,0.14)" stroke="#24356E" stroke-width="0.8"/>
+                            <rect x="25" y="13.5" width="13" height="8" rx="0.8" fill="rgba(194,162,98,0.14)" stroke="#24356E" stroke-width="0.8"/>
+                            <rect x="41" y="13.5" width="12" height="8" rx="0.8" fill="rgba(194,162,98,0.14)" stroke="#24356E" stroke-width="0.8"/>
                             <!-- Sliding door lines -->
-                            <line x1="23" y1="21.5" x2="23" y2="31" stroke="#162d4d" stroke-width="1.5"/>
-                            <line x1="39" y1="21.5" x2="39" y2="31" stroke="#162d4d" stroke-width="1.5"/>
+                            <line x1="23" y1="21.5" x2="23" y2="31" stroke="#1B2A5C" stroke-width="1.5"/>
+                            <line x1="39" y1="21.5" x2="39" y2="31" stroke="#1B2A5C" stroke-width="1.5"/>
                             <!-- Door handle -->
-                            <line x1="27" y1="27" x2="31" y2="27" stroke="#C9A84C" stroke-width="0.8" opacity="0.45"/>
+                            <line x1="27" y1="27" x2="31" y2="27" stroke="#C2A262" stroke-width="0.8" opacity="0.45"/>
                             <!-- Wheel arch cutouts -->
-                            <circle cx="17" cy="32" r="8" fill="#F7F5F2"/>
-                            <circle cx="62" cy="32" r="8" fill="#F7F5F2"/>
+                            <circle cx="17" cy="32" r="8" fill="#EFEDE8"/>
+                            <circle cx="62" cy="32" r="8" fill="#EFEDE8"/>
                             <!-- Wheels -->
-                            <circle cx="17" cy="32" r="6.5" fill="#1a1a2e" stroke="#C9A84C" stroke-width="1.5"/>
-                            <circle cx="17" cy="32" r="3.5" stroke="#C9A84C" stroke-width="0.7" fill="none" opacity="0.4"/>
-                            <circle cx="17" cy="32" r="1.8" fill="#C9A84C" opacity="0.6"/>
-                            <circle cx="62" cy="32" r="6.5" fill="#1a1a2e" stroke="#C9A84C" stroke-width="1.5"/>
-                            <circle cx="62" cy="32" r="3.5" stroke="#C9A84C" stroke-width="0.7" fill="none" opacity="0.4"/>
-                            <circle cx="62" cy="32" r="1.8" fill="#C9A84C" opacity="0.6"/>
+                            <circle cx="17" cy="32" r="6.5" fill="#15224D" stroke="#C2A262" stroke-width="1.5"/>
+                            <circle cx="17" cy="32" r="3.5" stroke="#C2A262" stroke-width="0.7" fill="none" opacity="0.4"/>
+                            <circle cx="17" cy="32" r="1.8" fill="#C2A262" opacity="0.6"/>
+                            <circle cx="62" cy="32" r="6.5" fill="#15224D" stroke="#C2A262" stroke-width="1.5"/>
+                            <circle cx="62" cy="32" r="3.5" stroke="#C2A262" stroke-width="0.7" fill="none" opacity="0.4"/>
+                            <circle cx="62" cy="32" r="1.8" fill="#C2A262" opacity="0.6"/>
                             <!-- Headlight -->
-                            <rect x="73" y="16.5" width="3" height="3" rx="0.8" fill="#C9A84C" opacity="0.7"/>
+                            <rect x="73" y="16.5" width="3" height="3" rx="0.8" fill="#C2A262" opacity="0.7"/>
                             <!-- Taillight -->
-                            <rect x="4" y="16.5" width="2.5" height="3" rx="0.5" fill="#C9A84C" opacity="0.35"/>
+                            <rect x="4" y="16.5" width="2.5" height="3" rx="0.5" fill="#C2A262" opacity="0.35"/>
                         </svg>
                         <div class="fleet-model">Toyota Hiace</div>
                         <div class="fleet-type">Van corporativa</div>
@@ -1293,14 +1435,14 @@ import { AuthService } from '../../service/auth.service';
                         <!-- Expandable fleet icon -->
                         <svg class="fleet-car-icon" width="80" height="40" viewBox="0 0 80 40" fill="none">
                             <!-- Background car silhouette (faded) -->
-                            <path d="M3 28 L3 23 L7.5 23 L11 17 Q12.5 15.5 14.5 15.5 L28.5 15.5 Q30.5 15.5 32 17 L35.5 23 L40 23 L40 28 Z" fill="#0C2340" opacity="0.15"/>
-                            <circle cx="10" cy="29.5" r="4.5" fill="#0C2340" opacity="0.1" stroke="#C9A84C" stroke-width="1" opacity-stroke="0.3"/>
-                            <circle cx="33" cy="29.5" r="4.5" fill="#0C2340" opacity="0.1" stroke="#C9A84C" stroke-width="1" opacity-stroke="0.3"/>
+                            <path d="M3 28 L3 23 L7.5 23 L11 17 Q12.5 15.5 14.5 15.5 L28.5 15.5 Q30.5 15.5 32 17 L35.5 23 L40 23 L40 28 Z" fill="#15224D" opacity="0.15"/>
+                            <circle cx="10" cy="29.5" r="4.5" fill="#15224D" opacity="0.1" stroke="#C2A262" stroke-width="1" opacity-stroke="0.3"/>
+                            <circle cx="33" cy="29.5" r="4.5" fill="#15224D" opacity="0.1" stroke="#C2A262" stroke-width="1" opacity-stroke="0.3"/>
                             <!-- Plus badge -->
-                            <circle cx="58" cy="19" r="14" stroke="#C9A84C" stroke-width="1.5" fill="rgba(201,168,76,0.06)"/>
-                            <circle cx="58" cy="19" r="10" stroke="#C9A84C" stroke-width="0.6" fill="none" opacity="0.3" stroke-dasharray="3 3"/>
-                            <line x1="58" y1="12" x2="58" y2="26" stroke="#C9A84C" stroke-width="2" stroke-linecap="round"/>
-                            <line x1="51" y1="19" x2="65" y2="19" stroke="#C9A84C" stroke-width="2" stroke-linecap="round"/>
+                            <circle cx="58" cy="19" r="14" stroke="#C2A262" stroke-width="1.5" fill="rgba(194,162,98,0.06)"/>
+                            <circle cx="58" cy="19" r="10" stroke="#C2A262" stroke-width="0.6" fill="none" opacity="0.3" stroke-dasharray="3 3"/>
+                            <line x1="58" y1="12" x2="58" y2="26" stroke="#C2A262" stroke-width="2" stroke-linecap="round"/>
+                            <line x1="51" y1="19" x2="65" y2="19" stroke="#C2A262" stroke-width="2" stroke-linecap="round"/>
                         </svg>
                         <div class="fleet-model">Y más</div>
                         <div class="fleet-type">Según necesidad</div>
@@ -1312,44 +1454,45 @@ import { AuthService } from '../../service/auth.service';
 
             <!-- WHY LECMA -->
             <section class="section" id="empresa">
+                <div class="iso-fragment frag-empresa" aria-hidden="true"><svg viewBox="0 0 108 86"><path fill-rule="evenodd" transform="translate(19.85 0) skewX(-13)" d="M26,52 H74 A12,12 0 0 1 86,64 V74 A12,12 0 0 1 74,86 H38 A12,12 0 0 1 26,74 V52 Z M39,62 H73 A3,3 0 0 1 76,65 V73 A3,3 0 0 1 73,76 H39 A3,3 0 0 1 36,73 V65 A3,3 0 0 1 39,62 Z"/></svg></div>
                 <div class="why-grid">
                     <div class="why-visual aos-left">
                         <svg width="260" height="300" viewBox="0 0 260 300" fill="none" xmlns="http://www.w3.org/2000/svg">
                             <!-- Top city -->
-                            <text x="130" y="38" text-anchor="middle" style="font-family:'Montserrat',sans-serif;font-size:11px;font-weight:800;fill:#fff;letter-spacing:0.05em;">BUENOS AIRES</text>
-                            <circle cx="130" cy="54" r="5" fill="#C9A84C"/>
-                            <circle cx="130" cy="54" r="12" stroke="#C9A84C" stroke-width="1" opacity="0.2"/>
+                            <text x="130" y="38" text-anchor="middle" style="font-family:'DM Sans',sans-serif;font-size:11px;font-weight:800;fill:#fff;letter-spacing:0.05em;">BUENOS AIRES</text>
+                            <circle cx="130" cy="54" r="5" fill="#C2A262"/>
+                            <circle cx="130" cy="54" r="12" stroke="#C2A262" stroke-width="1" opacity="0.2"/>
 
                             <!-- Line down -->
-                            <line x1="130" y1="66" x2="130" y2="110" stroke="rgba(201,168,76,0.3)" stroke-width="1" stroke-dasharray="4 4"/>
+                            <line x1="130" y1="66" x2="130" y2="110" stroke="rgba(194,162,98,0.3)" stroke-width="1" stroke-dasharray="4 4"/>
 
                             <!-- km label -->
-                            <text x="130" y="92" text-anchor="middle" style="font-family:'Montserrat',sans-serif;font-size:26px;font-weight:900;fill:#C9A84C;">360k</text>
-                            <text x="130" y="108" text-anchor="middle" style="font-family:'Montserrat',sans-serif;font-size:9px;font-weight:600;fill:rgba(255,255,255,0.35);letter-spacing:0.12em;">km/año promedio</text>
+                            <text x="130" y="92" text-anchor="middle" style="font-family:'DM Sans',sans-serif;font-size:26px;font-weight:900;fill:#C2A262;">360k</text>
+                            <text x="130" y="108" text-anchor="middle" style="font-family:'DM Sans',sans-serif;font-size:9px;font-weight:600;fill:rgba(255,255,255,0.35);letter-spacing:0.12em;">km/año promedio</text>
 
                             <circle cx="130" cy="122" r="4" fill="rgba(255,255,255,0.5)"/>
 
                             <!-- Branch lines -->
-                            <line x1="130" y1="122" x2="60" y2="172" stroke="rgba(201,168,76,0.2)" stroke-width="1" stroke-dasharray="3 3"/>
-                            <line x1="130" y1="122" x2="130" y2="187" stroke="rgba(201,168,76,0.3)" stroke-width="1" stroke-dasharray="4 4"/>
-                            <line x1="130" y1="122" x2="200" y2="172" stroke="rgba(201,168,76,0.2)" stroke-width="1" stroke-dasharray="3 3"/>
+                            <line x1="130" y1="122" x2="60" y2="172" stroke="rgba(194,162,98,0.2)" stroke-width="1" stroke-dasharray="3 3"/>
+                            <line x1="130" y1="122" x2="130" y2="187" stroke="rgba(194,162,98,0.3)" stroke-width="1" stroke-dasharray="4 4"/>
+                            <line x1="130" y1="122" x2="200" y2="172" stroke="rgba(194,162,98,0.2)" stroke-width="1" stroke-dasharray="3 3"/>
 
                             <!-- City nodes -->
                             <circle cx="60" cy="177" r="4" fill="rgba(255,255,255,0.4)"/>
-                            <text x="60" y="192" text-anchor="middle" style="font-family:'Montserrat',sans-serif;font-size:9px;font-weight:700;fill:rgba(255,255,255,0.45);letter-spacing:0.05em;">ROSARIO</text>
+                            <text x="60" y="192" text-anchor="middle" style="font-family:'DM Sans',sans-serif;font-size:9px;font-weight:700;fill:rgba(255,255,255,0.45);letter-spacing:0.05em;">ROSARIO</text>
 
                             <circle cx="130" cy="192" r="4" fill="rgba(255,255,255,0.4)"/>
-                            <text x="130" y="207" text-anchor="middle" style="font-family:'Montserrat',sans-serif;font-size:9px;font-weight:700;fill:rgba(255,255,255,0.45);letter-spacing:0.05em;">SAN NICOLÁS</text>
+                            <text x="130" y="207" text-anchor="middle" style="font-family:'DM Sans',sans-serif;font-size:9px;font-weight:700;fill:rgba(255,255,255,0.45);letter-spacing:0.05em;">SAN NICOLÁS</text>
 
                             <circle cx="200" cy="177" r="4" fill="rgba(255,255,255,0.4)"/>
-                            <text x="200" y="192" text-anchor="middle" style="font-family:'Montserrat',sans-serif;font-size:9px;font-weight:700;fill:rgba(255,255,255,0.45);letter-spacing:0.05em;">CÓRDOBA</text>
+                            <text x="200" y="192" text-anchor="middle" style="font-family:'DM Sans',sans-serif;font-size:9px;font-weight:700;fill:rgba(255,255,255,0.45);letter-spacing:0.05em;">CÓRDOBA</text>
 
                             <!-- International label -->
                             <line x1="60" y1="207" x2="200" y2="207" stroke="rgba(255,255,255,0.08)" stroke-width="1"/>
-                            <text x="130" y="230" text-anchor="middle" style="font-family:'Montserrat',sans-serif;font-size:9px;font-weight:600;fill:rgba(255,255,255,0.25);letter-spacing:0.1em;text-transform:uppercase;">+ todo el país</text>
-                            <text x="130" y="246" text-anchor="middle" style="font-family:'Montserrat',sans-serif;font-size:9px;font-weight:600;fill:rgba(255,255,255,0.2);letter-spacing:0.1em;text-transform:uppercase;">y países limítrofes</text>
+                            <text x="130" y="230" text-anchor="middle" style="font-family:'DM Sans',sans-serif;font-size:9px;font-weight:600;fill:rgba(255,255,255,0.25);letter-spacing:0.1em;text-transform:uppercase;">+ todo el país</text>
+                            <text x="130" y="246" text-anchor="middle" style="font-family:'DM Sans',sans-serif;font-size:9px;font-weight:600;fill:rgba(255,255,255,0.2);letter-spacing:0.1em;text-transform:uppercase;">y países limítrofes</text>
 
-                            <text x="130" y="282" text-anchor="middle" style="font-family:'Montserrat',sans-serif;font-size:9px;font-weight:700;fill:#C9A84C;letter-spacing:0.1em;">LECMA · MOVILIDAD CORPORATIVA</text>
+                            <text x="130" y="282" text-anchor="middle" style="font-family:'DM Sans',sans-serif;font-size:9px;font-weight:700;fill:#C2A262;letter-spacing:0.1em;">LECMA · MOVILIDAD CORPORATIVA</text>
                         </svg>
                     </div>
 
@@ -1394,6 +1537,8 @@ import { AuthService } from '../../service/auth.service';
 
             <!-- CTA FINAL -->
             <section class="cta-section" id="contacto">
+                <div class="brand-frame"></div>
+                <div class="iso-fragment frag-cta" aria-hidden="true"><svg viewBox="0 0 108 86"><path fill-rule="evenodd" transform="translate(19.85 0) skewX(-13)" d="M26,52 H74 A12,12 0 0 1 86,64 V74 A12,12 0 0 1 74,86 H38 A12,12 0 0 1 26,74 V52 Z M39,62 H73 A3,3 0 0 1 76,65 V73 A3,3 0 0 1 73,76 H39 A3,3 0 0 1 36,73 V65 A3,3 0 0 1 39,62 Z"/></svg></div>
                 <p class="cta-eyebrow aos">Sumá a LECMA a tu empresa</p>
                 <h2 class="cta-title aos d1">Empezá sin complicaciones</h2>
                 <p class="cta-sub aos d2">Contanos cuántas personas, qué días y qué horarios. En 24 horas te enviamos una propuesta a medida.</p>
@@ -1405,7 +1550,7 @@ import { AuthService } from '../../service/auth.service';
 
             <!-- FOOTER -->
             <footer class="footer">
-                <div class="footer-logo">LEC<span>MA</span></div>
+                <div class="footer-logo"><a class="brand-lockup" aria-label="LECMA"><svg viewBox="0 0 108 86" aria-hidden="true"><path class="iso-fill" fill-rule="evenodd" transform="translate(19.85 0) skewX(-13)" d="M12,0 H24 A12,12 0 0 1 36,12 V62 H12 A12,12 0 0 1 0,50 V12 A12,12 0 0 1 12,0 Z M13,10 H23 A3,3 0 0 1 26,13 V49 A3,3 0 0 1 23,52 H13 A3,3 0 0 1 10,49 V13 A3,3 0 0 1 13,10 Z M26,52 H74 A12,12 0 0 1 86,64 V74 A12,12 0 0 1 74,86 H38 A12,12 0 0 1 26,74 V52 Z M39,62 H73 A3,3 0 0 1 76,65 V73 A3,3 0 0 1 73,76 H39 A3,3 0 0 1 36,73 V65 A3,3 0 0 1 39,62 Z"/></svg><span class="brand-word">LECMA</span></a></div>
                 <span class="footer-copy">© 2025 LECMA · Buenos Aires, Argentina</span>
                 <span class="footer-tagline">Movilidad corporativa profesional</span>
             </footer>

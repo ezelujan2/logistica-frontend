@@ -14,36 +14,83 @@
         <link rel="apple-touch-icon" href="icons/icon-152x152.png" />
         <link rel="manifest" href="manifest.webmanifest" />
         <link href="https://fonts.cdnfonts.com/css/lato" rel="stylesheet" />
-        <!-- Pantalla de carga: se ve mientras baja el sistema; Angular la reemplaza al arrancar. -->
+        <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;700&display=swap" rel="stylesheet" />
+        <!-- Pantalla de carga: se ve mientras baja el sistema; Angular la reemplaza al arrancar.
+             El isotipo se dibuja con una línea dorada, se llena, se borra y vuelve a empezar. -->
         <style>
-            .app-splash { position: fixed; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 1.25rem; background: #f8f7f4; font-family: Lato, system-ui, sans-serif; }
-            .app-splash svg { width: 64px; height: 64px; animation: splash-pulse 1.6s ease-in-out infinite; }
-            .app-splash .name { font-size: 1.1rem; font-weight: 700; letter-spacing: 0.35em; color: #0c2340; padding-left: 0.35em; }
-            .app-splash .bar { width: 120px; height: 3px; border-radius: 3px; background: rgba(12, 35, 64, 0.12); overflow: hidden; }
-            .app-splash .bar::after { content: ''; display: block; width: 40%; height: 100%; border-radius: 3px; background: #b39565; animation: splash-bar 1.2s ease-in-out infinite; }
-            .splash-dark .app-splash { background: #0b1220; }
-            .splash-dark .app-splash .name { color: #f1ede6; }
-            .splash-dark .app-splash path { fill: #f1ede6; }
-            .splash-dark .app-splash .bar { background: rgba(241, 237, 230, 0.15); }
-            @keyframes splash-pulse { 50% { opacity: 0.55; transform: scale(0.94); } }
-            @keyframes splash-bar { from { transform: translateX(-100%); } to { transform: translateX(250%); } }
-            @media (prefers-reduced-motion: reduce) { .app-splash svg, .app-splash .bar::after { animation: none; } }
+            .app-splash { position: fixed; inset: 0; z-index: 99999; display: flex; align-items: center; justify-content: center; background: radial-gradient(ellipse at 50% 45%, #1d2c5e 0%, #15224d 55%, #0f1838 100%); overflow: hidden; transition: opacity 0.5s ease; }
+            .app-splash.leaving { opacity: 0; pointer-events: none; }
+            /* Mientras carga, el conjunto está corrido para que el isotipo solo quede centrado. */
+            .app-splash .lockup { display: flex; align-items: center; gap: 18px; transform: translateX(114px); transition: transform 0.7s cubic-bezier(0.65, 0, 0.35, 1) 0.15s; }
+            .app-splash.ready .lockup { transform: translateX(0); }
+            .app-splash svg { width: 92px; height: auto; overflow: visible; flex-shrink: 0; filter: drop-shadow(0 0 10px rgba(227, 201, 125, 0.35)); }
+            .app-splash .iso-ghost { fill: none; stroke: rgba(227, 201, 125, 0.16); stroke-width: 1; stroke-linejoin: round; }
+            /* Cargando: el isotipo se dibuja, se llena, se borra, en loop. */
+            .app-splash .iso-line { fill: url(#splash-gold); fill-opacity: 0; stroke: url(#splash-gold); stroke-width: 1.4; stroke-linejoin: round; stroke-dasharray: 100; stroke-dashoffset: 100; animation: iso-draw 2.4s cubic-bezier(0.65, 0, 0.35, 1) infinite, iso-fill 2.4s ease-in-out infinite; }
+            .app-splash .iso-glint { fill: none; stroke: #fff6d8; stroke-width: 1.4; stroke-linecap: round; stroke-dasharray: 6 94; animation: iso-glint 2.4s linear infinite; }
+            @keyframes iso-draw { 0% { stroke-dashoffset: 100; } 45%, 60% { stroke-dashoffset: 0; } 100% { stroke-dashoffset: -100; } }
+            @keyframes iso-fill { 0%, 38% { fill-opacity: 0; } 52% { fill-opacity: 0.95; } 66%, 100% { fill-opacity: 0; } }
+            @keyframes iso-glint { from { stroke-dashoffset: 100; } to { stroke-dashoffset: 0; } }
+            /* Listo: el isotipo queda lleno y el nombre sale de a una letra desde su borde, una sola vez. */
+            .app-splash.ready .iso-line { animation: iso-done 0.4s ease-out forwards; }
+            .app-splash.ready .iso-glint { animation: none; opacity: 0; }
+            @keyframes iso-done { to { stroke-dashoffset: 0; fill-opacity: 0.95; } }
+            .app-splash .word { display: flex; overflow: hidden; padding: 6px 4px 6px 2px; font-family: 'Dovens Slanted', 'Dovens', 'DM Sans', sans-serif; font-weight: 600; font-size: 40px; line-height: 1; letter-spacing: 0.08em; }
+            .app-splash .word span { display: inline-block; opacity: 0; transform: translateX(-0.95em); filter: blur(6px); background: linear-gradient(135deg, #E3C97D 0%, #967945 100%); -webkit-background-clip: text; background-clip: text; color: transparent; }
+            .app-splash.ready .word span { animation: letter-in 0.55s cubic-bezier(0.22, 1, 0.36, 1) forwards; }
+            @keyframes letter-in { to { opacity: 1; transform: none; filter: none; } }
+            .app-splash.ready .word span:nth-child(1) { animation-delay: 0.50s; }
+            .app-splash.ready .word span:nth-child(2) { animation-delay: 0.59s; }
+            .app-splash.ready .word span:nth-child(3) { animation-delay: 0.68s; }
+            .app-splash.ready .word span:nth-child(4) { animation-delay: 0.77s; }
+            .app-splash.ready .word span:nth-child(5) { animation-delay: 0.86s; }
+            @media (max-width: 480px) {
+                .app-splash .lockup { gap: 14px; transform: translateX(92px); }
+                .app-splash svg { width: 72px; }
+                .app-splash .word { font-size: 32px; }
+            }
+            @media (prefers-reduced-motion: reduce) {
+                .app-splash .lockup, .app-splash.ready .lockup { transition: none; }
+                .app-splash .iso-line { animation: none; stroke-dashoffset: 0; fill-opacity: 0.95; }
+                .app-splash .iso-glint { display: none; }
+                .app-splash.ready .word span { animation: none; opacity: 1; transform: none; filter: none; }
+            }
         </style>
-        <script>
-            try {
-                if (localStorage.getItem('lecma-dark-theme') === 'true') document.documentElement.classList.add('splash-dark');
-            } catch (e) {}
-        </script>
     </head>
 
     <body>
-        <app-root>
-            <div class="app-splash" role="status" aria-label="Cargando">
-                <svg viewBox="0 0 100 100" aria-hidden="true"><path d="M 50 20 L 20 90 L 38 90 L 50 55 L 62 90 L 80 90 Z" fill="#0C2340" /></svg>
-                <div class="name">LECMA</div>
-                <div class="bar"></div>
+        <app-root></app-root>
+            <div class="app-splash" id="app-splash" role="status" aria-label="Cargando">
+                <div class="lockup">
+                <svg viewBox="0 0 108 86" aria-hidden="true">
+                    <defs><linearGradient id="splash-gold" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#E3C97D" /><stop offset="1" stop-color="#967945" /></linearGradient></defs>
+                    <g transform="translate(19.85 0) skewX(-13)">
+                        <path class="iso-ghost" d="M12,0 H24 A12,12 0 0 1 36,12 V62 H12 A12,12 0 0 1 0,50 V12 A12,12 0 0 1 12,0 Z M13,10 H23 A3,3 0 0 1 26,13 V49 A3,3 0 0 1 23,52 H13 A3,3 0 0 1 10,49 V13 A3,3 0 0 1 13,10 Z M26,52 H74 A12,12 0 0 1 86,64 V74 A12,12 0 0 1 74,86 H38 A12,12 0 0 1 26,74 V52 Z M39,62 H73 A3,3 0 0 1 76,65 V73 A3,3 0 0 1 73,76 H39 A3,3 0 0 1 36,73 V65 A3,3 0 0 1 39,62 Z" />
+                        <path class="iso-line" pathLength="100" fill-rule="evenodd" d="M12,0 H24 A12,12 0 0 1 36,12 V62 H12 A12,12 0 0 1 0,50 V12 A12,12 0 0 1 12,0 Z M13,10 H23 A3,3 0 0 1 26,13 V49 A3,3 0 0 1 23,52 H13 A3,3 0 0 1 10,49 V13 A3,3 0 0 1 13,10 Z M26,52 H74 A12,12 0 0 1 86,64 V74 A12,12 0 0 1 74,86 H38 A12,12 0 0 1 26,74 V52 Z M39,62 H73 A3,3 0 0 1 76,65 V73 A3,3 0 0 1 73,76 H39 A3,3 0 0 1 36,73 V65 A3,3 0 0 1 39,62 Z" />
+                        <path class="iso-glint" pathLength="100" d="M12,0 H24 A12,12 0 0 1 36,12 V62 H12 A12,12 0 0 1 0,50 V12 A12,12 0 0 1 12,0 Z M26,52 H74 A12,12 0 0 1 86,64 V74 A12,12 0 0 1 74,86 H38 A12,12 0 0 1 26,74 V52 Z" />
+                    </g>
+                </svg>
+                <div class="word" aria-hidden="true"><span>L</span><span>E</span><span>C</span><span>M</span><span>A</span></div>
+                </div>
             </div>
-        </app-root>
+        <script>
+            // El sistema avisa cuando terminó de cargar (main.ts): ahí corre una sola vez la
+            // presentación del nombre y la pantalla se va. Mientras tanto, el isotipo sigue en loop.
+            (function () {
+                var splash = document.getElementById('app-splash');
+                var done = false;
+                var reduced = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+                window.__lecmaReady = function () {
+                    if (done || !splash) return;
+                    done = true;
+                    splash.classList.add('ready');
+                    setTimeout(function () {
+                        splash.classList.add('leaving');
+                        setTimeout(function () { splash.remove(); }, 550);
+                    }, reduced ? 400 : 2100);
+                };
+            })();
+        </script>
         <script>
             if ('serviceWorker' in navigator && location.hostname !== 'localhost') {
                 window.addEventListener('load', () => {

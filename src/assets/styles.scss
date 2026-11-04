@@ -103,3 +103,49 @@ body.p-overflow-hidden {
         padding: 1rem;
     }
 }
+
+/* Fuente de marca (DOVENS) para el nombre LECMA. OJO: la que está en public/fonts/dovens
+   es la versión "Personal Use": no subir a producción sin la licencia comercial/webfont.
+   Esa versión no trae números, casi ningún signo ni Á/É/á (pone su firma): con unicode-range
+   sólo se usa para las letras que tiene, y lo demás sale en la fuente siguiente (DM Sans). */
+@font-face { font-family: 'Dovens'; src: url('/fonts/dovens/DOVENSPersonalUse-Regular.otf') format('opentype'); font-weight: 400; font-display: swap; unicode-range: U+0020, U+0041-005A, U+0061-007A, U+00CD, U+00D1, U+00D3, U+00DA, U+00DC, U+00E9, U+00ED, U+00F1, U+00F3, U+00FA; }
+@font-face { font-family: 'Dovens'; src: url('/fonts/dovens/DOVENSPersonalUse-Bold.otf') format('opentype'); font-weight: 700; font-display: swap; unicode-range: U+0020, U+0041-005A, U+0061-007A, U+00CD, U+00D1, U+00D3, U+00DA, U+00DC, U+00E9, U+00ED, U+00F1, U+00F3, U+00FA; }
+@font-face { font-family: 'Dovens'; src: url('/fonts/dovens/DOVENSPersonalUse-ExtraBold.otf') format('opentype'); font-weight: 800; font-display: swap; unicode-range: U+0020, U+0041-005A, U+0061-007A, U+00CD, U+00D1, U+00D3, U+00DA, U+00DC, U+00E9, U+00ED, U+00F1, U+00F3, U+00FA; }
+@font-face { font-family: 'Dovens'; src: url('/fonts/dovens/DOVENSPersonalUse-Black.otf') format('opentype'); font-weight: 900; font-display: swap; unicode-range: U+0020, U+0041-005A, U+0061-007A, U+00CD, U+00D1, U+00D3, U+00DA, U+00DC, U+00E9, U+00ED, U+00F1, U+00F3, U+00FA; }
+
+/* Marca LECMA de la barra de arriba: "LECM" en letra y la A como triángulo, que acompaña el tamaño de la letra. */
+.brand-mark {
+    display: inline-flex;
+    flex-direction: column;
+    line-height: 1;
+    color: #0c2340;
+}
+.brand-mark .brand-name {
+    display: inline-flex;
+    align-items: baseline;
+    font-family: 'Dovens', 'Montserrat', sans-serif;
+    font-weight: 900;
+    font-size: 2rem;
+    letter-spacing: 0.02em;
+}
+.brand-mark .brand-a,
+.layout-topbar .layout-topbar-logo .brand-mark .brand-a {
+    width: 0.86em;
+    height: 0.7em;
+    margin-left: 0.04em;
+    fill: currentColor;
+}
+.brand-mark .brand-tagline {
+    margin-top: 0.3rem;
+    font-family: 'Montserrat', sans-serif;
+    font-size: 0.55rem;
+    font-weight: 400;
+    letter-spacing: 0.42em;
+    text-transform: uppercase;
+    color: #8a8d8f;
+}
+.app-dark .brand-mark {
+    color: #f1ede6;
+}
+@font-face { font-family: 'Dovens Slanted'; src: url('/fonts/dovens/DOVENSPersonalUse-SemBdSlant.otf') format('opentype'); font-weight: 600; font-display: swap; unicode-range: U+0020, U+0041-005A, U+0061-007A, U+00CD, U+00D1, U+00D3, U+00DA, U+00DC, U+00E9, U+00ED, U+00F1, U+00F3, U+00FA; }
+@font-face { font-family: 'Dovens Slanted'; src: url('/fonts/dovens/DOVENSPersonalUse-BoldSlanted.otf') format('opentype'); font-weight: 700; font-display: swap; unicode-range: U+0020, U+0041-005A, U+0061-007A, U+00CD, U+00D1, U+00D3, U+00DA, U+00DC, U+00E9, U+00ED, U+00F1, U+00F3, U+00FA; }
