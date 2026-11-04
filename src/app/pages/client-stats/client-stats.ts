@@ -1,4 +1,4 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, Input, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router, RouterModule } from '@angular/router';
@@ -21,9 +21,9 @@ import { SERVICE_TYPE_LABELS } from '../../service/labels';
         ::ng-deep .p-rating-off-icon { color: #D8D3C8 !important; }
     `],
     template: `
-        <div class="p-4 flex flex-col gap-6 animate-fadein">
-            <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
-                <div class="flex items-center gap-3">
+        <div class="flex flex-col gap-6 animate-fadein" [class.p-4]="!embedded">
+            <div class="flex flex-col md:flex-row md:items-center gap-4" [ngClass]="embedded ? 'md:justify-end' : 'justify-between'">
+                <div *ngIf="!embedded" class="flex items-center gap-3">
                     <p-button icon="pi pi-arrow-left" [rounded]="true" [text]="true" (click)="goBack()"></p-button>
                     <div class="flex flex-col">
                         <div class="font-bold text-3xl text-gray-800 dark:text-white">{{ stats?.client?.name || 'Cliente' }}</div>
@@ -183,6 +183,12 @@ import { SERVICE_TYPE_LABELS } from '../../service/labels';
     `
 })
 export class ClientStats implements OnInit {
+    /** Dentro de la ficha del cliente: sin título ni flecha para volver. */
+    @Input() embedded = false;
+    @Input() set client(id: number) {
+        this.clientId = id;
+    }
+
     stats: ClientDetailStats | null = null;
     loading = true;
     notFound = false;
@@ -218,7 +224,7 @@ export class ClientStats implements OnInit {
 
     async ngOnInit() {
         this.initChartOptions();
-        this.clientId = Number(this.route.snapshot.paramMap.get('id'));
+        this.clientId ||= Number(this.route.snapshot.paramMap.get('id'));
         await this.loadData();
     }
 

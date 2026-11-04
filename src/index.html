@@ -14,10 +14,36 @@
         <link rel="apple-touch-icon" href="icons/icon-152x152.png" />
         <link rel="manifest" href="manifest.webmanifest" />
         <link href="https://fonts.cdnfonts.com/css/lato" rel="stylesheet" />
+        <!-- Pantalla de carga: se ve mientras baja el sistema; Angular la reemplaza al arrancar. -->
+        <style>
+            .app-splash { position: fixed; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 1.25rem; background: #f8f7f4; font-family: Lato, system-ui, sans-serif; }
+            .app-splash svg { width: 64px; height: 64px; animation: splash-pulse 1.6s ease-in-out infinite; }
+            .app-splash .name { font-size: 1.1rem; font-weight: 700; letter-spacing: 0.35em; color: #0c2340; padding-left: 0.35em; }
+            .app-splash .bar { width: 120px; height: 3px; border-radius: 3px; background: rgba(12, 35, 64, 0.12); overflow: hidden; }
+            .app-splash .bar::after { content: ''; display: block; width: 40%; height: 100%; border-radius: 3px; background: #b39565; animation: splash-bar 1.2s ease-in-out infinite; }
+            .splash-dark .app-splash { background: #0b1220; }
+            .splash-dark .app-splash .name { color: #f1ede6; }
+            .splash-dark .app-splash path { fill: #f1ede6; }
+            .splash-dark .app-splash .bar { background: rgba(241, 237, 230, 0.15); }
+            @keyframes splash-pulse { 50% { opacity: 0.55; transform: scale(0.94); } }
+            @keyframes splash-bar { from { transform: translateX(-100%); } to { transform: translateX(250%); } }
+            @media (prefers-reduced-motion: reduce) { .app-splash svg, .app-splash .bar::after { animation: none; } }
+        </style>
+        <script>
+            try {
+                if (localStorage.getItem('lecma-dark-theme') === 'true') document.documentElement.classList.add('splash-dark');
+            } catch (e) {}
+        </script>
     </head>
 
     <body>
-        <app-root></app-root>
+        <app-root>
+            <div class="app-splash" role="status" aria-label="Cargando">
+                <svg viewBox="0 0 100 100" aria-hidden="true"><path d="M 50 20 L 20 90 L 38 90 L 50 55 L 62 90 L 80 90 Z" fill="#0C2340" /></svg>
+                <div class="name">LECMA</div>
+                <div class="bar"></div>
+            </div>
+        </app-root>
         <script>
             if ('serviceWorker' in navigator && location.hostname !== 'localhost') {
                 window.addEventListener('load', () => {

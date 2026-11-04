@@ -1,7 +1,5 @@
-import { SelectModule } from 'primeng/select';
-import { IVA_CONDITION_LABELS, optionsOf } from '../../service/labels';
 import { Component, OnInit } from '@angular/core';
-import { ActivatedRoute, Router } from '@angular/router';
+import { ActivatedRoute, Router, RouterModule } from '@angular/router';
 import { CommonModule } from '@angular/common';
 import { TableModule } from 'primeng/table';
 import { ButtonModule } from 'primeng/button';
@@ -9,16 +7,11 @@ import { InputTextModule } from 'primeng/inputtext';
 import { IconFieldModule } from 'primeng/iconfield';
 import { InputIconModule } from 'primeng/inputicon';
 import { DialogModule } from 'primeng/dialog';
-import { FormsModule } from '@angular/forms';
-import { TextareaModule } from 'primeng/textarea';
-import { CheckboxModule } from 'primeng/checkbox';
-import { InputNumberModule } from 'primeng/inputnumber';
 import { Client, ClientService } from '../../service/client.service';
-import { InvoiceService } from '../../service/invoice.service';
 import { ToastModule } from 'primeng/toast';
 import { MessageService } from 'primeng/api';
 import { TooltipModule } from 'primeng/tooltip';
-import { AuthService } from '../../service/auth.service';
+import { ClientForm } from './client-form';
 
 @Component({
     selector: 'app-client-list',
@@ -26,15 +19,15 @@ import { AuthService } from '../../service/auth.service';
         <div class="card">
             <p-toast></p-toast>
             <div class="font-semibold text-xl mb-4">Clientes</div>
-            <p-table #dt1 [value]="clients" dataKey="id" [rows]="10" [rowsPerPageOptions]="[10, 25, 50]" [loading]="loading" [paginator]="true" [globalFilterFields]="['name', 'cuit', 'email']">
+            <p-table #dt1 [value]="clients" dataKey="id" [rows]="10" [rowsPerPageOptions]="[10, 25, 50]" [loading]="loading" [paginator]="true" [globalFilterFields]="['name', 'legal_name', 'cuit', 'email']" styleClass="mobile-cards">
                 <ng-template pTemplate="caption">
-                    <div class="flex justify-between items-center">
-                        <span class="text-xl font-bold">Listado de Clientes</span>
+                    <div class="flex flex-col sm:flex-row gap-3 sm:justify-between sm:items-center">
+                        <span class="hidden sm:inline text-xl font-bold">Listado de Clientes</span>
                         <div class="flex gap-2">
                             <p-button label="Nuevo" icon="pi pi-plus" (click)="openNew()" />
-                            <p-iconfield>
+                            <p-iconfield class="flex-1 sm:flex-none">
                                 <p-inputicon styleClass="pi pi-search" />
-                                <input pInputText type="text" (input)="dt1.filterGlobal($any($event.target).value, 'contains')" placeholder="Buscar..." />
+                                <input pInputText type="text" (input)="dt1.filterGlobal($any($event.target).value, 'contains')" placeholder="Buscar..." class="w-full" />
                             </p-iconfield>
                         </div>
                     </div>
@@ -49,186 +42,56 @@ import { AuthService } from '../../service/auth.service';
                     </tr>
                 </ng-template>
                 <ng-template pTemplate="body" let-client>
-                    <tr>
-                        <td>{{ client.name }}</td>
-                        <td>{{ client.cuit }}</td>
+                    <tr class="m-card">
+                        <td class="m-title">
+                            <a class="font-medium text-primary cursor-pointer hover:underline" [routerLink]="['/app/clients', client.id]">{{ client.name }}</a>
+                            <div *ngIf="client.legal_name && client.legal_name !== client.name" class="text-xs text-muted-color">{{ client.legal_name }}</div>
+                        </td>
+                        <td [attr.data-label]="client.cuit ? 'CUIT' : null">{{ client.cuit }}</td>
                         <td>{{ client.phone }}</td>
-                        <td>{{ client.email }}</td>
-                        <td>
-                            <p-button *ngIf="canViewStats" icon="pi pi-chart-bar" [rounded]="true" [text]="true" severity="info" pTooltip="Ver estadísticas" (click)="viewStats(client)" />
-                            <p-button icon="pi pi-pencil" [rounded]="true" [text]="true" (click)="editClient(client)" />
-                            <p-button icon="pi pi-trash" [rounded]="true" [text]="true" severity="danger" (click)="deleteClient(client)" />
+                        <td class="break-all">{{ client.email }}</td>
+                        <td class="m-actions whitespace-nowrap">
+                            <p-button icon="pi pi-id-card" [rounded]="true" [text]="true" pTooltip="Abrir la ficha" [routerLink]="['/app/clients', client.id]" />
+                            <p-button icon="pi pi-trash" [rounded]="true" [text]="true" severity="danger" pTooltip="Eliminar" (click)="deleteClient(client)" />
                         </td>
                     </tr>
                 </ng-template>
             </p-table>
 
-            <p-dialog [(visible)]="clientDialog" [style]="{ width: '450px' }" header="Detalles del Cliente" [modal]="true" styleClass="p-fluid">
+            <p-dialog [(visible)]="clientDialog" [style]="{ width: '760px' }" [breakpoints]="{ '800px': '95vw' }" header="Nuevo cliente" [modal]="true" [draggable]="false">
                 <ng-template pTemplate="content">
-                    <div class="flex flex-col gap-4">
-                        <div class="flex flex-col gap-2">
-                            <label for="name">Nombre</label>
-                            <input type="text" pInputText id="name" [(ngModel)]="client.name" required autofocus />
-                            <small class="p-error" *ngIf="submitted && !client.name">El nombre es obligatorio.</small>
-                        </div>
-                        <div class="flex flex-col gap-2">
-                            <label for="legal_name">Razón social <span class="text-muted-color font-normal">(la que sale en la factura; vacía = el nombre)</span></label>
-                            <input type="text" pInputText id="legal_name" [(ngModel)]="client.legal_name" />
-                        </div>
-                        <div class="grid grid-cols-12 gap-4">
-                            <div class="col-span-12 md:col-span-6 flex flex-col gap-2">
-                                <label for="cuit">CUIT</label>
-                                <div class="flex gap-2">
-                                    <input type="text" pInputText id="cuit" [(ngModel)]="client.cuit" class="flex-1" />
-                                    <p-button icon="pi pi-search" label="Buscar en ARCA" [outlined]="true" size="small" [disabled]="!client.cuit || !cuitOk(client.cuit)" [loading]="padronLoading" (click)="lookupPadron()" pTooltip="Completa razón social, domicilio y condición frente al IVA" />
-                                </div>
-                                <small *ngIf="client.cuit && !cuitOk(client.cuit)" class="text-orange-600">No parece un CUIT válido: ARCA va a rechazar sus facturas A.</small>
-                            </div>
-                            <div class="col-span-12 md:col-span-6 flex flex-col gap-2">
-                                <label for="iva_condition">Condición frente al IVA</label>
-                                <p-select inputId="iva_condition" [options]="ivaConditions" [(ngModel)]="client.iva_condition" optionLabel="label" optionValue="value" placeholder="Según el tipo de facturación" [showClear]="true" appendTo="body" styleClass="w-full" />
-                                <small class="text-muted-color" *ngIf="client.iva_condition === 'EXENTO' || client.iva_condition === 'CONSUMIDOR_FINAL'">Factura B: mismo precio, con el IVA incluido sin discriminar.</small>
-                            </div>
-                            <div class="col-span-12 md:col-span-6 flex flex-col gap-2">
-                                <label for="phone">Teléfono</label>
-                                <input type="text" pInputText id="phone" [(ngModel)]="client.phone" />
-                            </div>
-                        </div>
-                        <div class="grid grid-cols-12 gap-4">
-                            <div class="col-span-12 md:col-span-6 flex flex-col gap-2">
-                                <label for="email">Email</label>
-                                <input type="text" pInputText id="email" [(ngModel)]="client.email" />
-                            </div>
-                            <div class="col-span-12 md:col-span-6 flex flex-col gap-2">
-                                <label for="address">Domicilio</label>
-                                <input type="text" pInputText id="address" [(ngModel)]="client.address" />
-                            </div>
-                        </div>
-
-                        <div class="grid grid-cols-12 gap-4">
-                            <div class="col-span-6 flex items-center gap-2">
-                                <p-checkbox [(ngModel)]="client.send_details" [binary]="true" inputId="send_details"></p-checkbox>
-                                <label for="send_details">Enviar detalles</label>
-                            </div>
-                            <div class="col-span-6 flex items-center gap-2">
-                                <p-checkbox [(ngModel)]="client.send_invoices" [binary]="true" inputId="send_invoices"></p-checkbox>
-                                <label for="send_invoices">Enviar facturas</label>
-                            </div>
-                            <div class="col-span-12 flex items-center gap-2">
-                                <p-checkbox [(ngModel)]="client.requires_purchase_order" [binary]="true" inputId="requires_purchase_order"></p-checkbox>
-                                <label for="requires_purchase_order">Pide orden de compra (OC obligatoria en cada reporte para facturar)</label>
-                            </div>
-                            <div class="col-span-12 flex items-center gap-2">
-                                <p-checkbox [(ngModel)]="client.receives_fce" [binary]="true" inputId="receives_fce"></p-checkbox>
-                                <label for="receives_fce">Empresa del registro de FCE (desde el monto mínimo se le factura con FCE A)</label>
-                            </div>
-                        </div>
-
-                        <div class="pt-2 mt-2 border-t border-surface-200 dark:border-surface-700">
-                            <div class="text-sm font-semibold text-muted-color mb-1">Ciclo de facturación y cobro</div>
-                            <div class="text-xs text-muted-color mb-3">Para clientes con facturación no inmediata (ej. mensual) — evita que sus servicios/facturas se marquen como "estancados" antes de tiempo.</div>
-                            <div class="grid grid-cols-12 gap-4">
-                                <div class="col-span-12 md:col-span-6 flex flex-col gap-2">
-                                    <label for="billing_cycle_days">Días normales hasta facturar</label>
-                                    <p-inputNumber id="billing_cycle_days" [(ngModel)]="client.billing_cycle_days" [min]="0" [max]="120" placeholder="15 (default)" styleClass="w-full" [style]="{'width':'100%'}"></p-inputNumber>
-                                </div>
-                                <div class="col-span-12 md:col-span-6 flex flex-col gap-2">
-                                    <label for="payment_terms_days">Días normales hasta que paga</label>
-                                    <p-inputNumber id="payment_terms_days" [(ngModel)]="client.payment_terms_days" [min]="0" [max]="180" placeholder="30 (default)" styleClass="w-full" [style]="{'width':'100%'}"></p-inputNumber>
-                                </div>
-                            </div>
-                        </div>
-
-                        <div class="grid grid-cols-12 gap-4">
-                             <div class="col-span-12 md:col-span-6 flex flex-col gap-2">
-                                 <label for="default_km_price">Precio KM Default</label>
-                                 <p-inputNumber id="default_km_price" [(ngModel)]="client.default_km_price" mode="currency" currency="USD" locale="en-US"></p-inputNumber>
-                             </div>
-                             <div class="col-span-12 md:col-span-6 flex flex-col gap-2">
-                                 <label for="default_extra_km_price">Precio KM Extra Default</label>
-                                 <p-inputNumber id="default_extra_km_price" [(ngModel)]="client.default_extra_km_price" mode="currency" currency="USD" locale="en-US"></p-inputNumber>
-                             </div>
-                        </div>
-
-                        <div class="flex flex-col gap-2">
-                             <label for="notes">Notas</label>
-                             <textarea id="notes" pTextarea [(ngModel)]="client.notes" rows="3" cols="20"></textarea>
-                        </div>
-                    </div>
+                    <app-client-form [client]="client" [submitted]="submitted" />
                 </ng-template>
 
                 <ng-template pTemplate="footer">
-                    <p-button label="Cancelar" icon="pi pi-times" [text]="true" (click)="hideDialog()" />
-                    <p-button label="Guardar" icon="pi pi-check" [text]="true" (click)="saveClient()" />
+                    <p-button label="Cancelar" [text]="true" severity="secondary" (click)="hideDialog()" />
+                    <p-button label="Crear cliente" icon="pi pi-check" [loading]="saving" (click)="saveClient()" />
                 </ng-template>
             </p-dialog>
         </div>
     `,
     standalone: true,
-    imports: [CommonModule, TableModule, ButtonModule, InputTextModule, IconFieldModule, InputIconModule, DialogModule, FormsModule, TextareaModule, CheckboxModule, InputNumberModule, ToastModule, TooltipModule, SelectModule],
+    imports: [CommonModule, RouterModule, TableModule, ButtonModule, InputTextModule, IconFieldModule, InputIconModule, DialogModule, ToastModule, TooltipModule, ClientForm],
     providers: [MessageService]
 })
 export class ClientList implements OnInit {
-    readonly ivaConditions = optionsOf(IVA_CONDITION_LABELS);
-
-    /** Mismo control que hace ARCA: 11 dígitos con el verificador correcto. */
-    cuitOk(text: string): boolean {
-        const d = (text ?? '').replace(/\D/g, '');
-        if (d.length !== 11) return false;
-        const sum = [5, 4, 3, 2, 7, 6, 5, 4, 3, 2].reduce((acc, w, i) => acc + w * Number(d[i]), 0);
-        const check = 11 - (sum % 11);
-        return (check === 11 ? 0 : check === 10 ? 9 : check) === Number(d[10]);
-    }
-
-    padronLoading = false;
-
-    /** Trae de ARCA razón social, domicilio fiscal y condición frente al IVA. */
-    async lookupPadron() {
-        if (!this.client.cuit) return;
-        this.padronLoading = true;
-        try {
-            const p = await this.invoiceService.padron(this.client.cuit);
-            if (p.legalName) this.client.legal_name = p.legalName;
-            if (p.address) this.client.address = p.address;
-            if (p.ivaCondition) this.client.iva_condition = p.ivaCondition as Client['iva_condition'];
-            if (p.legalName || p.address || p.ivaCondition) {
-                this.messageService.add({ severity: 'success', summary: 'Datos de ARCA', detail: 'Se completaron razón social, domicilio y condición frente al IVA. Revisalos y guardá.', life: 5000 });
-            }
-            if (p.warning) this.messageService.add({ severity: 'warn', summary: 'Aviso de ARCA', detail: p.warning, life: 8000 });
-        } catch (e: any) {
-            this.messageService.add({ severity: 'error', summary: 'ARCA', detail: e?.error?.error ?? 'No se pudo consultar ARCA.' });
-        } finally {
-            this.padronLoading = false;
-        }
-    }
-
     clients: Client[] = [];
     client: Client = { name: '' };
     loading: boolean = true;
     clientDialog: boolean = false;
     submitted: boolean = false;
+    saving = false;
 
-    canViewStats = false;
-
-    constructor(private clientService: ClientService, private invoiceService: InvoiceService, private messageService: MessageService, private route: ActivatedRoute, private router: Router, private authService: AuthService) {
-        this.canViewStats = this.authService.hasPermission('viewStatistics');
-    }
-
-    viewStats(client: Client) {
-        this.router.navigate(['/app/clients', client.id, 'stats']);
-    }
+    constructor(private clientService: ClientService, private messageService: MessageService, private route: ActivatedRoute, private router: Router) {}
 
     async ngOnInit() {
+        // Links viejos (?action=edit&id=…) van a la ficha.
+        const params = this.route.snapshot.queryParams;
+        if (params['action'] === 'edit' && params['id']) {
+            this.router.navigate(['/app/clients', Number(params['id'])], { queryParams: { tab: 'datos' }, replaceUrl: true });
+            return;
+        }
         await this.loadClients();
-        this.route.queryParams.subscribe(params => {
-            if (params['action'] === 'edit' && params['id']) {
-                const id = Number(params['id']);
-                const client = this.clients.find(c => c.id === id);
-                if (client) {
-                    this.editClient(client);
-                }
-            }
-        });
     }
 
     async loadClients() {
@@ -249,15 +112,10 @@ export class ClientList implements OnInit {
         this.clientDialog = true;
     }
 
-    editClient(client: Client) {
-        this.client = { ...client };
-        this.clientDialog = true;
-    }
-
     async deleteClient(client: Client) {
         if (!client.id) return;
         if (confirm('¿Está seguro de que desea eliminar este cliente?')) {
-             try {
+            try {
                 await this.clientService.deleteClient(client.id);
                 this.messageService.add({ severity: 'success', summary: 'Éxito', detail: 'Cliente eliminado', life: 3000 });
                 this.loadClients();
@@ -272,24 +130,19 @@ export class ClientList implements OnInit {
         this.submitted = false;
     }
 
+    /** Crea el cliente y abre su ficha, para seguir con los contactos. */
     async saveClient() {
         this.submitted = true;
-
-        if (this.client.name?.trim()) {
-            try {
-                if (this.client.id) {
-                    await this.clientService.updateClient(this.client.id, this.client);
-                    this.messageService.add({ severity: 'success', summary: 'Éxito', detail: 'Cliente actualizado', life: 3000 });
-                } else {
-                    await this.clientService.createClient(this.client);
-                    this.messageService.add({ severity: 'success', summary: 'Éxito', detail: 'Cliente creado', life: 3000 });
-                }
-                this.clientDialog = false;
-                this.client = { name: '' };
-                this.loadClients();
-            } catch (error) {
-                 this.messageService.add({ severity: 'error', summary: 'Error', detail: 'No se pudo guardar el cliente' });
-            }
+        if (!this.client.name?.trim()) return;
+        this.saving = true;
+        try {
+            const created = await this.clientService.createClient(this.client);
+            this.clientDialog = false;
+            this.router.navigate(['/app/clients', created.id], { queryParams: { tab: 'contactos' } });
+        } catch (error) {
+            this.messageService.add({ severity: 'error', summary: 'Error', detail: 'No se pudo guardar el cliente' });
+        } finally {
+            this.saving = false;
         }
     }
 }

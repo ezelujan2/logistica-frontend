@@ -12,7 +12,7 @@ import { DatePickerModule } from 'primeng/datepicker';
 import { ConfirmationService, MessageService } from 'primeng/api';
 import { ClientService } from '../../service/client.service';
 import { ServiceService } from '../../service/service.service';
-import { ArcaStatus, InvoiceForm, InvoiceService, emptyInvoiceForm, isInvoiceFormComplete } from '../../service/invoice.service';
+import { ArcaStatus, InvoiceForm, InvoiceService, emptyInvoiceForm, isInvoiceFormComplete, purchaseOrderLabel } from '../../service/invoice.service';
 import { InvoiceFields } from '../service-list/invoice-fields';
 import { ARCA_ACTIVITY_LABELS, DEFAULT_ARCA_ACTIVITY, IVA_CONDITION_LABELS, labelOf, optionsOf } from '../../service/labels';
 
@@ -33,6 +33,16 @@ import { ARCA_ACTIVITY_LABELS, DEFAULT_ARCA_ACTIVITY, IVA_CONDITION_LABELS, labe
                     <label class="font-bold">Cliente</label>
                     <p-select [options]="clients" [(ngModel)]="client" optionLabel="name" (onChange)="loadGroups()" placeholder="Elegí el cliente" appendTo="body" styleClass="w-full" [filter]="true" filterBy="name" />
                     <small *ngIf="padronMismatch" class="text-orange-600"><i class="pi pi-exclamation-triangle mr-1"></i>{{ padronMismatch }}</small>
+                </div>
+
+                <div *ngIf="client && mode === 'arca' && !client.address?.trim()" class="flex flex-col gap-2 p-3 rounded-lg border border-orange-200 bg-orange-50 dark:bg-orange-900/20 dark:border-orange-800">
+                    <span class="text-sm text-orange-800 dark:text-orange-200"><i class="pi pi-exclamation-triangle mr-1"></i>Al cliente le falta el <b>domicilio</b>, obligatorio para emitir. Cargalo acá y queda guardado en su ficha.</span>
+                    <div class="flex flex-wrap gap-2">
+                        <input pInputText [(ngModel)]="addressDraft" placeholder="Calle 123 - Localidad, Provincia" class="flex-1 min-w-48" (keyup.enter)="saveAddress()" />
+                        <p-button *ngIf="client.cuit" icon="pi pi-search" label="Buscar en ARCA" [outlined]="true" [loading]="addressLoading" (click)="lookupAddress()" />
+                        <p-button label="Guardar" icon="pi pi-check" [disabled]="!addressDraft.trim()" [loading]="addressSaving" (click)="saveAddress()" />
+                    </div>
+                    <small *ngIf="addressFromArca" class="text-muted-color">Lo trajo ARCA con el CUIT: revisalo y guardá.</small>
                 </div>
 
                 <div *ngIf="arca?.enabled" class="flex flex-wrap items-center gap-3">
@@ -153,10 +163,10 @@ export class InvoiceBillingDialog {
         return this.client?.iva_condition === 'EXENTO' || this.client?.iva_condition === 'CONSUMIDOR_FINAL';
     }
 
-    /** Igual que el backend: "Honorarios por servicios según Reporte REP-0123 OC3196 - texto". */
+    /** Igual que el backend: "Honorarios por servicios según REP-0123 OC 3196 - texto". */
     lineText(group: any): string {
         const oc = this.purchaseOrders[group.id]?.trim();
-        const base = `Honorarios por servicios según Reporte ${group.code}${oc ? ' ' + oc : ''}`;
+        const base = `Honorarios por servicios según ${group.code}${oc ? ' ' + purchaseOrderLabel(oc) : ''}`;
         return this.extraText.trim() ? `${base} - ${this.extraText.trim()}` : base;
     }
 
@@ -174,11 +184,20 @@ export class InvoiceBillingDialog {
     private customPaymentDue: Date | null = null;
     readonly today = new Date();
 
+    private defaultPaymentDue: { key: string; date: Date } | null = null;
+
+    /** Siempre el mismo objeto mientras no cambien la emisión ni el plazo: una fecha nueva en cada vuelta traba el calendario. */
     get paymentDue(): Date {
         if (this.customPaymentDue) return this.customPaymentDue;
-        const d = new Date(this.form.issueDate ?? new Date());
-        d.setDate(d.getDate() + (this.client?.payment_terms_days ?? 30));
-        return d;
+        const issue = new Date(this.form.issueDate ?? this.today);
+        const days = this.client?.payment_terms_days ?? 30;
+        const key = `${issue.toDateString()}|${days}`;
+        if (this.defaultPaymentDue?.key !== key) {
+            const date = new Date(issue);
+            date.setDate(date.getDate() + days);
+            this.defaultPaymentDue = { key, date };
+        }
+        return this.defaultPaymentDue.date;
     }
 
     set paymentDue(value: Date) {
@@ -228,13 +247,63 @@ export class InvoiceBillingDialog {
     /** Si la condición frente al IVA de la ficha no coincide con la de ARCA. */
     padronMismatch: string | null = null;
 
+    /** Domicilio para completar desde el diálogo cuando el cliente no lo tiene. */
+    addressDraft = '';
+    addressFromArca = false;
+    addressLoading = false;
+    addressSaving = false;
+
+    async lookupAddress() {
+        const client = this.client;
+        if (!client?.cuit) return;
+        this.addressLoading = true;
+        try {
+            const p = await this.invoiceService.padron(client.cuit);
+            if (this.client !== client) return;
+            if (p.address) {
+                this.addressDraft = p.address;
+                this.addressFromArca = true;
+            } else {
+                this.messageService.add({ severity: 'warn', summary: 'ARCA', detail: p.warning ?? 'ARCA no tiene el domicilio de ese CUIT: cargalo a mano.' });
+            }
+        } catch (e: any) {
+            this.messageService.add({ severity: 'error', summary: 'ARCA', detail: e?.error?.error ?? 'No se pudo consultar ARCA.' });
+        } finally {
+            this.addressLoading = false;
+        }
+    }
+
+    async saveAddress() {
+        const client = this.client;
+        const address = this.addressDraft.trim();
+        if (!client?.id || !address) return;
+        this.addressSaving = true;
+        try {
+            await this.clientService.updateClient(client.id, { ...client, address });
+            client.address = address;
+            this.messageService.add({ severity: 'success', summary: 'Domicilio guardado', detail: `Quedó en la ficha de ${client.name}.`, life: 3000 });
+        } catch {
+            this.messageService.add({ severity: 'error', summary: 'Error', detail: 'No se pudo guardar el domicilio.' });
+        } finally {
+            this.addressSaving = false;
+        }
+    }
+
     private async checkPadron() {
         this.padronMismatch = null;
+        this.addressDraft = '';
+        this.addressFromArca = false;
         const client = this.client;
         if (!this.arca?.enabled || !client?.cuit) return;
         try {
             const p = await this.invoiceService.padron(client.cuit);
-            if (this.client !== client || !p.ivaCondition || p.ivaCondition === client.iva_condition) return;
+            if (this.client !== client) return;
+            // Si le falta el domicilio, ya queda propuesto el de ARCA para revisar y guardar.
+            if (!client.address?.trim() && p.address && !this.addressDraft) {
+                this.addressDraft = p.address;
+                this.addressFromArca = true;
+            }
+            if (!p.ivaCondition || p.ivaCondition === client.iva_condition) return;
             const saved = client.iva_condition ? labelOf(IVA_CONDITION_LABELS, client.iva_condition) : 'sin cargar';
             this.padronMismatch = `En ARCA figura como ${labelOf(IVA_CONDITION_LABELS, p.ivaCondition)} y en la ficha del cliente está ${saved}. Revisalo en Clientes antes de emitir.`;
         } catch {
@@ -288,7 +357,7 @@ export class InvoiceBillingDialog {
             return;
         }
         if (!this.client.address?.trim()) {
-            this.messageService.add({ severity: 'warn', summary: 'Falta el domicilio', detail: 'El domicilio del cliente es obligatorio en la factura. Cargalo en Clientes.' });
+            this.messageService.add({ severity: 'warn', summary: 'Falta el domicilio', detail: 'El domicilio del cliente es obligatorio en la factura. Completalo debajo del cliente.' });
             return;
         }
         const total = this.selectedTotal.toLocaleString('es-AR', { maximumFractionDigits: 2 });

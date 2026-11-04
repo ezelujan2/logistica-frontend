@@ -11,11 +11,35 @@ export interface Driver {
     email?: string;
     cuit?: string;
     license_number?: string;
+    dni?: string | null;
+    address?: string | null;
+    birth_date?: string | Date | null;
+    emergency_contact_name?: string | null;
+    emergency_contact_phone?: string | null;
+    /** Datos para pagarle las liquidaciones. */
+    cbu?: string | null;
+    cbu_alias?: string | null;
+    bank?: string | null;
+    account_holder?: string | null;
     /** Calendario de Google propio del chofer, donde se copian sus servicios. */
     google_calendar_id?: string | null;
     carnetVencimiento?: string | Date | null;
     createdAt?: Date;
     updatedAt?: Date;
+}
+
+export interface DriverSummary {
+    year: number;
+    trips: number;
+    km: number;
+    earnings: number;
+    monthly: { month: number; trips: number; earnings: number }[];
+    topClients: { id: number; name: string; trips: number }[];
+    toSettle: { count: number; amount: number };
+    pendingAdvances: { count: number; amount: number };
+    firstServiceDate: string | null;
+    lastServiceDate: string | null;
+    lastSettlement: { id: number; code: string; createdAt: string; totalAmount: number; status: string } | null;
 }
 
 @Injectable({
@@ -28,6 +52,14 @@ export class DriverService {
 
     async getDrivers(): Promise<Driver[]> {
         return await firstValueFrom(this.http.get<Driver[]>(this.apiUrl));
+    }
+
+    async getDriver(id: number): Promise<Driver> {
+        return await firstValueFrom(this.http.get<Driver>(`${this.apiUrl}/${id}`));
+    }
+
+    async getSummary(id: number, year: number): Promise<DriverSummary> {
+        return await firstValueFrom(this.http.get<DriverSummary>(`${this.apiUrl}/${id}/summary`, { params: { year } }));
     }
 
     async createDriver(driver: Driver): Promise<Driver> {

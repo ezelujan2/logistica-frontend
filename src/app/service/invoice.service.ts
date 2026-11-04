@@ -69,6 +69,11 @@ export interface NoteForm {
 export const isArcaInvoice = (invoice: any) => !!invoice?.arcaData;
 
 /** Tiene PDF para bajar: la armamos nosotros (ARCA) o se adjuntó el de ARCA. */
+/** Igual que el backend: la OC sale como "OC 3196", la hayan escrito "3196", "OC3196" u "oc: 3196". */
+export function purchaseOrderLabel(purchaseOrder: string): string {
+  return `OC ${purchaseOrder.trim().replace(/^o\.?\s*c\.?[\s:#°º.-]*(?:n[°º.]?|nro\.?)?[\s:#°º.-]*(?=\d)/i, '')}`;
+}
+
 export const hasInvoicePdf = (invoice: any) => isArcaInvoice(invoice) || !!invoice?.pdfFile;
 
 @Injectable({
@@ -84,8 +89,8 @@ export class InvoiceService {
     return firstValueFrom(this.http.post<any>(this.apiUrl, { serviceIds, clientId, ...form, purchaseOrders }));
   }
 
-  getInvoices() {
-    return firstValueFrom(this.http.get<any[]>(this.apiUrl));
+  getInvoices(filters: { clientId?: number } = {}) {
+    return firstValueFrom(this.http.get<any[]>(this.apiUrl, { params: filters }));
   }
 
   updateInvoice(invoiceId: number, form: InvoiceForm, serviceIds?: number[]) {
@@ -123,6 +128,11 @@ export class InvoiceService {
   }
 
   /** Baja el PDF de una factura emitida desde LECMA. */
+  /** Cobro de la factura entera: sus servicios en Pendiente Pago pasan a Pagado. */
+  pay(invoiceId: number) {
+    return firstValueFrom(this.http.post<{ paidServices: number }>(`${this.apiUrl}/${invoiceId}/pay`, {}));
+  }
+
   async downloadPdf(invoiceId: number, invoiceNumber: string) {
     const blob = await firstValueFrom(this.http.get(`${this.apiUrl}/${invoiceId}/pdf`, { responseType: 'blob' }));
     const url = URL.createObjectURL(blob);

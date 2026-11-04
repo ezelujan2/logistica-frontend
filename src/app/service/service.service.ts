@@ -78,6 +78,8 @@ export interface Service {
   clientNames?: string;
   driverNames?: string;
   isVatExempt?: boolean;
+  /** Al guardar, recalcular el IVA incluido con la condición actual del cliente. */
+  applyClientVatCondition?: boolean;
 }
 
 @Injectable({

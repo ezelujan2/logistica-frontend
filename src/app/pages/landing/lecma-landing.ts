@@ -1597,6 +1597,17 @@ export class LecmaLanding implements AfterViewInit, OnDestroy {
     ngAfterViewInit() {
         // rAF ensures layout is complete before we measure positions
         requestAnimationFrame(() => {
+            // Navegadores viejos y robots (buscadores, vista previa de links) pueden no tener
+            // IntersectionObserver completo: se muestra todo de una, sin animación.
+            if (typeof IntersectionObserver === 'undefined' || typeof IntersectionObserver.prototype?.observe !== 'function') {
+                document.querySelectorAll('.aos, .aos-left, .aos-right').forEach((el) => el.classList.add('is-visible'));
+                if (!this.countersStarted) {
+                    this.countersStarted = true;
+                    this.startCounters();
+                }
+                return;
+            }
+
             this.observer = new IntersectionObserver(
                 (entries) => {
                     entries.forEach(entry => {

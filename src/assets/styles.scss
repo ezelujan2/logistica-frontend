@@ -4,3 +4,102 @@
 @use 'primeicons/primeicons.css';
 @use './demo/demo.scss';
 @use './manual.scss';
+
+/* Celular: con un diálogo abierto, el gesto de bajar el dedo no recarga la página
+   (ni pasa el scroll a la pantalla de atrás). Fuera de los diálogos se puede seguir recargando. */
+.p-dialog-content,
+.p-drawer-content {
+    overscroll-behavior: contain;
+}
+
+html:has(.p-dialog-mask),
+html:has(.p-dialog-mask) body,
+body.p-overflow-hidden {
+    overscroll-behavior-y: none;
+}
+
+/* Celular: las tablas con la clase mobile-cards muestran cada fila como una tarjeta.
+   En cada celda: m-title = título de la tarjeta, m-actions = botones arriba a la derecha,
+   m-strong = dato destacado, m-end = al final, m-hide = no se muestra; data-label = prefijo. */
+@media (max-width: 767px) {
+    .p-datatable.mobile-cards {
+        .p-datatable-thead {
+            display: none;
+        }
+
+        .p-datatable-table,
+        .p-datatable-tbody {
+            display: block;
+            width: 100%;
+        }
+
+        tr.m-card {
+            position: relative;
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            gap: 0.375rem 0.875rem;
+            padding: 0.875rem 0.25rem;
+            border-bottom: 1px solid var(--p-content-border-color);
+
+            > td {
+                display: block;
+                border: 0 !important;
+                padding: 0 !important;
+                font-size: 0.8125rem;
+                color: var(--p-text-muted-color);
+            }
+
+            > td:empty,
+            > td.m-hide {
+                display: none;
+            }
+
+            > td[data-label]::before {
+                content: attr(data-label) ' ';
+                font-size: 0.75rem;
+            }
+
+            > td.m-title {
+                order: -1;
+                flex-basis: 100%;
+                padding-right: 7.5rem !important;
+                font-size: 1rem;
+                color: var(--p-text-color);
+            }
+
+            > td.m-strong {
+                font-weight: 600;
+                color: var(--p-text-color);
+            }
+
+            > td.m-end {
+                order: 99;
+            }
+
+            > td.m-actions {
+                position: absolute;
+                top: 0.375rem;
+                right: 0;
+            }
+        }
+    }
+
+    .p-paginator .p-paginator-rpp-dropdown,
+    .p-paginator .p-paginator-first,
+    .p-paginator .p-paginator-last {
+        display: none;
+    }
+}
+
+/* Celular chico: menos margen alrededor para que entre más. */
+@media (max-width: 575px) {
+    .layout-wrapper .layout-main-container {
+        padding-left: 0.75rem;
+        padding-right: 0.75rem;
+    }
+
+    .card {
+        padding: 1rem;
+    }
+}

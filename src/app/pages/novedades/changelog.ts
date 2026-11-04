@@ -25,16 +25,37 @@ export interface Release {
 
 export const RELEASES: Release[] = [
     {
+        version: '2.7.0',
+        date: '2026-11-01',
+        title: 'Fichas de clientes y choferes, y mejoras al facturar',
+        changes: [
+            { kind: 'nuevo', text: 'Cada cliente tiene su ficha (tocá su nombre en Clientes): resumen con sus números, datos, contactos y sus servicios y facturas del último año.' },
+            { kind: 'nuevo', text: 'Contactos de cada cliente: las personas a las que se les escribe (ej. quién compra, quién paga), con cargo, teléfono, email y comentarios ("Recibe las facturas"). Botones para escribirles por WhatsApp o email.' },
+            { kind: 'nuevo', text: 'Cada chofer tiene su ficha: viajes y ganancia del año, lo que falta liquidar y los adelantos sin descontar; sus vencimientos; y sus liquidaciones y adelantos.' },
+            { kind: 'nuevo', text: 'Choferes: DNI, domicilio, fecha de nacimiento, contacto de emergencia y datos para pagarle (CBU o CVU, alias, banco y titular), con botón para copiar el CBU y el alias. Avisa si el CBU parece mal escrito.' },
+            { kind: 'nuevo', text: 'Facturas: botón "Marcar pagada". Pasa a Pagado todos sus servicios en Pendiente Pago y actualiza sus reportes.' },
+            { kind: 'nuevo', text: 'Facturas de un reporte: desde Servicios, el ícono de recibo abre todas las facturas y notas de ese reporte, también las anuladas. Y botón "Limpiar filtros".' },
+            { kind: 'mejora', text: 'Facturar: si al cliente le falta el domicilio, se completa ahí mismo (o se trae de ARCA con el CUIT) y queda guardado en su ficha.' },
+            { kind: 'mejora', text: 'La factura muestra Subtotal, Alícuota de IVA y Subtotal con IVA de cada fila, como las de ARCA. La fila dice "Honorarios por servicios según REP-… OC …": el "OC" se agrega solo aunque se escriba sólo el número.' },
+            { kind: 'mejora', text: 'Formularios de cliente y chofer más claros, por secciones. En el celular, las listas de Clientes, Choferes, Autos y Facturas se ven como tarjetas, y aparece una pantalla de carga en vez de la pantalla en blanco.' },
+            { kind: 'mejora', text: 'Al generar un reporte ya no se pide la OC: se carga al facturar (o editando el reporte si llega antes).' },
+            { kind: 'correccion', text: 'Un servicio se ve como se guardó: si después cambia la condición frente al IVA del cliente, avisa y deja aplicar la nueva con un botón, en vez de cambiarla sola. Los servicios anteriores a octubre de clientes exentos quedan como se cobraron.' },
+            { kind: 'correccion', text: 'Facturas: al filtrar por cliente o por reporte aparecen también las anuladas y sus notas de crédito.' },
+            { kind: 'correccion', text: 'En el celular, deslizar hacia abajo con un formulario abierto ya no recarga la página; y en el calendario se ve la flecha del mes siguiente.' },
+            { kind: 'correccion', text: 'Facturar: elegir el cliente ya no traba la pantalla.' }
+        ]
+    },
+    {
         version: '2.6.0',
         date: '2026-10-30',
         title: 'Facturación con ARCA',
         changes: [
             { kind: 'importante', text: 'Facturar: ahora se emite directo en ARCA desde LECMA ("Emitir en ARCA"). ARCA da el número y el CAE, y se descarga la factura en PDF con el código QR. Si dos personas facturan a la vez, cada una recibe su número, sin repetir.' },
             { kind: 'nuevo', text: 'Pantalla "Facturas" en el menú: todas las facturas y notas en un lugar, con filtros por cliente, período, estado y número, CAE, OC o reporte. Cada fila se despliega con sus reportes y servicios, y el código del reporte abre su PDF. Desde ahí se factura, se descarga el PDF y se hacen notas.' },
-            { kind: 'nuevo', text: 'La factura lleva una fila por reporte: "Honorarios por servicios según Reporte REP-…" con la OC del reporte, más un texto adicional opcional. Antes de emitir se ve cómo quedan las filas.' },
+            { kind: 'nuevo', text: 'La factura lleva una fila por reporte: "Honorarios por servicios según REP-…" con la OC del reporte, más un texto adicional opcional. Antes de emitir se ve cómo quedan las filas.' },
             { kind: 'nuevo', text: 'Factura A, Factura B y Factura de Crédito Electrónica (FCE). Notas de crédito (anular la factura entera o por un importe) y de débito desde el botón de nota al lado de la factura. Al anularla, sus servicios vuelven a "A Facturar".' },
             { kind: 'nuevo', text: 'Al emitir se elige la actividad de LECMA que se informa a ARCA (por defecto 523090, gestión y logística) y el vencimiento del pago (viene a 30 días o el plazo del cliente, y se puede cambiar).' },
-            { kind: 'nuevo', text: 'Orden de compra por reporte: se carga al generar el reporte, al editarlo o al facturar. Los clientes con "Pide orden de compra" (como Sidersa) no se pueden facturar sin la OC de cada reporte.' },
+            { kind: 'nuevo', text: 'Orden de compra por reporte: se carga al facturar o, si llega antes, editando el reporte. Los clientes con "Pide orden de compra" (como Sidersa) no se pueden facturar sin la OC de cada reporte.' },
             { kind: 'nuevo', text: 'Clientes: condición frente al IVA (Responsable Inscripto, Monotributo, Exento o Consumidor Final). A los exentos y consumidores finales se les hace Factura B, con el mismo precio y el IVA incluido sin discriminar, también en el reporte.' },
             { kind: 'nuevo', text: 'Clientes: botón "Buscar en ARCA" al lado del CUIT, que trae razón social, domicilio y condición frente al IVA para revisar y guardar. Nuevo campo "Razón social": es la que sale en la factura.' },
             { kind: 'nuevo', text: 'Clientes: opción "Empresa del registro de FCE". Si el total llega al monto mínimo de ARCA, el sistema pide FCE en lugar de Factura A.' },

@@ -149,6 +149,7 @@ Si falta algún dato obligatorio (cliente, fechas, origen, destino, chofer, auto
 - **"Agregar Reembolso":** gastos que se le recobran al cliente, con foto o PDF en "Evidencias (Opcional)".
 - **"Agregar Pendiente":** tareas para recordar (por ejemplo, confirmar el horario con el pasajero). Con "Avisar día antes / mismo día" el sistema envía un recordatorio por correo.
 - **"Generar Encuesta":** crea el enlace de la encuesta de satisfacción del servicio (sección 16).
+- **IVA:** el servicio se ve como se guardó. Si después cambió la condición frente al IVA del cliente, aparece un aviso naranja con el botón "Aplicar la condición actual del cliente"; el total no cambia, sólo si el IVA va aparte o incluido. Los servicios de antes de octubre de 2026 quedan como se cobraron.
 
 ## 5. Trabajar con la lista de servicios
 
@@ -186,6 +187,7 @@ Muestra los servicios de cada día. Se puede ver por mes o por semana: se cambia
 | Lápiz | Abre el servicio para ver o editar todos sus datos |
 | Reloj | Sólo ADMIN. Muestra la historia completa del servicio: el alta, cada dato que cambió (con su valor anterior y el nuevo), cambios de chofer, gastos y estados, con fecha y usuario |
 | PDF azul | Abre el reporte al que pertenece el servicio |
+| Recibo | Abre Facturas con todas las facturas y notas de ese reporte, también las anuladas |
 | Tacho rojo | Borra el servicio (pide confirmación) |
 
 La flecha no aparece en Env. Detalles ni en A Facturar: esos pasos se hacen armando el reporte y facturando (secciones 6 y 7).
@@ -213,9 +215,8 @@ Un reporte junta los servicios de un cliente en un PDF para enviarle el detalle 
 2. Marcá con las casillas los servicios del mismo cliente que van en el reporte.
 3. Tocá "Ver Resumen": muestra la lista elegida con el subtotal, el IVA y el total.
 4. Si querés, escribí comentarios para el cliente; salen en el PDF.
-5. Si el cliente mandó orden de compra, cargala en "Orden de compra" (por ejemplo "OC3196"). Para los clientes con "Pide orden de compra" es obligatoria antes de facturar; si todavía no la tenés, se puede cargar después.
-6. Tocá "Generar Reporte". El reporte recibe su código (por ejemplo REP-0042) y se genera el PDF.
-7. Abrí el PDF con el ícono azul de cualquiera de sus servicios y enviáselo al cliente.
+5. Tocá "Generar Reporte". El reporte recibe su código (por ejemplo REP-0042) y se genera el PDF.
+6. Abrí el PDF con el ícono azul de cualquiera de sus servicios y enviáselo al cliente.
 
 Después de armarlo, los servicios a facturar pasan a A Facturar y los informales a Pendiente Pago.
 
@@ -240,11 +241,11 @@ La factura se emite en ARCA desde el sistema: ARCA da el número y el código de
 
 En el menú, "Facturas" muestra todas las facturas y notas: las emitidas desde el sistema, las registradas a mano y las históricas (a título personal, de antes de octubre de 2026).
 
-- Filtros: buscar por número, CAE, orden de compra o código de reporte; cliente; período; estado (emitida sin cobrar, pagada, anulada); facturas o notas; de LECMA o históricas.
+- Filtros: buscar por número, CAE, orden de compra o código de reporte; cliente; período; estado (emitida sin cobrar, pagada, anulada); facturas o notas; de LECMA o históricas. Por cliente o por reporte aparecen también las anuladas y sus notas. "Limpiar filtros" vuelve a mostrar todo.
 - Arriba se ve cuántos comprobantes hay y el total facturado del filtro.
 - La flecha de cada fila despliega sus reportes con sus servicios. El código del reporte abre su PDF. Una factura figura "Pagada" cuando todos sus servicios están cobrados.
 - Las facturas anuladas muestran con qué nota se anularon y qué servicios tenían.
-- Botones de cada fila: descargar el PDF (las emitidas desde el sistema y las registradas a mano con el PDF adjunto) y hacer una nota de crédito o débito (sólo las emitidas desde el sistema).
+- Botones de cada fila: descargar el PDF (las emitidas desde el sistema y las registradas a mano con el PDF adjunto), "Marcar pagada" (sección 8) y hacer una nota de crédito o débito (sólo las emitidas desde el sistema).
 - "Nueva factura" abre el mismo cuadro que "Facturar" en Servicios › A Facturar.
 
 ### Antes de facturar: los datos del cliente
@@ -271,7 +272,7 @@ El sistema no deja emitir una letra que no corresponda y explica por qué. Los s
 ### Emitir una factura en ARCA
 
 1. Tocá "Nueva factura" en Facturas, o "Facturar" en Servicios › A Facturar.
-2. En "Cliente" elegí el cliente. Aparecen sus reportes listos para facturar, con código, cantidad de viajes y total. Si en A Facturar seleccionaste servicios de un solo cliente, ya viene elegido.
+2. En "Cliente" elegí el cliente. Aparecen sus reportes listos para facturar, con código, cantidad de viajes y total. Si en A Facturar seleccionaste servicios de un solo cliente, ya viene elegido. Si le falta el domicilio, aparece un recuadro para completarlo ahí (o traerlo de ARCA con el CUIT); al guardarlo queda en su ficha.
 3. Dejá elegido "Emitir en ARCA" y completá:
    - "Comprobante": Factura A, Factura B o FCE. Se propone el que corresponde al cliente.
    - "Fecha de emisión": hoy, salvo que haga falta otra.
@@ -279,12 +280,12 @@ El sistema no deja emitir una letra que no corresponda y explica por qué. Los s
    - "Vencimiento del pago": viene a 30 días (o el plazo del cliente). Se puede cambiar.
    - "Texto adicional" (opcional): se agrega a cada fila, por ejemplo "Traslados de personal octubre".
 4. Marcá los reportes que incluye esa factura y, en la columna "OC del cliente", la orden de compra de cada uno si la tiene (con asterisco: obligatoria).
-5. Revisá "Así salen las filas de la factura": una fila por reporte, "Honorarios por servicios según Reporte REP-… OC…".
+5. Revisá "Así salen las filas de la factura": una fila por reporte, "Honorarios por servicios según REP-… OC …".
 6. Tocá "Emitir en ARCA" y confirmá.
 
 Aparecen los reportes en "Generado" y también los que quedaron en "A Facturar". Si un reporte tiene servicios ya facturados, se factura sólo lo que falta.
 
-La factura queda con su número (por ejemplo "FA 0002-00000015") y se descarga el PDF para mandarle al cliente. Los servicios pasan a Pendiente Pago. Los servicios cancelados de esos reportes no se facturan ni suman al total.
+La factura queda con su número (por ejemplo "FA 0002-00000015") y se descarga el PDF para mandarle al cliente. Cada fila muestra el subtotal, la alícuota de IVA y el subtotal con IVA (en la Factura B, sólo el subtotal con el IVA incluido). Los servicios pasan a Pendiente Pago. Los servicios cancelados de esos reportes no se facturan ni suman al total.
 
 Avisos que pueden aparecer en el cuadro:
 
@@ -346,6 +347,10 @@ Cuando el cliente paga, se marca como Pagado el reporte entero o cada servicio p
 2. En la cabecera del reporte cobrado, tocá "Pagado".
 
 Todos sus servicios pasan a Pagado, salvo los cancelados.
+
+### Cobro de una factura entera
+
+En Facturas, tocá el botón verde "Marcar pagada" de la factura cobrada y confirmá. Todos sus servicios en Pendiente Pago pasan a Pagado y sus reportes se actualizan. Si algún servicio está en otro estado, no cambia nada y avisa cuál: revisalo primero.
 
 ### Cobro de un servicio suelto
 
@@ -455,7 +460,7 @@ Si el total da negativo (el chofer recibió más adelantos que lo que le corresp
 
 ## 11. Clientes, choferes, autos y tarifas
 
-Estas pantallas guardan los datos que se usan al cargar servicios. Todas funcionan igual: "Nuevo" para dar de alta, el lápiz para editar, "Guardar" para confirmar.
+Estas pantallas guardan los datos que se usan al cargar servicios. "Nuevo" da de alta. En Clientes y Choferes, tocar el nombre abre su ficha, donde se ven y editan sus datos; en Autos y Tarifas se edita con el lápiz.
 
 ### Clientes
 
@@ -474,13 +479,25 @@ Estas pantallas guardan los datos que se usan al cargar servicios. Todas funcion
 | Días normales hasta facturar / hasta que paga | Con estos plazos el sistema detecta servicios estancados o cobros vencidos |
 | Notas | Información interna |
 
-El ícono "Ver estadísticas" abre el detalle del cliente (sólo ADMIN y DIRECTOR).
+La ficha del cliente tiene cuatro pestañas:
+
+- **Resumen** (sólo ADMIN y DIRECTOR): sus números, como en Estadísticas.
+- **Datos**: los campos de la tabla; "Guardar" para confirmar.
+- **Contactos**: las personas de la empresa a las que se les escribe (quién compra, quién paga), con cargo, teléfono, email y comentarios (por ejemplo "Recibe las facturas"). Botones para escribirles por WhatsApp o email.
+- **Servicios y facturas**: sus servicios del último año y todas sus facturas y notas, con el PDF.
 
 > **En desarrollo:** se le pidió al encargado de sistemas que la pantalla Clientes muestre la categoría de cada cliente y sume un tracker de referidos.
 
 ### Choferes
 
-Nombre, teléfono, email, CUIT y número de licencia. La fecha de vencimiento del "Carnet de conducir" crea el vencimiento correspondiente (sección 12). En "Calendario de Google" se pega el ID de su calendario propio, para que vea sus servicios en el celular (sección 13).
+Datos personales (nombre, DNI, CUIT, fecha de nacimiento, domicilio), contacto (teléfono, email y contacto de emergencia), número de licencia y datos para pagarle (CBU o CVU, alias, banco y titular si no es el chofer). Si el CBU parece mal escrito, avisa. La fecha de vencimiento del carnet crea el vencimiento correspondiente (sección 12). En "Calendario de Google" se pega el ID de su calendario propio, para que vea sus servicios en el celular (sección 13).
+
+La ficha del chofer tiene cuatro pestañas:
+
+- **Resumen**: viajes, km y ganancia del año, lo que falta liquidar, adelantos sin descontar y los clientes con los que más viaja.
+- **Datos**: los campos de arriba; "Guardar" para confirmar.
+- **Documentos**: sus vencimientos y las renovaciones.
+- **Liquidaciones y adelantos**: sus datos de pago, con botones para copiar el CBU y el alias, y sus liquidaciones y adelantos.
 
 ### Autos
 

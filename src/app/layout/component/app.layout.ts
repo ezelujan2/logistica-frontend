@@ -72,9 +72,19 @@ export class AppLayout {
 
     get pullOpacity(): number { return Math.min(this.pullDistance / this.PTR_THRESHOLD, 1); }
 
+    /**
+     * Sólo arranca con la página arriba de todo y fuera de diálogos y desplegables.
+     * Tampoco si el dedo está sobre algo con scroll propio (una lista, una tabla) que no está arriba.
+     */
     onPtrTouchStart(e: TouchEvent) {
-        const el = e.currentTarget as HTMLElement;
-        if (el.scrollTop > 0) return;
+        this._ptrActive = false;
+        const page = document.scrollingElement ?? document.documentElement;
+        if (page.scrollTop > 0 || document.body.classList.contains('p-overflow-hidden')) return;
+        const target = e.target as HTMLElement | null;
+        if (target?.closest('.p-dialog, .p-drawer, .p-overlay-mask, .p-select-overlay, .p-datepicker-panel, .p-popover')) return;
+        for (let el = target; el && el !== e.currentTarget; el = el.parentElement) {
+            if (el.scrollTop > 0) return;
+        }
         this._ptrStartY = e.touches[0].clientY;
         this._ptrActive = true;
     }

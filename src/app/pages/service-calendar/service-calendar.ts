@@ -29,15 +29,15 @@ interface CalendarDay {
         <div class="cal-wrapper">
 
             <!-- ── HEADER ── -->
-            <div class="flex items-center justify-between px-3 py-3 border-b border-surface-200 dark:border-surface-700 gap-2">
-                <div class="flex items-center gap-1 min-w-0">
+            <div class="flex flex-wrap items-center justify-between px-3 py-3 border-b border-surface-200 dark:border-surface-700 gap-2">
+                <div class="flex items-center justify-between sm:justify-start gap-1 min-w-0 w-full sm:w-auto">
                     <button pButton icon="pi pi-chevron-left" [rounded]="true" [text]="true" severity="secondary" size="small" (click)="previousPeriod()"></button>
                     <span class="text-sm font-bold capitalize px-1 truncate" style="min-width:130px;text-align:center;">
                         {{ getFormattedHeader() }}
                     </span>
                     <button pButton icon="pi pi-chevron-right" [rounded]="true" [text]="true" severity="secondary" size="small" (click)="nextPeriod()"></button>
                 </div>
-                <div class="flex gap-2 items-center flex-shrink-0">
+                <div class="flex gap-2 items-center justify-center flex-shrink-0 w-full sm:w-auto">
                     <p-selectButton [options]="viewOptions" [(ngModel)]="viewMode" optionLabel="label" optionValue="value" (onChange)="generateCalendar()"></p-selectButton>
                     <button pButton label="Hoy" size="small" [outlined]="true" (click)="goToToday()"></button>
                 </div>

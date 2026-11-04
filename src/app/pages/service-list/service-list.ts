@@ -35,12 +35,12 @@ import { TooltipModule } from 'primeng/tooltip';
 import { PanelModule } from 'primeng/panel';
 import { DividerModule } from 'primeng/divider';
 import { ToggleButtonModule } from 'primeng/togglebutton';
-import { ActivatedRoute } from '@angular/router';
+import { ActivatedRoute, RouterModule } from '@angular/router';
 import { environment } from '../../../environments/environment';
 import { ServiceCalendar } from '../service-calendar/service-calendar';
 import { AuthService } from '../../service/auth.service';
 import { AgendaService, AgendaEntry, AvailabilityWarning } from '../../service/agenda.service';
-import { EXPENSE_TYPE_LABELS, GROUP_STATUS_LABELS, SERVICE_STATUS_LABELS, SERVICE_TYPE_LABELS, labelOf, optionsOf } from '../../service/labels';
+import { EXPENSE_TYPE_LABELS, GROUP_STATUS_LABELS, IVA_CONDITION_LABELS, SERVICE_STATUS_LABELS, SERVICE_TYPE_LABELS, labelOf, optionsOf } from '../../service/labels';
 
 @Component({
     selector: 'app-service-list',
@@ -401,6 +401,18 @@ import { EXPENSE_TYPE_LABELS, GROUP_STATUS_LABELS, SERVICE_STATUS_LABELS, SERVIC
                                       tooltipPosition="left">
                             </p-button>
 
+                            <!-- Facturas y notas del reporte (también las anuladas) -->
+                            <p-button *ngIf="service.serviceGroup?.code"
+                                      icon="pi pi-receipt"
+                                      [rounded]="true"
+                                      [text]="true"
+                                      severity="secondary"
+                                      [routerLink]="['/app/invoices']"
+                                      [queryParams]="{ q: service.serviceGroup.code }"
+                                      pTooltip="Facturas y notas del reporte"
+                                      tooltipPosition="left">
+                            </p-button>
+
                             <p-button *ngIf="getNextStatus(service)"
                                       icon="pi pi-arrow-right"
                                       [rounded]="true"
@@ -578,6 +590,10 @@ import { EXPENSE_TYPE_LABELS, GROUP_STATUS_LABELS, SERVICE_STATUS_LABELS, SERVIC
                                     <div class="flex flex-col gap-2">
                                         <label>Descuento (%)</label>
                                         <p-inputNumber [(ngModel)]="service.discountPercentage" suffix="%" styleClass="w-full"></p-inputNumber>
+                                    </div>
+                                    <div *ngIf="clientVatChanged" class="flex flex-col gap-2 p-3 rounded-lg border border-orange-200 bg-orange-50 dark:bg-orange-900/20 dark:border-orange-800 text-sm text-orange-800 dark:text-orange-200">
+                                        <span><i class="pi pi-exclamation-triangle mr-1"></i>Este servicio se guardó con <b>{{ service.isVatExempt ? 'IVA incluido sin discriminar' : 'IVA aparte' }}</b>, pero hoy el cliente figura como <b>{{ currentClientIvaLabel }}</b>. Se muestra como se guardó.</span>
+                                        <p-button label="Aplicar la condición actual del cliente" icon="pi pi-refresh" size="small" [outlined]="true" severity="warn" (click)="applyClientVatCondition()" />
                                     </div>
                                     <div *ngIf="vatIncludedClient" class="flex items-start gap-2 pt-2 text-sm text-blue-700 dark:text-blue-300">
                                         <i class="pi pi-lock mt-1"></i>
@@ -1001,11 +1017,6 @@ import { EXPENSE_TYPE_LABELS, GROUP_STATUS_LABELS, SERVICE_STATUS_LABELS, SERVIC
                              * El IVA se calcula automáticamente según el tipo de facturación de cada servicio.
                         </div>
 
-                        <div class="flex flex-col gap-2 mt-2">
-                            <label class="font-bold text-sm">OC del cliente <span *ngIf="!summaryClientRequiresPo" class="font-normal">(Opcional)</span><span *ngIf="summaryClientRequiresPo" class="text-orange-600"> (este cliente la pide para facturar)</span></label>
-                            <input pInputText [(ngModel)]="reportPurchaseOrder" maxlength="60" placeholder="Ej: OC3196" class="w-full" />
-                        </div>
-
                         <!-- Add Notes Field -->
                         <div class="flex flex-col gap-2 mt-2">
                             <label class="font-bold text-sm">Comentarios / Observaciones (Opcional)</label>
@@ -1043,8 +1054,8 @@ import { EXPENSE_TYPE_LABELS, GROUP_STATUS_LABELS, SERVICE_STATUS_LABELS, SERVIC
                 <div class="flex flex-col gap-4">
                     <div class="flex flex-col gap-2">
                         <label for="groupPurchaseOrder">OC del cliente <span class="text-muted-color font-normal">(opcional)</span></label>
-                        <input pInputText id="groupPurchaseOrder" [(ngModel)]="editingGroupPurchaseOrder" maxlength="60" placeholder="Ej: OC3196" class="w-full" />
-                        <small class="text-muted-color">Sale en la fila de la factura: "Honorarios por servicios según Reporte … OC3196".</small>
+                        <input pInputText id="groupPurchaseOrder" [(ngModel)]="editingGroupPurchaseOrder" maxlength="60" placeholder="Ej: 3196" class="w-full" />
+                        <small class="text-muted-color">Sale en la fila de la factura como "… según … OC 3196" (el "OC" se agrega solo).</small>
                     </div>
                     <div class="flex flex-col gap-2">
                         <label for="groupNotes">Comentarios / Observaciones</label>
@@ -1176,7 +1187,7 @@ import { EXPENSE_TYPE_LABELS, GROUP_STATUS_LABELS, SERVICE_STATUS_LABELS, SERVIC
             <app-invoice-note-dialog [invoice]="noteInvoice" (closed)="noteInvoice = null" (emitted)="loadAllData()" />
     `,
     standalone: true,
-    imports: [CommonModule, TableModule, ButtonModule, InputTextModule, IconFieldModule, InputIconModule, TagModule, DialogModule, FormsModule, SelectModule, MultiSelectModule, InputNumberModule, TextareaModule, DatePickerModule, ToastModule, PanelModule, DividerModule, CheckboxModule, TooltipModule, ToggleButtonModule, ConfirmDialogModule, ServiceCalendar, InvoiceFields, InvoiceBillingDialog, InvoiceNoteDialog],
+    imports: [CommonModule, RouterModule, TableModule, ButtonModule, InputTextModule, IconFieldModule, InputIconModule, TagModule, DialogModule, FormsModule, SelectModule, MultiSelectModule, InputNumberModule, TextareaModule, DatePickerModule, ToastModule, PanelModule, DividerModule, CheckboxModule, TooltipModule, ToggleButtonModule, ConfirmDialogModule, ServiceCalendar, InvoiceFields, InvoiceBillingDialog, InvoiceNoteDialog],
 
     providers: [MessageService, ConfirmationService, ServiceService, ClientService, DriverService, VehicleService, ConfigurationService]
 })
@@ -1898,6 +1909,7 @@ export class ServiceList implements OnInit {
                 customReminderAt: t.customReminderAt ? new Date(t.customReminderAt) : null
             }))
         };
+        this.savedVatInputs = { clientId: this.service.clientIds?.[0], billingType: this.service.billingType, startDate: new Date(this.service.startDate).getTime() };
         this.availabilityWarnings = [];
         this.refreshAvailability();
         this.serviceDialog = true;
@@ -2335,10 +2347,42 @@ export class ServiceList implements OnInit {
      * se marca a mano; el backend hace la misma cuenta.
      */
     get vatIncludedClient(): boolean {
+        // Igual que el backend: un servicio guardado se ve como se guardó, salvo que cambie lo que define el IVA.
+        if (this.service?.id && !this.vatInputsChanged) return !!this.service.isVatExempt;
+        return this.clientVatIncluded;
+    }
+
+    /** Lo que correspondería hoy según la condición actual del cliente (rige desde el 1/10/2026). */
+    private get clientVatIncluded(): boolean {
         const id = this.service?.clientIds?.[0];
         const client: any = id ? this.clientsList.find((c) => c.id === id) : null;
         const formal = this.service?.billingType === 'OFFICIAL_A' || this.service?.billingType === 'MONOTRIBUTO';
-        return formal && (client?.iva_condition === 'EXENTO' || client?.iva_condition === 'CONSUMIDOR_FINAL');
+        const fromCutoff = !this.service?.startDate || new Date(this.service.startDate) >= new Date('2026-10-01T03:00:00Z');
+        return formal && fromCutoff && (client?.iva_condition === 'EXENTO' || client?.iva_condition === 'CONSUMIDOR_FINAL');
+    }
+
+    /** Cliente, facturación y fecha con que se abrió el servicio: si cambian, el IVA se recalcula. */
+    private savedVatInputs: { clientId: number | undefined; billingType: string | undefined; startDate: number } | null = null;
+
+    private get vatInputsChanged(): boolean {
+        const saved = this.savedVatInputs;
+        if (!saved || this.service?.applyClientVatCondition) return true;
+        return saved.clientId !== this.service?.clientIds?.[0] || saved.billingType !== this.service?.billingType || saved.startDate !== new Date(this.service?.startDate).getTime();
+    }
+
+    /** El servicio se guardó con una condición de IVA y el cliente hoy tiene otra. */
+    get clientVatChanged(): boolean {
+        return !!this.service?.id && !this.vatInputsChanged && !this.legacyNoVat && !!this.service.isVatExempt !== this.clientVatIncluded;
+    }
+
+    applyClientVatCondition() {
+        this.service.applyClientVatCondition = true;
+    }
+
+    get currentClientIvaLabel(): string {
+        const id = this.service?.clientIds?.[0];
+        const client: any = id ? this.clientsList.find((c) => c.id === id) : null;
+        return client?.iva_condition ? labelOf(IVA_CONDITION_LABELS, client.iva_condition) : 'sin condición cargada';
     }
 
     get firstClientIvaLabel(): string {
@@ -2347,10 +2391,13 @@ export class ServiceList implements OnInit {
         return client?.iva_condition === 'EXENTO' ? 'exento' : 'consumidor final';
     }
 
-    /** Exentos de antes de octubre 2026: se guardaron sin IVA y así quedan. */
+    /**
+     * Exentos de antes de octubre 2026 (como Lepa): se guardaron con facturación con IVA pero IVA en cero, y así quedan.
+     * Igual que el backend: se mira lo guardado, no la marca de exento (en los viejos no siempre está).
+     */
     get legacyNoVat(): boolean {
         const s: any = this.service;
-        return !!s?.id && !!s.isVatExempt && Number(s.tax_amount) === 0 && Number(s.net_amount) > 0;
+        return !!s?.id && (s.billing_type === 'OFFICIAL_A' || s.billing_type === 'MONOTRIBUTO') && Number(s.tax_amount) === 0 && Number(s.net_amount) > 0;
     }
 
     get calculateClientTax(): number {
@@ -2389,13 +2436,6 @@ export class ServiceList implements OnInit {
     summaryDialog: boolean = false;
     summaryConfig: any = { subtotal: 0, tax: 0, total: 0 };
     reportNotes: string = '';
-    reportPurchaseOrder: string = '';
-
-    /** Si el cliente de los servicios seleccionados pide orden de compra. */
-    get summaryClientRequiresPo(): boolean {
-        const id = this.selectedServices[0]?.clientIds?.[0];
-        return !!(id && (this.clientsList.find((c) => c.id === id) as any)?.requires_purchase_order);
-    }
 
     // Group Notes Editing State
     groupNotesDialogVisible: boolean = false;
@@ -2431,7 +2471,6 @@ export class ServiceList implements OnInit {
     openSummary() {
         if (!this.selectedServices.length) return;
         this.reportNotes = '';
-        this.reportPurchaseOrder = '';
         this.calculateSummaryTotal();
         this.summaryDialog = true;
     }
@@ -2642,13 +2681,12 @@ export class ServiceList implements OnInit {
     private async executeGenerateReport(currentClientId: number) {
         try {
             this.loading = true;
-            await this.serviceService.createGroup(this.selectedServices.map(s => s.id!), currentClientId, this.reportNotes, this.reportPurchaseOrder);
+            await this.serviceService.createGroup(this.selectedServices.map(s => s.id!), currentClientId, this.reportNotes);
 
             this.messageService.add({ severity: 'success', summary: 'Éxito', detail: 'Reporte generado y servicios agrupados.' });
             this.summaryDialog = false;
             this.selectedServices = [];
             this.reportNotes = ''; // Reset notes
-            this.reportPurchaseOrder = '';
             this.loadAllData(); // Refresh to move them to next status
         } catch (error: any) {
             console.error(error);

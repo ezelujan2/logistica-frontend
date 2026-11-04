@@ -28,8 +28,34 @@ export interface Client {
     default_km_price?: number;
     default_waiting_hour_price?: number;
     default_extra_km_price?: number;
+    contacts?: ClientContact[];
     createdAt?: Date;
     updatedAt?: Date;
+}
+
+/** Una persona de la empresa cliente (ej. Lepa → Ignacio, de compras). */
+export interface ClientContact {
+    id?: number;
+    name: string;
+    role?: string | null;
+    phone?: string | null;
+    email?: string | null;
+    /** Texto libre, ej. "Recibe las facturas". */
+    comments?: string | null;
+}
+
+/** Link de WhatsApp para un teléfono argentino: 0341 15-555-1234 → 5493415551234. */
+export function whatsappLink(phone: string | null | undefined): string | null {
+    let digits = (phone ?? '').replace(/\D/g, '');
+    if (!digits) return null;
+    if (digits.startsWith('00')) digits = digits.slice(2);
+    if (digits.startsWith('54')) digits = digits.slice(2);
+    if (digits.startsWith('9')) digits = digits.slice(1);
+    if (digits.startsWith('0')) digits = digits.slice(1);
+    // El 15 de los celulares va después del código de área (2 a 4 dígitos); con el 9 delante ya no hace falta.
+    const fifteen = digits.length === 12 ? digits.match(/^(\d{2,4}?)15(\d{6,8})$/) : null;
+    if (fifteen && fifteen[1].length + fifteen[2].length === 10) digits = fifteen[1] + fifteen[2];
+    return digits.length === 10 ? `https://wa.me/549${digits}` : null;
 }
 
 @Injectable({
@@ -44,6 +70,10 @@ export class ClientService {
         return await firstValueFrom(this.http.get<Client[]>(this.apiUrl));
     }
 
+    async getClient(id: number): Promise<Client> {
+        return await firstValueFrom(this.http.get<Client>(`${this.apiUrl}/${id}`));
+    }
+
     async createClient(client: Client): Promise<Client> {
         return await firstValueFrom(this.http.post<Client>(this.apiUrl, client));
     }
@@ -54,5 +84,15 @@ export class ClientService {
 
     async deleteClient(id: number): Promise<void> {
         await firstValueFrom(this.http.delete(`${this.apiUrl}/${id}`));
+    }
+
+    async saveContact(clientId: number, contact: ClientContact): Promise<ClientContact> {
+        return contact.id
+            ? await firstValueFrom(this.http.put<ClientContact>(`${this.apiUrl}/${clientId}/contacts/${contact.id}`, contact))
+            : await firstValueFrom(this.http.post<ClientContact>(`${this.apiUrl}/${clientId}/contacts`, contact));
+    }
+
+    async deleteContact(clientId: number, contactId: number): Promise<void> {
+        await firstValueFrom(this.http.delete(`${this.apiUrl}/${clientId}/contacts/${contactId}`));
     }
 }

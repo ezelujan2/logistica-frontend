@@ -1,5 +1,5 @@
 import { Component, OnInit } from '@angular/core';
-import { ActivatedRoute } from '@angular/router';
+import { ActivatedRoute, Router, RouterModule } from '@angular/router';
 import { CommonModule } from '@angular/common';
 import { TableModule } from 'primeng/table';
 import { ButtonModule } from 'primeng/button';
@@ -7,12 +7,12 @@ import { InputTextModule } from 'primeng/inputtext';
 import { IconFieldModule } from 'primeng/iconfield';
 import { InputIconModule } from 'primeng/inputicon';
 import { DialogModule } from 'primeng/dialog';
-import { FormsModule } from '@angular/forms';
-import { DatePickerModule } from 'primeng/datepicker';
 import { TagModule } from 'primeng/tag';
+import { TooltipModule } from 'primeng/tooltip';
 import { Driver, DriverService } from '../../service/driver.service';
 import { ToastModule } from 'primeng/toast';
 import { MessageService } from 'primeng/api';
+import { DriverForm } from './driver-form';
 
 @Component({
     selector: 'app-driver-list',
@@ -20,15 +20,15 @@ import { MessageService } from 'primeng/api';
         <div class="card">
             <p-toast></p-toast>
             <div class="font-semibold text-xl mb-4">Choferes</div>
-            <p-table #dt1 [value]="drivers" dataKey="id" [rows]="10" [rowsPerPageOptions]="[10, 25, 50]" [loading]="loading" [paginator]="true" [globalFilterFields]="['name', 'phone', 'email']">
+            <p-table #dt1 [value]="drivers" dataKey="id" [rows]="10" [rowsPerPageOptions]="[10, 25, 50]" [loading]="loading" [paginator]="true" [globalFilterFields]="['name', 'phone', 'email']" styleClass="mobile-cards">
                 <ng-template pTemplate="caption">
-                    <div class="flex justify-between items-center">
-                        <span class="text-xl font-bold">Listado de Choferes</span>
+                    <div class="flex flex-col sm:flex-row gap-3 sm:justify-between sm:items-center">
+                        <span class="hidden sm:inline text-xl font-bold">Listado de Choferes</span>
                         <div class="flex gap-2">
                             <p-button label="Nuevo" icon="pi pi-plus" (click)="openNew()" />
-                            <p-iconfield>
+                            <p-iconfield class="flex-1 sm:flex-none">
                                 <p-inputicon styleClass="pi pi-search" />
-                                <input pInputText type="text" (input)="dt1.filterGlobal($any($event.target).value, 'contains')" placeholder="Buscar..." />
+                                <input pInputText type="text" (input)="dt1.filterGlobal($any($event.target).value, 'contains')" placeholder="Buscar..." class="w-full" />
                             </p-iconfield>
                         </div>
                     </div>
@@ -44,76 +44,36 @@ import { MessageService } from 'primeng/api';
                     </tr>
                 </ng-template>
                 <ng-template pTemplate="body" let-driver>
-                    <tr>
-                        <td>{{ driver.name }}</td>
+                    <tr class="m-card">
+                        <td class="m-title"><a class="font-medium text-primary cursor-pointer hover:underline" [routerLink]="['/app/drivers', driver.id]">{{ driver.name }}</a></td>
                         <td>{{ driver.phone }}</td>
-                        <td>{{ driver.email }}</td>
-                        <td>{{ driver.license_number }}</td>
-                        <td>
+                        <td class="break-all">{{ driver.email }}</td>
+                        <td [attr.data-label]="driver.license_number ? 'Licencia' : null">{{ driver.license_number }}</td>
+                        <td class="m-end">
                             <p-tag *ngIf="vencimientoStatus(driver) as st" [value]="st.label" [severity]="st.severity"></p-tag>
                         </td>
-                        <td>
-                            <p-button icon="pi pi-pencil" [rounded]="true" [text]="true" (click)="editDriver(driver)" />
-                            <p-button icon="pi pi-trash" [rounded]="true" [text]="true" severity="danger" (click)="deleteDriver(driver)" />
+                        <td class="m-actions whitespace-nowrap">
+                            <p-button icon="pi pi-id-card" [rounded]="true" [text]="true" pTooltip="Abrir la ficha" [routerLink]="['/app/drivers', driver.id]" />
+                            <p-button icon="pi pi-trash" [rounded]="true" [text]="true" severity="danger" pTooltip="Eliminar" (click)="deleteDriver(driver)" />
                         </td>
                     </tr>
                 </ng-template>
             </p-table>
 
-            <p-dialog [(visible)]="driverDialog" [style]="{ width: '480px' }" header="Detalles del Chofer" [modal]="true" styleClass="p-fluid">
+            <p-dialog [(visible)]="driverDialog" [style]="{ width: '760px' }" [breakpoints]="{ '800px': '95vw' }" header="Nuevo chofer" [modal]="true" [draggable]="false">
                 <ng-template pTemplate="content">
-                    <div class="flex flex-col gap-4">
-                        <div class="flex flex-col gap-2">
-                            <label for="name">Nombre</label>
-                            <input type="text" pInputText id="name" [(ngModel)]="driver.name" required autofocus />
-                            <small class="p-error" *ngIf="submitted && !driver.name">El nombre es obligatorio.</small>
-                        </div>
-                        <div class="grid grid-cols-12 gap-4">
-                            <div class="col-span-12 md:col-span-6 flex flex-col gap-2">
-                                <label for="phone">Teléfono</label>
-                                <input type="text" pInputText id="phone" [(ngModel)]="driver.phone" />
-                            </div>
-                            <div class="col-span-12 md:col-span-6 flex flex-col gap-2">
-                                <label for="email">Email</label>
-                                <input type="text" pInputText id="email" [(ngModel)]="driver.email" />
-                            </div>
-                        </div>
-                        <div class="grid grid-cols-12 gap-4">
-                            <div class="col-span-12 md:col-span-6 flex flex-col gap-2">
-                                <label for="license">Número de Licencia</label>
-                                <input type="text" pInputText id="license" [(ngModel)]="driver.license_number" />
-                            </div>
-                             <div class="col-span-12 md:col-span-6 flex flex-col gap-2">
-                                <label for="cuit">CUIT</label>
-                                <input type="text" pInputText id="cuit" [(ngModel)]="driver.cuit" />
-                            </div>
-                        </div>
-
-                        <div class="flex flex-col gap-2">
-                            <label for="googleCalendar">Calendario de Google <span class="text-muted-color font-normal">(opcional)</span></label>
-                            <input type="text" pInputText id="googleCalendar" [(ngModel)]="driver.google_calendar_id" placeholder="…@group.calendar.google.com" />
-                            <small class="text-muted-color">Pegá el ID de su calendario y el sistema le copia ahí sus servicios (con detalles y notas) y sus días no disponibles. Ver el manual, sección 13.</small>
-                        </div>
-
-                        <div class="pt-2 mt-2 border-t border-surface-200 dark:border-surface-700">
-                            <div class="text-sm font-semibold text-muted-color mb-3">Vencimientos</div>
-                            <div class="flex flex-col gap-2">
-                                <label for="carnet">Carnet de conducir</label>
-                                <p-datepicker inputId="carnet" [(ngModel)]="driver.carnetVencimiento" dateFormat="dd/mm/yy" [showIcon]="true" [showButtonBar]="true" appendTo="body" styleClass="w-full"></p-datepicker>
-                            </div>
-                        </div>
-                    </div>
+                    <app-driver-form [driver]="driver" [submitted]="submitted" />
                 </ng-template>
 
                 <ng-template pTemplate="footer">
-                    <p-button label="Cancelar" icon="pi pi-times" [text]="true" (click)="hideDialog()" />
-                    <p-button label="Guardar" icon="pi pi-check" [text]="true" (click)="saveDriver()" />
+                    <p-button label="Cancelar" [text]="true" severity="secondary" (click)="hideDialog()" />
+                    <p-button label="Crear chofer" icon="pi pi-check" [loading]="saving" (click)="saveDriver()" />
                 </ng-template>
             </p-dialog>
         </div>
     `,
     standalone: true,
-    imports: [CommonModule, TableModule, ButtonModule, InputTextModule, IconFieldModule, InputIconModule, DialogModule, FormsModule, DatePickerModule, TagModule, ToastModule],
+    imports: [CommonModule, RouterModule, TableModule, ButtonModule, InputTextModule, IconFieldModule, InputIconModule, DialogModule, TagModule, ToastModule, TooltipModule, DriverForm],
     providers: [MessageService]
 })
 export class DriverList implements OnInit {
@@ -122,20 +82,18 @@ export class DriverList implements OnInit {
     loading: boolean = true;
     driverDialog: boolean = false;
     submitted: boolean = false;
+    saving = false;
 
-    constructor(private driverService: DriverService, private messageService: MessageService, private route: ActivatedRoute) {}
+    constructor(private driverService: DriverService, private messageService: MessageService, private route: ActivatedRoute, private router: Router) {}
 
     async ngOnInit() {
+        // Links viejos (?action=edit&id=…) van a la ficha.
+        const params = this.route.snapshot.queryParams;
+        if (params['action'] === 'edit' && params['id']) {
+            this.router.navigate(['/app/drivers', Number(params['id'])], { queryParams: { tab: 'datos' }, replaceUrl: true });
+            return;
+        }
         await this.loadDrivers();
-        this.route.queryParams.subscribe(params => {
-            if (params['action'] === 'edit' && params['id']) {
-                const id = Number(params['id']);
-                const driver = this.drivers.find(d => d.id === id);
-                if (driver) {
-                    this.editDriver(driver);
-                }
-            }
-        });
     }
 
     async loadDrivers() {
@@ -153,14 +111,6 @@ export class DriverList implements OnInit {
     openNew() {
         this.driver = { name: '' };
         this.submitted = false;
-        this.driverDialog = true;
-    }
-
-    editDriver(driver: Driver) {
-        this.driver = {
-            ...driver,
-            carnetVencimiento: driver.carnetVencimiento ? new Date(driver.carnetVencimiento) : null
-        };
         this.driverDialog = true;
     }
 
@@ -190,24 +140,19 @@ export class DriverList implements OnInit {
         this.submitted = false;
     }
 
+    /** Crea el chofer y abre su ficha. */
     async saveDriver() {
         this.submitted = true;
-
-        if (this.driver.name?.trim()) {
-            try {
-                if (this.driver.id) {
-                    await this.driverService.updateDriver(this.driver.id, this.driver);
-                    this.messageService.add({ severity: 'success', summary: 'Éxito', detail: 'Chofer actualizado', life: 3000 });
-                } else {
-                    await this.driverService.createDriver(this.driver);
-                    this.messageService.add({ severity: 'success', summary: 'Éxito', detail: 'Chofer creado', life: 3000 });
-                }
-                this.driverDialog = false;
-                this.driver = { name: '' };
-                this.loadDrivers();
-            } catch (error) {
-                 this.messageService.add({ severity: 'error', summary: 'Error', detail: 'No se pudo guardar el chofer' });
-            }
+        if (!this.driver.name?.trim()) return;
+        this.saving = true;
+        try {
+            const created = await this.driverService.createDriver(this.driver);
+            this.driverDialog = false;
+            this.router.navigate(['/app/drivers', created.id]);
+        } catch (error) {
+            this.messageService.add({ severity: 'error', summary: 'Error', detail: 'No se pudo guardar el chofer' });
+        } finally {
+            this.saving = false;
         }
     }
 }

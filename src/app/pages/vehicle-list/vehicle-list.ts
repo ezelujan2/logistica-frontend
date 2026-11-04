@@ -24,15 +24,15 @@ import { AuthService } from '../../service/auth.service';
         <div class="card">
             <p-toast></p-toast>
             <div class="font-semibold text-xl mb-4">Autos</div>
-            <p-table #dt1 [value]="vehicles" dataKey="id" [rows]="10" [rowsPerPageOptions]="[10, 25, 50]" [loading]="loading" [paginator]="true" [globalFilterFields]="['plate', 'model']">
+            <p-table #dt1 [value]="vehicles" dataKey="id" [rows]="10" [rowsPerPageOptions]="[10, 25, 50]" [loading]="loading" [paginator]="true" [globalFilterFields]="['plate', 'model']" styleClass="mobile-cards">
                 <ng-template pTemplate="caption">
-                    <div class="flex justify-between items-center">
-                        <span class="text-xl font-bold">Listado de Autos</span>
+                    <div class="flex flex-col sm:flex-row gap-3 sm:justify-between sm:items-center">
+                        <span class="hidden sm:inline text-xl font-bold">Listado de Autos</span>
                         <div class="flex gap-2">
                             <p-button label="Nuevo" icon="pi pi-plus" (click)="openNew()" />
-                            <p-iconfield>
+                            <p-iconfield class="flex-1 sm:flex-none">
                                 <p-inputicon styleClass="pi pi-search" />
-                                <input pInputText type="text" (input)="dt1.filterGlobal($any($event.target).value, 'contains')" placeholder="Buscar..." />
+                                <input pInputText type="text" (input)="dt1.filterGlobal($any($event.target).value, 'contains')" placeholder="Buscar..." class="w-full" />
                             </p-iconfield>
                         </div>
                     </div>
@@ -47,14 +47,14 @@ import { AuthService } from '../../service/auth.service';
                     </tr>
                 </ng-template>
                 <ng-template pTemplate="body" let-vehicle>
-                    <tr>
-                        <td>{{ vehicle.plate }}</td>
+                    <tr class="m-card">
+                        <td class="m-title font-medium">{{ vehicle.plate }}</td>
                         <td>{{ vehicle.model }}</td>
                         <td>{{ getOwnershipLabel(vehicle.ownership) }}</td>
-                        <td>
+                        <td class="m-end">
                             <p-tag *ngIf="vencimientoStatus(vehicle) as st" [value]="st.label" [severity]="st.severity"></p-tag>
                         </td>
-                        <td>
+                        <td class="m-actions whitespace-nowrap">
                             <p-button *ngIf="canViewStats" icon="pi pi-chart-bar" [rounded]="true" [text]="true" severity="info" pTooltip="Ver rentabilidad" (click)="viewStats(vehicle)" />
                             <p-button icon="pi pi-pencil" [rounded]="true" [text]="true" (click)="editVehicle(vehicle)" />
                             <p-button icon="pi pi-trash" [rounded]="true" [text]="true" severity="danger" (click)="deleteVehicle(vehicle)" />
