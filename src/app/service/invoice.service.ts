@@ -127,6 +127,11 @@ export class InvoiceService {
     return firstValueFrom(this.http.post<any>(`${this.apiUrl}/${invoiceId}/note`, note));
   }
 
+  /** Una nota que se hizo a mano en ARCA, asociada a su factura. annul = anula la factura entera. */
+  registerNote(invoiceId: number, note: { kind: 'credit' | 'debit'; pointOfSale: number; number: number; total: number; cae: string | null; issueDate: Date | null; pdfFile: string | null; annul: boolean }) {
+    return firstValueFrom(this.http.post<any>(`${this.apiUrl}/${invoiceId}/note/manual`, note));
+  }
+
   /** Baja el PDF de una factura emitida desde LECMA. */
   /** Cobro de la factura entera: sus servicios en Pendiente Pago pasan a Pagado. */
   pay(invoiceId: number, paymentDate?: Date | null) {

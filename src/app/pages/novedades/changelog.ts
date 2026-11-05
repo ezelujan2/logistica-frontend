@@ -32,6 +32,7 @@ export const RELEASES: Release[] = [
             { kind: 'importante', text: 'Un servicio facturado ya no cambia sus importes, su cliente ni su tipo de facturación (sí lo del chofer, las notas o los horarios). Si hay que corregirlo, se anula la factura con una nota de crédito. Así la factura y el servicio no quedan con montos distintos.' },
             { kind: 'nuevo', text: 'Facturas: al lado de cada reporte, el lápiz cambia su orden de compra y, en los clientes que piden OC, el "+" la agrega. El reporte muestra "OC" delante del número.' },
             { kind: 'nuevo', text: '"Marcar pagada" permite poner la fecha en que se cobró; si se deja vacía, queda la de hoy.' },
+            { kind: 'nuevo', text: 'Notas de crédito y débito también para las facturas hechas a mano en ARCA: se pueden emitir desde el sistema (arma la nota con el cliente y los servicios de la factura) o registrar una que se hizo en "Comprobantes en línea", con su número, CAE y PDF. Si anula la factura entera, sus servicios vuelven a A Facturar.' },
             { kind: 'mejora', text: 'Las facturas de octubre y noviembre hechas en ARCA quedaron con su número y su CAE, y las OC que estaban escritas en el número de las facturas viejas pasaron a sus reportes.' },
             { kind: 'correccion', text: 'Cambiar sólo la OC de un reporte ya no vuelve a generar su PDF, y actualiza la OC de su factura.' }
         ]

@@ -1190,7 +1190,7 @@ import { EXPENSE_TYPE_LABELS, GROUP_STATUS_LABELS, IVA_CONDITION_LABELS, SERVICE
             </p-dialog>
         </div>
 
-            <app-invoice-note-dialog [invoice]="noteInvoice" (closed)="noteInvoice = null" (emitted)="loadAllData()" />
+            <app-invoice-note-dialog [invoice]="noteInvoice" [arcaEnabled]="true" (closed)="noteInvoice = null" (emitted)="loadAllData()" />
     `,
     standalone: true,
     imports: [CommonModule, RouterModule, TableModule, ButtonModule, InputTextModule, IconFieldModule, InputIconModule, TagModule, DialogModule, FormsModule, SelectModule, MultiSelectModule, InputNumberModule, TextareaModule, DatePickerModule, ToastModule, PanelModule, DividerModule, CheckboxModule, TooltipModule, ToggleButtonModule, ConfirmDialogModule, ServiceCalendar, InvoiceFields, InvoiceBillingDialog, InvoiceNoteDialog],

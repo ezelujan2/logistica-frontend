@@ -302,14 +302,19 @@ En Facturas, o en la lista de servicios al lado del número de factura, el botó
 
 ### Notas de crédito y débito
 
-Una factura emitida en ARCA no se edita: se corrige con una nota.
+Una factura emitida en ARCA no se edita: se corrige con una nota. Sirve para cualquier factura A, B o FCE de LECMA, la hayas emitido desde el sistema o registrado a mano.
 
 1. En Facturas (o en la lista de servicios, al lado del número de factura), tocá el botón de nota.
-2. Elegí "Nota de crédito" o "Nota de débito".
-3. Para crédito, elegí:
+2. Elegí cómo:
+   - "Emitir en ARCA": el sistema la emite. Si la factura se había hecho a mano en ARCA, arma la nota con el cliente y los servicios de esa factura.
+   - "Ya la hice en ARCA": para registrar una nota que hiciste en "Comprobantes en línea". Cargá punto de venta, número, importe total, fecha y, si los tenés, el CAE y el PDF.
+3. Elegí "Nota de crédito" o "Nota de débito".
+4. Para crédito, elegí:
    - "Anular la factura": la anula entera y sus servicios vuelven a A Facturar para facturarlos de nuevo.
-   - "Por un importe": cargá el importe neto, el IVA y el motivo.
-4. Tocá "Emitir en ARCA" y confirmá. Se descarga el PDF de la nota.
+   - "Por un importe": cargá el importe neto, el IVA y el motivo (o, si la registrás, el importe total).
+5. Tocá "Emitir en ARCA" (se descarga el PDF de la nota) o "Registrar la nota", y confirmá.
+
+Si querés anular entera desde el sistema una factura hecha a mano y sus servicios no suman lo mismo que la factura, el sistema avisa: hacé una nota por importe, o hacela en ARCA y registrala.
 
 ### Registrar una factura hecha a mano
 

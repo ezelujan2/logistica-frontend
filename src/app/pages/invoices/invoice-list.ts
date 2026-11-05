@@ -212,7 +212,7 @@ const CREDIT_TYPES = [3, 8, 203];
         </div>
 
         <app-invoice-billing-dialog [(visible)]="billingVisible" (invoiced)="load()" />
-        <app-invoice-note-dialog [invoice]="noteFor" (closed)="noteFor = null" (emitted)="load()" />
+        <app-invoice-note-dialog [invoice]="noteFor" [arcaEnabled]="!!arca?.enabled" (closed)="noteFor = null" (emitted)="load()" />
     `
 })
 export class InvoiceList implements OnInit {
@@ -415,8 +415,9 @@ export class InvoiceList implements OnInit {
         }
     }
 
+    /** Factura A, B o FCE de LECMA (emitida desde acá o registrada a mano): se le puede hacer o registrar una nota. */
     canNote(inv: any): boolean {
-        return isArcaInvoice(inv) && !this.isNote(inv) && inv.status !== 'CANCELLED' && !!this.arca?.enabled;
+        return inv.issuer === 'LECMA' && [1, 6, 201].includes(inv.voucherType) && !this.isNote(inv) && inv.status !== 'CANCELLED';
     }
 
     /** El PDF del reporte, el mismo que se abre desde Servicios. */
