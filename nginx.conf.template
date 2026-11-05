@@ -34,6 +34,11 @@ server {
         # Inject API Key
         proxy_set_header x-api-key ${API_KEY};
 
+        # IP real del usuario (la que vio el Traefik de entrada): sin esto, el
+        # backend ve siempre la del puente de Docker, porque esta llamada sale
+        # por el dominio público y pasa de nuevo por Traefik.
+        proxy_set_header X-Client-IP $http_x_real_ip;
+
         proxy_cache_bypass $http_upgrade;
     }
 
@@ -46,6 +51,11 @@ server {
 
         # Inject API Key
         proxy_set_header x-api-key ${API_KEY};
+
+        # IP real del usuario (la que vio el Traefik de entrada): sin esto, el
+        # backend ve siempre la del puente de Docker, porque esta llamada sale
+        # por el dominio público y pasa de nuevo por Traefik.
+        proxy_set_header X-Client-IP $http_x_real_ip;
     }
 
     # Static Assets Cache

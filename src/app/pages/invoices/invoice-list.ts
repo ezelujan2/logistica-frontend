@@ -180,7 +180,7 @@ const CREDIT_TYPES = [3, 8, 203];
                     <tr>
                         <td colspan="8">
                             <div class="md:pl-12 py-2 flex flex-col gap-3">
-                                <div *ngIf="inv.annulledBy" class="text-sm text-red-600"><i class="pi pi-ban mr-1"></i>Anulada por {{ inv.annulledBy }}. Estos servicios volvieron a A Facturar.</div>
+                                <div *ngIf="inv.annulledBy" class="text-sm text-red-600"><i class="pi pi-ban mr-1"></i>Anulada por {{ inv.annulledBy }}. Sus servicios quedaron libres para volver a facturarse (los pendientes de pago volvieron a A Facturar; los ya cobrados siguen como pagados).</div>
                                 <div *ngIf="(isNote(inv) || !inv.reports.length) && inv.lines.length" class="flex flex-col">
                                     <div *ngFor="let l of inv.lines" class="flex justify-between gap-4 text-sm py-1 border-b border-surface-200 dark:border-surface-700 last:border-0">
                                         <span>{{ l.description }}</span>

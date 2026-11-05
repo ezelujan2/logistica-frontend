@@ -29,7 +29,7 @@ const USAGE_COLORS = {
     dark: ['#3987e5', '#d95926', '#199e70']
 };
 
-type Level = 'good' | 'warning' | 'critical';
+type Level = 'good' | 'warning' | 'critical' | 'off';
 
 @Component({
     selector: 'app-sistema',
@@ -49,6 +49,7 @@ type Level = 'good' | 'warning' | 'critical';
                     <p-tag *ngIf="status" [value]="status.sentryEnabled ? 'Sentry activo' : 'Sentry sin configurar'" [severity]="status.sentryEnabled ? 'success' : 'warn'" [icon]="status.sentryEnabled ? 'pi pi-check' : 'pi pi-exclamation-triangle'" />
                     <p-tag *ngIf="status" [value]="status.assistantConfigured ? 'Asistente configurado' : 'Asistente sin clave'" [severity]="status.assistantConfigured ? 'success' : 'warn'" [icon]="status.assistantConfigured ? 'pi pi-check' : 'pi pi-exclamation-triangle'" />
                     <p-tag *ngIf="status" [value]="backupTagText()" [severity]="tagSeverity(status.backups.level)" [icon]="'pi ' + levelIcon(status.backups.level)" />
+                    <p-tag *ngIf="arca() as a" [value]="'ARCA: ' + a.summary" [severity]="tagSeverity(a.level)" [icon]="'pi ' + levelIcon(a.level)" />
                     <p-button icon="pi pi-refresh" [text]="true" [rounded]="true" (click)="load()" [loading]="loading" pTooltip="Actualizar" />
                 </div>
             </div>
@@ -163,12 +164,164 @@ type Level = 'good' | 'warning' | 'critical';
                     </div>
                 </div>
 
+                <!-- Qué ocupa la base y cuánto crece por mes (del historial horario). -->
+                <div class="card" *ngIf="status.dbTables">
+                    <div class="font-semibold mb-4">Base de datos: qué ocupa</div>
+                    <div class="grid grid-cols-12 gap-6">
+                        <div class="col-span-12 lg:col-span-7">
+                            <div class="text-sm font-medium mb-2">Tablas más grandes</div>
+                            <p-table [value]="status.dbTables.tables" styleClass="p-datatable-sm text-sm">
+                                <ng-template pTemplate="header">
+                                    <tr><th>Tabla</th><th class="text-right">Filas</th><th class="text-right">Tamaño</th><th class="w-1/3"></th></tr>
+                                </ng-template>
+                                <ng-template pTemplate="body" let-t>
+                                    <tr>
+                                        <td class="font-mono text-xs">{{ tableName(t.name) }}</td>
+                                        <td class="text-right">{{ t.rows | number: '1.0-0' }}</td>
+                                        <td class="text-right whitespace-nowrap">{{ bytes(t.bytes) }}</td>
+                                        <td>
+                                            <div class="h-2 rounded-full bg-surface-200 dark:bg-surface-700 overflow-hidden">
+                                                <div class="h-full rounded-full bg-primary" [style.width.%]="tableShare(t.bytes)"></div>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                </ng-template>
+                            </p-table>
+                        </div>
+                        <div class="col-span-12 lg:col-span-5">
+                            <div class="text-sm font-medium mb-2">Crecimiento por mes</div>
+                            <div *ngIf="!status.dbTables.growth.length" class="text-sm text-muted-color">Todavía no hay historial.</div>
+                            <p-table *ngIf="status.dbTables.growth.length" [value]="status.dbTables.growth" styleClass="p-datatable-sm text-sm">
+                                <ng-template pTemplate="header">
+                                    <tr><th>Mes</th><th class="text-right">Tamaño al cierre</th><th class="text-right">Creció</th></tr>
+                                </ng-template>
+                                <ng-template pTemplate="body" let-g>
+                                    <tr>
+                                        <td class="whitespace-nowrap">{{ monthName(g.month) }}</td>
+                                        <td class="text-right whitespace-nowrap">{{ bytes(g.bytes) }}</td>
+                                        <td class="text-right whitespace-nowrap text-muted-color">{{ g.change === null ? '—' : (g.change >= 0 ? '+' : '−') + bytes(abs(g.change)) }}</td>
+                                    </tr>
+                                </ng-template>
+                            </p-table>
+                            <div class="text-xs text-muted-color mt-2">El mes en curso muestra el tamaño de ahora. El primer mes no tiene comparación.</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Servicios externos: ARCA, Google, Sentry, asistente y correo. -->
+                <div class="card" *ngIf="status.integrations">
+                    <div class="font-semibold mb-3">Servicios externos</div>
+                    <div class="flex flex-col divide-y divide-surface-200 dark:divide-surface-700">
+                        <div *ngFor="let i of status.integrations" class="py-3 flex flex-col sm:flex-row sm:items-start gap-2 sm:gap-4">
+                            <div class="sm:w-56 shrink-0 flex items-center gap-2">
+                                <i class="pi" [ngClass]="[levelIcon(i.level), levelText(i.level)]"></i>
+                                <span class="font-medium">{{ i.name }}</span>
+                            </div>
+                            <div class="flex-1 min-w-0 text-sm">
+                                <div [ngClass]="levelText(i.level)">{{ i.summary }}</div>
+                                <div *ngFor="let d of i.details" class="text-xs text-muted-color break-words">{{ d }}</div>
+                                <ng-container *ngIf="i.key === 'arca'">
+                                    <div *ngIf="i.certExpires" class="text-xs mt-1" [ngClass]="levelText(certLevel(i.certDaysLeft))">
+                                        Certificado: vence el {{ i.certExpires | date: 'dd/MM/yyyy' }} ({{ i.certDaysLeft < 0 ? 'vencido' : 'faltan ' + daysText(i.certDaysLeft) }})
+                                    </div>
+                                    <div class="text-xs text-muted-color">
+                                        Último comprobante emitido: {{ i.lastIssued ? i.lastIssued.number + ' · ' + (i.lastIssued.at | date: 'dd/MM HH:mm') : 'ninguno todavía' }}
+                                    </div>
+                                    <div *ngIf="i.lastRejection" class="text-xs mt-1 break-words" [ngClass]="levelText('warning')">
+                                        <i class="pi pi-exclamation-triangle"></i> Último rechazo ({{ i.lastRejection.at | date: 'dd/MM HH:mm' }}): {{ i.lastRejection.message }}
+                                    </div>
+                                </ng-container>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="text-xs text-muted-color mt-2">ARCA se consulta cada 5 minutos con su servicio de prueba, que no usa el certificado.</div>
+                </div>
+
+                <div class="grid grid-cols-12 gap-4">
+                    <!-- Archivos guardados en las carpetas del servidor, y si el último respaldo los llevó. -->
+                    <div class="col-span-12 lg:col-span-6 card mb-0" *ngIf="status.storage">
+                        <div class="flex flex-wrap items-center justify-between gap-2 mb-3">
+                            <div class="font-semibold">Archivos guardados</div>
+                            <p-tag *ngIf="filesBackupLevel() as l" [value]="filesBackupText()" [severity]="tagSeverity(l)" [icon]="'pi ' + levelIcon(l)" />
+                        </div>
+                        <p-table [value]="status.storage.folders" styleClass="p-datatable-sm text-sm">
+                            <ng-template pTemplate="header">
+                                <tr><th>Carpeta</th><th class="text-right">Archivos</th><th class="text-right">Tamaño</th></tr>
+                            </ng-template>
+                            <ng-template pTemplate="body" let-f>
+                                <tr>
+                                    <td>{{ f.name }} <span *ngIf="!f.exists" class="text-xs" [ngClass]="levelText('warning')">· no existe la carpeta</span></td>
+                                    <td class="text-right">{{ f.files | number: '1.0-0' }}</td>
+                                    <td class="text-right whitespace-nowrap">{{ bytes(f.bytes) }}</td>
+                                </tr>
+                            </ng-template>
+                            <ng-template pTemplate="footer">
+                                <tr><td>Total</td><td class="text-right">{{ status.storage.totalFiles | number: '1.0-0' }}</td><td class="text-right whitespace-nowrap">{{ bytes(status.storage.totalBytes) }}</td></tr>
+                            </ng-template>
+                        </p-table>
+                        <div class="text-xs text-muted-color mt-2">
+                            <ng-container *ngIf="status.backups.lastWithFiles as b">
+                                El último respaldo ({{ b.at | date: 'dd/MM HH:mm' }}) llevó {{ b.filesCount | number: '1.0-0' }} archivos ({{ bytes(b.filesBytes) }} comprimidos).
+                            </ng-container>
+                            <ng-container *ngIf="!status.backups.lastWithFiles">Los respaldos todavía no informan cuántos archivos llevan (hace falta el script nuevo del servidor).</ng-container>
+                            Se cuenta cada 10 minutos.
+                        </div>
+                    </div>
+
+                    <!-- Quién está usando el sistema. -->
+                    <div class="col-span-12 lg:col-span-6 card mb-0" *ngIf="status.users">
+                        <div class="flex flex-wrap items-center justify-between gap-2 mb-3">
+                            <div class="font-semibold">Usuarios</div>
+                            <p-tag [value]="status.users.activeNow === 1 ? '1 conectado ahora' : status.users.activeNow + ' conectados ahora'" [severity]="status.users.activeNow ? 'success' : 'secondary'" />
+                        </div>
+                        <p-table [value]="status.users.list" [paginator]="status.users.list.length > 8" [rows]="8" styleClass="p-datatable-sm text-sm">
+                            <ng-template pTemplate="header">
+                                <tr><th>Usuario</th><th>Último uso</th><th class="hidden sm:table-cell">Último ingreso</th></tr>
+                            </ng-template>
+                            <ng-template pTemplate="body" let-u>
+                                <tr>
+                                    <td>
+                                        <div class="flex items-center gap-2">
+                                            <span class="inline-block w-2 h-2 rounded-full shrink-0" [ngClass]="u.active ? 'bg-green-600' : 'bg-surface-300 dark:bg-surface-600'" [pTooltip]="u.active ? 'Conectado (usó el sistema en los últimos 15 minutos)' : ''"></span>
+                                            <span class="truncate">{{ u.name || u.email }}</span>
+                                            <span class="text-xs text-muted-color">{{ roleName(u.role) }}</span>
+                                        </div>
+                                    </td>
+                                    <td class="whitespace-nowrap">{{ u.lastSeenAt ? sinceText(u.lastSeenAt) : '—' }}</td>
+                                    <td class="whitespace-nowrap hidden sm:table-cell text-muted-color">{{ u.lastLoginAt ? (u.lastLoginAt | date: 'dd/MM HH:mm') : '—' }}</td>
+                                </tr>
+                            </ng-template>
+                        </p-table>
+                        <div class="text-xs text-muted-color mt-2">"Último uso" se registra desde la versión 2.9.0.</div>
+                    </div>
+                </div>
+
                 <!-- Respaldos: los informa el script de backup del servidor al terminar. -->
                 <div class="card">
                     <div class="flex flex-wrap items-center justify-between gap-2 mb-3">
-                        <div class="font-semibold">Respaldos de la base de datos</div>
-                        <p-tag *ngIf="status.backups.recent.length" [value]="backupTagText()" [severity]="tagSeverity(status.backups.level)" [icon]="'pi ' + levelIcon(status.backups.level)" />
+                        <div class="font-semibold">Respaldos (base de datos y archivos)</div>
+                        <div class="flex flex-wrap items-center gap-2">
+                            <p-tag *ngIf="status.backups.recent.length" [value]="backupTagText()" [severity]="tagSeverity(status.backups.level)" [icon]="'pi ' + levelIcon(status.backups.level)" />
+                            <p-button
+                                *ngIf="status.backups.configured"
+                                label="Hacer un respaldo ahora"
+                                icon="pi pi-save"
+                                size="small"
+                                [outlined]="true"
+                                [loading]="backupRequesting"
+                                [disabled]="backupInProgress()"
+                                (click)="runBackup()"
+                                pTooltip="Se hace en el servidor en el próximo minuto y se sube a Drive. No borra ningún respaldo anterior."
+                            />
+                        </div>
                     </div>
+                    <div *ngIf="status.backups.request as r" class="text-sm mb-3">
+                        <span *ngIf="r.status === 'PENDING'" [ngClass]="levelText('warning')"><i class="pi pi-clock"></i> Respaldo pedido a las {{ r.createdAt | date: 'HH:mm' }}: el servidor lo arranca en menos de un minuto.</span>
+                        <span *ngIf="r.status === 'RUNNING'" [ngClass]="levelText('warning')"><i class="pi pi-spin pi-spinner"></i> Haciendo el respaldo (arrancó {{ r.startedAt | date: 'HH:mm' }}). Tarda unos minutos.</span>
+                        <span *ngIf="r.status === 'FAILED' && recentRequest(r)" [ngClass]="levelText('critical')"><i class="pi pi-times-circle"></i> El respaldo pedido a las {{ r.createdAt | date: 'HH:mm' }} falló: {{ r.message || 'sin detalle' }}</span>
+                        <span *ngIf="r.status === 'DONE' && recentRequest(r)" [ngClass]="levelText('good')"><i class="pi pi-check-circle"></i> Respaldo pedido a las {{ r.createdAt | date: 'HH:mm' }}: listo.</span>
+                    </div>
+                    <div *ngIf="backupError" class="text-sm text-red-600 mb-3">{{ backupError }}</div>
                     <div *ngIf="!status.backups.configured && !status.backups.recent.length" class="text-sm text-muted-color">
                         Sin configurar. Cargá BACKUP_REPORT_TOKEN en el backend y agregá al script de respaldo del servidor el aviso a /api/backups/report.
                     </div>
@@ -178,7 +331,7 @@ type Level = 'good' | 'warning' | 'critical';
                     <ng-container *ngIf="status.backups.recent.length">
                         <div class="grid grid-cols-12 gap-4 mb-4">
                             <div class="col-span-12 sm:col-span-4">
-                                <div class="text-muted-color text-sm">Último respaldo bueno</div>
+                                <div class="text-muted-color text-sm">Último respaldo automático bueno</div>
                                 <div class="text-2xl font-bold">{{ status.backups.lastOk ? (status.backups.lastOk.at | date: 'dd/MM HH:mm') : 'Nunca' }}</div>
                                 <div class="text-xs mt-1" [ngClass]="levelText(status.backups.level)" *ngIf="status.backups.hoursSinceOk !== null">hace {{ hoursAgo(status.backups.hoursSinceOk) }}</div>
                             </div>
@@ -194,37 +347,20 @@ type Level = 'good' | 'warning' | 'critical';
                         </div>
                         <p-table [value]="status.backups.recent" styleClass="p-datatable-sm text-sm">
                             <ng-template pTemplate="header">
-                                <tr><th>Fecha</th><th>Resultado</th><th class="text-right">Tamaño</th><th>Detalle</th></tr>
+                                <tr><th>Fecha</th><th>Tipo</th><th>Resultado</th><th class="text-right">Tamaño</th><th class="text-right hidden sm:table-cell">Archivos</th><th>Detalle</th></tr>
                             </ng-template>
                             <ng-template pTemplate="body" let-r>
                                 <tr>
                                     <td class="whitespace-nowrap">{{ r.at | date: 'dd/MM/yy HH:mm' }}</td>
+                                    <td class="text-xs">{{ r.manual ? 'Manual' : 'Automático' }}</td>
                                     <td><span [ngClass]="levelText(r.ok ? 'good' : 'critical')"><i class="pi" [ngClass]="levelIcon(r.ok ? 'good' : 'critical')"></i> {{ r.ok ? 'Bien' : 'Falló' }}</span></td>
-                                    <td class="text-right whitespace-nowrap">{{ r.sizeBytes ? bytes(r.sizeBytes) : '—' }}</td>
+                                    <td class="text-right whitespace-nowrap" [pTooltip]="r.dbBytes ? 'Base: ' + bytes(r.dbBytes) + ' · archivos: ' + bytes(r.filesBytes) : ''">{{ r.sizeBytes ? bytes(r.sizeBytes) : '—' }}</td>
+                                    <td class="text-right hidden sm:table-cell">{{ r.filesCount ?? '—' }}</td>
                                     <td class="text-xs text-muted-color">{{ r.message || r.file }}</td>
                                 </tr>
                             </ng-template>
                         </p-table>
                     </ng-container>
-                </div>
-
-                <!-- Copia a Google Calendar: se sincroniza tras cada cambio y cada 10 minutos. -->
-                <div class="card" *ngIf="status.googleCalendar">
-                    <div class="flex flex-wrap items-center justify-between gap-2 mb-2">
-                        <div class="font-semibold">Google Calendar</div>
-                        <p-tag *ngIf="status.googleCalendar.enabled && status.googleCalendar.last" [value]="status.googleCalendar.last.ok ? 'Sincronizado' : 'Con error'" [severity]="status.googleCalendar.last.ok ? 'success' : 'danger'" />
-                    </div>
-                    <div *ngIf="!status.googleCalendar.enabled" class="text-sm text-muted-color">
-                        Desactivado. Para activarlo hay que cargar GOOGLE_SERVICE_ACCOUNT_JSON y los tres GOOGLE_CALENDAR_*_ID en el backend.
-                    </div>
-                    <div *ngIf="status.googleCalendar.enabled && !status.googleCalendar.last" class="text-sm text-muted-color">Todavía no terminó la primera sincronización.</div>
-                    <div *ngIf="status.googleCalendar.last as g" class="text-sm">
-                        Última: {{ g.at | date: 'dd/MM HH:mm' }}
-                        <span class="text-muted-color"> · {{ g.created }} nuevos, {{ g.updated }} actualizados, {{ g.deleted }} borrados</span>
-                        <div *ngIf="!g.ok" class="mt-1 text-xs break-all" [ngClass]="levelText('critical')">
-                            <span *ngIf="g.failed">{{ g.failed }} no se pudieron escribir (el resto sí). </span><span class="font-mono">{{ g.error }}</span>
-                        </div>
-                    </div>
                 </div>
 
                 <!-- Seguridad: intentos de ingreso, bloqueos y accesos desde lugares nuevos. -->
@@ -421,6 +557,9 @@ export class Sistema implements OnInit, OnDestroy {
     onlyFailed = false;
     eventSearch = '';
 
+    backupRequesting = false;
+    backupError = '';
+
     issueSearch = '';
     issueProject: string | null = null;
     issueLevel: string | null = null;
@@ -601,6 +740,109 @@ export class Sistema implements OnInit, OnDestroy {
         };
     }
 
+    arca(): any {
+        return this.status?.integrations?.find((i: any) => i.key === 'arca' && i.level !== 'off') ?? null;
+    }
+
+    certLevel(days: number | null): Level {
+        return days === null || days < 0 ? 'critical' : days <= 60 ? 'warning' : 'good';
+    }
+
+    daysText(days: number): string {
+        return days > 90 ? `${Math.round(days / 30)} meses` : `${days} días`;
+    }
+
+    backupInProgress(): boolean {
+        const r = this.status?.backups?.request;
+        return Boolean(r && (r.status === 'PENDING' || r.status === 'RUNNING'));
+    }
+
+    /** Un pedido terminado se muestra sólo durante el día en que se pidió. */
+    recentRequest(r: any): boolean {
+        return Date.now() - new Date(r.finishedAt ?? r.createdAt).getTime() < 12 * 3_600_000;
+    }
+
+    async runBackup() {
+        this.backupRequesting = true;
+        this.backupError = '';
+        try {
+            await firstValueFrom(this.http.post(`${environment.apiUrl}system/backups/run`, {}));
+            await this.load();
+            // Mientras corre, se mira cada 15 segundos en vez de cada minuto.
+            const poll = setInterval(async () => {
+                await this.load();
+                if (!this.backupInProgress()) clearInterval(poll);
+            }, 15_000);
+            setTimeout(() => clearInterval(poll), 60 * 60_000);
+        } catch (e: any) {
+            this.backupError = e?.error?.error ?? 'No se pudo pedir el respaldo.';
+        } finally {
+            this.backupRequesting = false;
+        }
+    }
+
+    /** Si el último respaldo llevó (más o menos) los archivos que hay en las carpetas. */
+    filesBackupLevel(): Level | null {
+        const b = this.status?.backups?.lastWithFiles;
+        const total = this.status?.storage?.totalFiles ?? 0;
+        if (!b) return null;
+        if (total > 0 && !b.filesCount) return 'critical';
+        // Los subidos después del respaldo todavía no están: se tolera un 10%.
+        return b.filesCount >= total * 0.9 ? 'good' : 'warning';
+    }
+
+    filesBackupText(): string {
+        const l = this.filesBackupLevel();
+        return l === 'good' ? 'En el respaldo' : l === 'warning' ? 'Faltan archivos en el respaldo' : 'El respaldo no llevó archivos';
+    }
+
+    tableShare(bytes: number): number {
+        const max = this.status?.dbTables?.tables?.[0]?.bytes || 1;
+        return (bytes / max) * 100;
+    }
+
+    /** Nombre de la tabla en castellano, para las que importan. */
+    tableName(name: string): string {
+        const names: Record<string, string> = {
+            AuditLog: 'Historial de cambios',
+            StatusHistory: 'Historial de estados',
+            Service: 'Servicios',
+            ServiceGroup: 'Reportes',
+            Invoice: 'Facturas',
+            Expense: 'Gastos',
+            AssistantConversation: 'Conversaciones del asistente',
+            AssistantUsageLog: 'Uso del asistente',
+            LoginEvent: 'Ingresos al sistema',
+            MetricsHourly: 'Historial de métricas',
+            Settlement: 'Liquidaciones',
+            Client: 'Clientes',
+            Driver: 'Choferes',
+            Vehicle: 'Autos'
+        };
+        return names[name] ? `${names[name]} (${name})` : name;
+    }
+
+    monthName(month: string): string {
+        const [y, m] = month.split('-').map(Number);
+        return new Date(y!, m! - 1, 1).toLocaleDateString('es-AR', { month: 'long', year: 'numeric' });
+    }
+
+    abs(n: number): number {
+        return Math.abs(n);
+    }
+
+    roleName(role: string): string {
+        return ({ ADMIN: 'Admin', ADMIN_OPERATIVO: 'Operativo', DIRECTOR: 'Director', USER: 'Usuario' } as Record<string, string>)[role] ?? role;
+    }
+
+    sinceText(at: string): string {
+        const min = (Date.now() - new Date(at).getTime()) / 60_000;
+        if (min < 2) return 'ahora';
+        if (min < 60) return `hace ${Math.round(min)} min`;
+        if (min < 24 * 60) return `hace ${Math.round(min / 60)} h`;
+        return new Date(at).toLocaleString('es-AR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' });
+    }
+
     backupTagText(): string {
         const b = this.status.backups;
         if (!b.configured && !b.recent.length) return 'Respaldo sin configurar';
@@ -609,7 +851,7 @@ export class Sistema implements OnInit, OnDestroy {
     }
 
     tagSeverity(l: Level) {
-        return ({ good: 'success', warning: 'warn', critical: 'danger' } as const)[l];
+        return ({ good: 'success', warning: 'warn', critical: 'danger', off: 'secondary' } as const)[l];
     }
 
     hoursAgo(h: number): string {
@@ -676,15 +918,15 @@ export class Sistema implements OnInit, OnDestroy {
     }
 
     levelText(l: Level) {
-        return { good: 'text-green-700 dark:text-green-400', warning: 'text-orange-600 dark:text-orange-400', critical: 'text-red-600 dark:text-red-400' }[l];
+        return { good: 'text-green-700 dark:text-green-400', warning: 'text-orange-600 dark:text-orange-400', critical: 'text-red-600 dark:text-red-400', off: 'text-muted-color' }[l];
     }
 
     levelIcon(l: Level) {
-        return { good: 'pi-check-circle', warning: 'pi-exclamation-triangle', critical: 'pi-times-circle' }[l];
+        return { good: 'pi-check-circle', warning: 'pi-exclamation-triangle', critical: 'pi-times-circle', off: 'pi-minus-circle' }[l];
     }
 
     levelBar(l: Level) {
-        return { good: 'bg-green-600', warning: 'bg-orange-500', critical: 'bg-red-600' }[l];
+        return { good: 'bg-green-600', warning: 'bg-orange-500', critical: 'bg-red-600', off: 'bg-surface-400' }[l];
     }
 
     bytes(n: number): string {

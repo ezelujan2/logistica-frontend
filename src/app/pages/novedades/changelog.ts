@@ -25,6 +25,20 @@ export interface Release {
 
 export const RELEASES: Release[] = [
     {
+        version: '2.9.0',
+        date: '2026-11-05',
+        title: 'Estado del sistema más completo',
+        changes: [
+            { kind: 'nuevo', text: 'Estado del sistema muestra los servicios externos en un solo lugar: ARCA (si responde, cuándo vence el certificado, el último comprobante emitido y el último rechazo), Google Calendar, Sentry, el asistente y el correo de la web.' },
+            { kind: 'nuevo', text: 'Archivos guardados: cuántos reportes, comprobantes y liquidaciones hay y si el último respaldo los llevó todos.' },
+            { kind: 'nuevo', text: 'Base de datos: las tablas que más ocupan y cuánto creció la base cada mes.' },
+            { kind: 'nuevo', text: 'Usuarios: quién está conectado ahora y cuándo usó el sistema cada uno por última vez.' },
+            { kind: 'nuevo', text: '"Hacer un respaldo ahora": pide un respaldo al servidor, que se sube a Google Drive. No borra ningún respaldo anterior.' },
+            { kind: 'correccion', text: 'Una factura hecha a mano y anulada con nota de crédito ahora sigue mostrando de qué reporte era y con qué nota se anuló.' },
+            { kind: 'correccion', text: 'Estado del sistema y Seguridad muestran la IP real de cada inicio de sesión (antes salía siempre 10.0.1.1), y el límite de intentos de inicio de sesión vuelve a ser por persona y no uno para todos.' }
+        ]
+    },
+    {
         version: '2.8.1',
         date: '2026-11-05',
         title: 'Corrección en notas de facturas hechas a mano',

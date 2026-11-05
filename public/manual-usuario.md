@@ -766,16 +766,19 @@ La pantalla Estado del sistema muestra de un vistazo si todo funciona y se actua
 
 | Bloque | Qué muestra |
 | --- | --- |
-| Etiquetas de arriba | Si la base de datos responde, si el aviso de errores (Sentry) está activo y si el asistente tiene su clave |
+| Etiquetas de arriba | Si la base de datos responde, si el aviso de errores (Sentry) está activo, si el asistente tiene su clave, el estado del respaldo y el de ARCA |
 | Pedidos, errores y tiempo de respuesta | Cuánto se usó el sistema en las últimas 24 horas, qué parte terminó en error y cuánto tardan las respuestas |
 | Asistente de IA | Consultas y costo del mes |
 | Etiqueta de respaldo | "Respaldo al día" si el último respaldo bueno tiene menos de 26 horas; "Respaldo atrasado" si no |
 | Historial | Tres gráficos con el período que elijas (24 horas, 7, 30 o 90 días): pedidos (en rojo los que dieron error), tiempo de respuesta y uso del servidor (CPU, memoria y disco). Hasta 7 días se ven hora por hora; más, día por día |
 | Servidor | Uso de CPU, memoria y disco, en verde, naranja o rojo según qué tan cerca están del límite |
 | Base de datos | Tiempo de respuesta, tamaño y conexiones abiertas, y los pedidos más lentos |
-| Respaldos de la base de datos | Cuándo fue el último respaldo bueno, su tamaño (avisa si salió mucho más chico que el anterior, señal de que quedó incompleto) y los últimos 10 intentos |
+| Base de datos: qué ocupa | Las 10 tablas más grandes, con cuántas filas tienen y cuánto ocupan, y el tamaño de la base al cierre de cada mes con cuánto creció |
+| Servicios externos | Una fila por cada servicio de afuera (ARCA, Google Calendar, Sentry, asistente de IA y correo de la web): si está configurado, si anda y su último error. En ARCA, además: si sus servidores responden (se consulta cada 5 minutos), cuándo vence el certificado (avisa en naranja 60 días antes), el último comprobante emitido y el último rechazo, si hubo uno después |
+| Archivos guardados | Cuántos archivos y cuánto ocupan los reportes, los comprobantes y facturas y las liquidaciones, y cuántos llevó el último respaldo. Avisa si al respaldo le faltan archivos |
+| Usuarios | Quién está conectado ahora (usó el sistema en los últimos 15 minutos), cuándo fue el último uso y el último ingreso de cada uno |
+| Respaldos (base de datos y archivos) | Cuándo fue el último respaldo automático bueno, su tamaño (avisa si salió mucho más chico que el anterior, señal de que quedó incompleto) y los últimos 10 intentos, automáticos y manuales, con cuántos archivos llevó cada uno. El botón "Hacer un respaldo ahora" pide uno al servidor: arranca en menos de un minuto, tarda unos minutos y se sube a Google Drive. Los manuales no borran ningún respaldo anterior, ni en el servidor ni en Drive |
 | Seguridad: ingresos al sistema | Para hoy, 7 o 30 días: ingresos correctos, intentos fallidos y por qué fallaron, usuarios bloqueados, las IPs y cuentas con más fallos, los ingresos desde un lugar nuevo (una IP que esa persona no usó en los 90 días anteriores) y la lista de intentos, con buscador y filtro "Sólo fallidos" |
-| Google Calendar | Si la copia a Google Calendar está activa, cuándo fue la última actualización y cuántos eventos creó, cambió o borró. Si falló, muestra el motivo y cuántos no se pudieron copiar |
 | Errores abiertos | Los errores de las últimas 24 horas registrados en Sentry, con cuántas veces pasaron, a cuántos usuarios y un enlace al detalle. Se pueden buscar, filtrar por proyecto y nivel, ordenar y paginar; "Ver todo en Sentry" abre la lista completa |
 
 El historial se arma con lo que se guarda una vez por hora desde la versión 2.2.0 (se conserva un año), más la hora en curso. Las horas sin barra no tienen datos: el servidor estaba apagado o todavía no se guardaba. En 7 días, el eje marca el comienzo de cada día; pasá el mouse para ver la hora. Un ingreso "desde un lugar nuevo" no siempre es un problema (otra red de wifi, el celular): conviene revisarlo sólo si la persona no lo reconoce.
