@@ -25,6 +25,14 @@ export interface Release {
 
 export const RELEASES: Release[] = [
     {
+        version: '2.8.1',
+        date: '2026-11-05',
+        title: 'Corrección en notas de facturas hechas a mano',
+        changes: [
+            { kind: 'correccion', text: 'Emitir desde el sistema una nota de crédito o débito de una factura hecha a mano en ARCA daba el error 10035 (faltaba el vencimiento del pago). Ya se emite bien.' }
+        ]
+    },
+    {
         version: '2.8.0',
         date: '2026-11-05',
         title: 'Órdenes de compra y servicios facturados',
