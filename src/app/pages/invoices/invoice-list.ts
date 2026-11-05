@@ -20,7 +20,9 @@ import { HttpClient } from '@angular/common/http';
 import { environment } from '../../../environments/environment';
 import { ClientService } from '../../service/client.service';
 import { FileService } from '../../service/file.service';
-import { ArcaStatus, InvoiceService, hasInvoicePdf, isArcaInvoice } from '../../service/invoice.service';
+import { ArcaStatus, InvoiceService, hasInvoicePdf, isArcaInvoice, purchaseOrderLabel } from '../../service/invoice.service';
+import { ServiceService } from '../../service/service.service';
+import { DialogModule } from 'primeng/dialog';
 import { VOUCHER_TYPES } from '../../service/labels';
 import { InvoiceBillingDialog } from './invoice-billing-dialog';
 import { InvoiceNoteDialog } from './invoice-note-dialog';
@@ -51,6 +53,7 @@ const CREDIT_TYPES = [3, 8, 203];
         TooltipModule,
         ToastModule,
         ConfirmDialogModule,
+        DialogModule,
         InvoiceBillingDialog,
         InvoiceNoteDialog
     ],
@@ -58,6 +61,31 @@ const CREDIT_TYPES = [3, 8, 203];
     template: `
         <p-toast />
         <p-confirmDialog />
+        <p-dialog [(visible)]="payDialog" [header]="'Marcar pagada ' + (payInvoice?.invoiceNumber ?? '')" [modal]="true" [style]="{ width: '420px' }" [breakpoints]="{ '480px': '95vw' }">
+            <div class="flex flex-col gap-3">
+                <span class="text-sm">Sus servicios en Pendiente Pago pasan a <b>Pagado</b> y sus reportes se actualizan.</span>
+                <div class="flex flex-col gap-2">
+                    <label for="pay-date" class="text-sm font-medium">Fecha de cobro <span class="text-muted-color font-normal">(opcional)</span></label>
+                    <p-datepicker inputId="pay-date" [(ngModel)]="payDate" dateFormat="dd/mm/yy" [showIcon]="true" [showButtonBar]="true" [maxDate]="today" appendTo="body" styleClass="w-full" placeholder="Hoy" />
+                    <small class="text-muted-color">Si la dejás vacía, queda la de hoy.</small>
+                </div>
+            </div>
+            <ng-template pTemplate="footer">
+                <p-button label="Cancelar" [text]="true" severity="secondary" (click)="payDialog = false" />
+                <p-button label="Sí, está pagada" icon="pi pi-check" [loading]="paySaving" (click)="confirmPay()" />
+            </ng-template>
+        </p-dialog>
+        <p-dialog [(visible)]="ocDialog" [header]="'OC del reporte ' + (ocReport?.code ?? '')" [modal]="true" [style]="{ width: '420px' }" [breakpoints]="{ '480px': '95vw' }">
+            <div class="flex flex-col gap-2">
+                <label for="oc-input" class="text-sm font-medium">Orden de compra del cliente</label>
+                <input pInputText id="oc-input" [(ngModel)]="ocValue" maxlength="60" placeholder="Ej: 4550003691" (keyup.enter)="saveOc()" autofocus />
+                <small class="text-muted-color">Escribí el número completo. Vacío = sin OC. No cambia el PDF del reporte ni la factura de ARCA: sirve para buscar y cruzar pagos.</small>
+            </div>
+            <ng-template pTemplate="footer">
+                <p-button label="Cancelar" [text]="true" severity="secondary" (click)="ocDialog = false" />
+                <p-button label="Guardar" icon="pi pi-check" [loading]="ocSaving" (click)="saveOc()" />
+            </ng-template>
+        </p-dialog>
         <div class="card">
             <div class="flex flex-wrap items-center justify-between gap-3 mb-4">
                 <div>
@@ -131,7 +159,8 @@ const CREDIT_TYPES = [3, 8, 203];
                         <td>
                             <div *ngFor="let r of inv.reports" class="whitespace-nowrap">
                                 <a *ngIf="r.code" class="cursor-pointer text-primary hover:underline" (click)="openReport(r.code)" pTooltip="Ver el reporte (PDF)" tooltipPosition="top"><i class="pi pi-file-pdf text-xs mr-1"></i>{{ r.code }}</a>
-                                <span *ngIf="!r.code">Sin reporte</span><span *ngIf="r.purchaseOrder" class="text-muted-color"> · {{ r.purchaseOrder }}</span>
+                                <span *ngIf="!r.code">Sin reporte</span><span *ngIf="r.purchaseOrder" class="text-muted-color"> · {{ ocLabel(r.purchaseOrder) }}</span>
+                                <p-button *ngIf="canEditOc(inv, r)" [icon]="r.purchaseOrder ? 'pi pi-pencil' : 'pi pi-plus'" [rounded]="true" [text]="true" size="small" severity="secondary" styleClass="w-6 h-6 p-0 ml-1" [pTooltip]="r.purchaseOrder ? 'Cambiar la OC del reporte' : 'Agregar la OC del reporte'" tooltipPosition="top" (click)="editOc(r)" />
                             </div>
                             <div *ngIf="!inv.reports.length && inv.clientReference" class="text-muted-color">{{ inv.clientReference }}</div>
                             <div *ngIf="inv.extraText" class="text-xs text-muted-color italic">{{ inv.extraText }}</div>
@@ -162,7 +191,7 @@ const CREDIT_TYPES = [3, 8, 203];
                                     <div class="flex justify-between font-semibold text-sm mb-1">
                                         <span>
                                             <a *ngIf="r.code" class="cursor-pointer text-primary hover:underline" (click)="openReport(r.code)"><i class="pi pi-file-pdf text-xs mr-1"></i>Reporte {{ r.code }}</a>
-                                            <span *ngIf="!r.code">Servicios sin reporte</span><span *ngIf="r.purchaseOrder" class="font-normal text-muted-color"> · {{ r.purchaseOrder }}</span></span>
+                                            <span *ngIf="!r.code">Servicios sin reporte</span><span *ngIf="r.purchaseOrder" class="font-normal text-muted-color"> · {{ ocLabel(r.purchaseOrder) }}</span></span>
                                         <span *ngIf="r.services.length">{{ r.total | currency: 'ARS' : 'symbol-narrow' : '1.2-2' }}</span>
                                     </div>
                                     <div *ngFor="let s of r.services" class="flex flex-wrap gap-x-4 text-sm py-1 border-b border-surface-200 dark:border-surface-700 last:border-0">
@@ -229,7 +258,8 @@ export class InvoiceList implements OnInit {
         private clientService: ClientService,
         private fileService: FileService,
         private messageService: MessageService,
-        private confirmationService: ConfirmationService
+        private confirmationService: ConfirmationService,
+        private serviceService: ServiceService
     ) {}
 
     async ngOnInit() {
@@ -317,22 +347,72 @@ export class InvoiceList implements OnInit {
         return !this.isNote(inv) && inv.status !== 'CANCELLED' && !inv.paid && (inv.reports?.length ?? 0) > 0;
     }
 
+    readonly ocLabel = purchaseOrderLabel;
+    ocDialog = false;
+    ocSaving = false;
+    ocValue = '';
+    ocReport: { id: number; code: string | null; purchaseOrder: string | null } | null = null;
+
+    /** Con OC se puede corregir siempre; agregarla, sólo a los clientes que piden orden de compra. */
+    canEditOc(inv: any, report: { id: number | null; purchaseOrder: string | null }): boolean {
+        if (!report.id) return false;
+        if (report.purchaseOrder) return true;
+        return !!(this.clients.find((c) => c.id === inv.clientId) as any)?.requires_purchase_order;
+    }
+
+    /** Agregar o cambiar la OC de un reporte desde su factura. */
+    editOc(report: { id: number; code: string | null; purchaseOrder: string | null }) {
+        this.ocReport = report;
+        this.ocValue = report.purchaseOrder ?? '';
+        this.ocDialog = true;
+    }
+
+    async saveOc() {
+        if (!this.ocReport) return;
+        this.ocSaving = true;
+        try {
+            // Se guarda tal cual la escriben; el "OC" de adelante lo pone la pantalla.
+            const value = this.ocValue.trim().replace(/^o\.?\s*c\.?[\s:#°º.-]*(?=\d)/i, '');
+            await this.serviceService.updateGroupNotes(this.ocReport.id, undefined, value);
+            this.messageService.add({ severity: 'success', summary: 'OC guardada', detail: `${this.ocReport.code}: ${value ? purchaseOrderLabel(value) : 'sin OC'}`, life: 3000 });
+            this.ocDialog = false;
+            this.load();
+        } catch (e: any) {
+            this.messageService.add({ severity: 'error', summary: 'Error', detail: e?.error?.error ?? 'No se pudo guardar la OC.' });
+        } finally {
+            this.ocSaving = false;
+        }
+    }
+
+    readonly today = new Date();
+    payDialog = false;
+    paySaving = false;
+    payDate: Date | null = null;
+    payInvoice: any = null;
+
     pay(inv: any) {
-        this.confirmationService.confirm({
-            header: 'Marcar pagada',
-            message: `¿Marcar <b>${inv.invoiceNumber}</b> como pagada?<br>Sus servicios en Pendiente Pago pasan a <b>Pagado</b> y sus reportes se actualizan.`,
-            acceptLabel: 'Sí, está pagada',
-            rejectLabel: 'Cancelar',
-            accept: async () => {
-                try {
-                    const { paidServices } = await this.invoiceService.pay(inv.id);
-                    this.messageService.add({ severity: 'success', summary: 'Factura pagada', detail: `${inv.invoiceNumber}: ${paidServices} servicio(s) pasaron a Pagado.`, life: 4000 });
-                    this.load();
-                } catch (e: any) {
-                    this.messageService.add({ severity: 'error', summary: 'No se pudo', detail: e?.error?.error ?? 'No se pudo marcar como pagada.', life: 8000 });
-                }
-            }
-        });
+        this.payInvoice = inv;
+        this.payDate = null;
+        this.payDialog = true;
+    }
+
+    /** La fecha de cobro es opcional: vacía, queda la de hoy. */
+    async confirmPay() {
+        const inv = this.payInvoice;
+        if (!inv) return;
+        this.paySaving = true;
+        try {
+            // Mediodía de ese día, así la fecha no se corre al guardarla.
+            const date = this.payDate ? new Date(this.payDate.getFullYear(), this.payDate.getMonth(), this.payDate.getDate(), 12) : null;
+            const { paidServices } = await this.invoiceService.pay(inv.id, date);
+            this.messageService.add({ severity: 'success', summary: 'Factura pagada', detail: `${inv.invoiceNumber}: ${paidServices} servicio(s) pasaron a Pagado.`, life: 4000 });
+            this.payDialog = false;
+            this.load();
+        } catch (e: any) {
+            this.messageService.add({ severity: 'error', summary: 'No se pudo', detail: e?.error?.error ?? 'No se pudo marcar como pagada.', life: 8000 });
+        } finally {
+            this.paySaving = false;
+        }
     }
 
     canNote(inv: any): boolean {

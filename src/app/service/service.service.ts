@@ -139,7 +139,8 @@ export class ServiceService {
     }
 
     /** Notas del reporte y la orden de compra del cliente (sale en la fila de la factura). */
-    async updateGroupNotes(id: number, notes: string, purchaseOrder?: string) {
-        return firstValueFrom(this.http.patch(environment.apiUrl + 'groups/' + id, { notes, ...(purchaseOrder !== undefined ? { purchaseOrder } : {}) }));
+    /** Lo que no se manda no cambia. Cambiar sólo la OC no regenera el PDF del reporte. */
+    async updateGroupNotes(id: number, notes: string | undefined, purchaseOrder?: string) {
+        return firstValueFrom(this.http.patch(environment.apiUrl + 'groups/' + id, { ...(notes !== undefined ? { notes } : {}), ...(purchaseOrder !== undefined ? { purchaseOrder } : {}) }));
     }
 }

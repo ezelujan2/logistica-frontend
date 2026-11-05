@@ -129,8 +129,8 @@ export class InvoiceService {
 
   /** Baja el PDF de una factura emitida desde LECMA. */
   /** Cobro de la factura entera: sus servicios en Pendiente Pago pasan a Pagado. */
-  pay(invoiceId: number) {
-    return firstValueFrom(this.http.post<{ paidServices: number }>(`${this.apiUrl}/${invoiceId}/pay`, {}));
+  pay(invoiceId: number, paymentDate?: Date | null) {
+    return firstValueFrom(this.http.post<{ paidServices: number }>(`${this.apiUrl}/${invoiceId}/pay`, paymentDate ? { paymentDate } : {}));
   }
 
   async downloadPdf(invoiceId: number, invoiceNumber: string) {

@@ -25,6 +25,18 @@ export interface Release {
 
 export const RELEASES: Release[] = [
     {
+        version: '2.8.0',
+        date: '2026-11-05',
+        title: 'Órdenes de compra y servicios facturados',
+        changes: [
+            { kind: 'importante', text: 'Un servicio facturado ya no cambia sus importes, su cliente ni su tipo de facturación (sí lo del chofer, las notas o los horarios). Si hay que corregirlo, se anula la factura con una nota de crédito. Así la factura y el servicio no quedan con montos distintos.' },
+            { kind: 'nuevo', text: 'Facturas: al lado de cada reporte, el lápiz cambia su orden de compra y, en los clientes que piden OC, el "+" la agrega. El reporte muestra "OC" delante del número.' },
+            { kind: 'nuevo', text: '"Marcar pagada" permite poner la fecha en que se cobró; si se deja vacía, queda la de hoy.' },
+            { kind: 'mejora', text: 'Las facturas de octubre y noviembre hechas en ARCA quedaron con su número y su CAE, y las OC que estaban escritas en el número de las facturas viejas pasaron a sus reportes.' },
+            { kind: 'correccion', text: 'Cambiar sólo la OC de un reporte ya no vuelve a generar su PDF, y actualiza la OC de su factura.' }
+        ]
+    },
+    {
         version: '2.7.0',
         date: '2026-11-01',
         title: 'Fichas de clientes y choferes, y mejoras al facturar',

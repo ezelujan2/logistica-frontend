@@ -450,7 +450,7 @@ import { EXPENSE_TYPE_LABELS, GROUP_STATUS_LABELS, IVA_CONDITION_LABELS, SERVICE
                                     </div>
                                     <div class="flex flex-col gap-2">
                                         <label for="serviceType">Tipo de Servicio</label>
-                                        <p-select [options]="serviceTypes" [(ngModel)]="service.serviceType" optionLabel="label" optionValue="value" appendTo="body" styleClass="w-full"></p-select>
+                                        <p-select [options]="serviceTypes" [(ngModel)]="service.serviceType" [disabled]="billedLocked" optionLabel="label" optionValue="value" appendTo="body" styleClass="w-full"></p-select>
                                     </div>
                                     <div class="flex flex-col gap-2">
                                         <label for="status">Estado</label>
@@ -458,11 +458,11 @@ import { EXPENSE_TYPE_LABELS, GROUP_STATUS_LABELS, IVA_CONDITION_LABELS, SERVICE
                                     </div>
                                     <div class="flex flex-col gap-2">
                                         <label for="billingType">Tipo de Facturación</label>
-                                        <p-select [options]="billingTypes" [(ngModel)]="service.billingType" optionLabel="label" optionValue="value" appendTo="body" styleClass="w-full"></p-select>
+                                        <p-select [options]="billingTypes" [(ngModel)]="service.billingType" [disabled]="billedLocked" optionLabel="label" optionValue="value" appendTo="body" styleClass="w-full"></p-select>
                                     </div>
                                     <div class="flex flex-col gap-2">
                                         <label for="selectedConfig">Tarifa a Aplicar</label>
-                                        <p-select [options]="configs" [(ngModel)]="selectedConfig" optionLabel="name" appendTo="body" styleClass="w-full" (onChange)="onConfigSelected($event)" placeholder="Elegir Tarifa..."></p-select>
+                                        <p-select [options]="configs" [(ngModel)]="selectedConfig" [disabled]="billedLocked" optionLabel="name" appendTo="body" styleClass="w-full" (onChange)="onConfigSelected($event)" placeholder="Elegir Tarifa..."></p-select>
                                     </div>
                                 </div>
                             </p-panel>
@@ -484,22 +484,22 @@ import { EXPENSE_TYPE_LABELS, GROUP_STATUS_LABELS, IVA_CONDITION_LABELS, SERVICE
                                     <div class="grid grid-cols-12 gap-4" *ngIf="service.serviceType !== 'OTHER'">
                                         <div class="col-span-12 md:col-span-4 flex flex-col gap-2">
                                             <label for="kmTraveled">KM Recorridos</label>
-                                            <p-inputNumber [(ngModel)]="service.kmTraveled" mode="decimal" [minFractionDigits]="2" styleClass="w-full" inputStyleClass="w-full"></p-inputNumber>
+                                            <p-inputNumber [(ngModel)]="service.kmTraveled" [disabled]="billedLocked" mode="decimal" [minFractionDigits]="2" styleClass="w-full" inputStyleClass="w-full"></p-inputNumber>
                                         </div>
                                         <div class="col-span-12 md:col-span-4 flex flex-col gap-2">
                                             <label for="extraKmTraveled">KM Extra (Cliente)</label>
-                                            <p-inputNumber [(ngModel)]="service.extraKmTraveled" mode="decimal" [minFractionDigits]="2" styleClass="w-full" inputStyleClass="w-full"></p-inputNumber>
+                                            <p-inputNumber [(ngModel)]="service.extraKmTraveled" [disabled]="billedLocked" mode="decimal" [minFractionDigits]="2" styleClass="w-full" inputStyleClass="w-full"></p-inputNumber>
                                         </div>
                                         <div class="col-span-12 md:col-span-4 flex flex-col gap-2">
                                             <label for="waitingHours">Horas de Espera</label>
-                                            <p-inputNumber [(ngModel)]="service.waitingHours" mode="decimal" [minFractionDigits]="2" styleClass="w-full" inputStyleClass="w-full"></p-inputNumber>
+                                            <p-inputNumber [(ngModel)]="service.waitingHours" [disabled]="billedLocked" mode="decimal" [minFractionDigits]="2" styleClass="w-full" inputStyleClass="w-full"></p-inputNumber>
                                         </div>
                                     </div>
 
                                     <div class="grid grid-cols-1 md:grid-cols-2 gap-4" *ngIf="service.serviceType === 'OTHER'">
                                          <div class="flex flex-col gap-2">
                                              <label for="finalAmount">Monto Final Acordado (Cliente)</label>
-                                             <p-inputNumber [(ngModel)]="service.kmPriceOverride" mode="currency" currency="USD" locale="en-US" styleClass="w-full" placeholder="Monto total cliente"></p-inputNumber>
+                                             <p-inputNumber [(ngModel)]="service.kmPriceOverride" [disabled]="billedLocked" mode="currency" currency="USD" locale="en-US" styleClass="w-full" placeholder="Monto total cliente"></p-inputNumber>
                                          </div>
                                          <div class="flex flex-col gap-2">
                                              <label for="finalDriverAmount">Monto Final (Chofer)</label>
@@ -528,7 +528,7 @@ import { EXPENSE_TYPE_LABELS, GROUP_STATUS_LABELS, IVA_CONDITION_LABELS, SERVICE
                                 <div class="flex flex-col gap-4">
                                     <div class="flex flex-col gap-2">
                                         <label>Clientes</label>
-                                        <p-multiSelect #clientMulti [options]="clientsList" [(ngModel)]="service.clientIds" optionLabel="name" optionValue="id" placeholder="Seleccionar Clientes" display="chip" appendTo="body" styleClass="w-full" (onChange)="clientMulti.hide()"></p-multiSelect>
+                                        <p-multiSelect #clientMulti [options]="clientsList" [(ngModel)]="service.clientIds" [disabled]="billedLocked" optionLabel="name" optionValue="id" placeholder="Seleccionar Clientes" display="chip" appendTo="body" styleClass="w-full" (onChange)="clientMulti.hide()"></p-multiSelect>
                                     </div>
                                     <div class="flex flex-col gap-2">
                                         <label>Choferes</label>
@@ -559,18 +559,22 @@ import { EXPENSE_TYPE_LABELS, GROUP_STATUS_LABELS, IVA_CONDITION_LABELS, SERVICE
 
                             <p-panel header="Precios (Opcional - Sobrescribe defaults)">
                                 <div class="flex flex-col gap-4">
+                                    <div *ngIf="billedLocked" class="flex items-start gap-2 p-3 rounded-lg border border-blue-200 bg-blue-50 dark:bg-blue-900/20 dark:border-blue-800 text-sm text-blue-800 dark:text-blue-200">
+                                        <i class="pi pi-lock mt-1"></i>
+                                        <span>Este servicio está facturado (<b>{{ service.invoice?.invoiceNumber || 'factura vigente' }}</b>): no se pueden cambiar los importes, el cliente ni el tipo de facturación. Lo del chofer sí. Si hay que corregirlo, se anula la factura con una nota de crédito.</span>
+                                    </div>
                                     <div class="grid grid-cols-12 gap-4" *ngIf="service.serviceType !== 'OTHER'">
                                         <div class="col-span-12 md:col-span-4 flex flex-col gap-2">
                                             <label>Precio KM</label>
-                                            <p-inputNumber [(ngModel)]="service.kmPriceOverride" mode="currency" currency="USD" locale="en-US" styleClass="w-full" inputStyleClass="w-full"></p-inputNumber>
+                                            <p-inputNumber [(ngModel)]="service.kmPriceOverride" [disabled]="billedLocked" mode="currency" currency="USD" locale="en-US" styleClass="w-full" inputStyleClass="w-full"></p-inputNumber>
                                         </div>
                                         <div class="col-span-12 md:col-span-4 flex flex-col gap-2">
                                             <label>Precio KM Ex.</label>
-                                            <p-inputNumber [(ngModel)]="service.extraKmPriceOverride" mode="currency" currency="USD" locale="en-US" styleClass="w-full" inputStyleClass="w-full"></p-inputNumber>
+                                            <p-inputNumber [(ngModel)]="service.extraKmPriceOverride" [disabled]="billedLocked" mode="currency" currency="USD" locale="en-US" styleClass="w-full" inputStyleClass="w-full"></p-inputNumber>
                                         </div>
                                         <div class="col-span-12 md:col-span-4 flex flex-col gap-2">
                                             <label>Precio Hora</label>
-                                            <p-inputNumber [(ngModel)]="service.hourPriceOverride" mode="currency" currency="USD" locale="en-US" styleClass="w-full" inputStyleClass="w-full"></p-inputNumber>
+                                            <p-inputNumber [(ngModel)]="service.hourPriceOverride" [disabled]="billedLocked" mode="currency" currency="USD" locale="en-US" styleClass="w-full" inputStyleClass="w-full"></p-inputNumber>
                                         </div>
                                     </div>
                                     <div class="grid grid-cols-12 gap-4" *ngIf="service.serviceType !== 'OTHER'">
@@ -584,12 +588,12 @@ import { EXPENSE_TYPE_LABELS, GROUP_STATUS_LABELS, IVA_CONDITION_LABELS, SERVICE
                                         </div>
                                     </div>
                                     <div class="flex items-center gap-2 pt-2">
-                                        <p-checkbox [(ngModel)]="service.applyWaitingSurcharge" [binary]="true" inputId="applyWaitingSurcharge"></p-checkbox>
+                                        <p-checkbox [(ngModel)]="service.applyWaitingSurcharge" [disabled]="billedLocked" [binary]="true" inputId="applyWaitingSurcharge"></p-checkbox>
                                         <label for="applyWaitingSurcharge" class="cursor-pointer font-bold text-orange-600 dark:text-orange-400">¿Recargo 5+ Hs? (Vale doble)</label>
                                     </div>
                                     <div class="flex flex-col gap-2">
                                         <label>Descuento (%)</label>
-                                        <p-inputNumber [(ngModel)]="service.discountPercentage" suffix="%" styleClass="w-full"></p-inputNumber>
+                                        <p-inputNumber [(ngModel)]="service.discountPercentage" [disabled]="billedLocked" suffix="%" styleClass="w-full"></p-inputNumber>
                                     </div>
                                     <div *ngIf="clientVatChanged" class="flex flex-col gap-2 p-3 rounded-lg border border-orange-200 bg-orange-50 dark:bg-orange-900/20 dark:border-orange-800 text-sm text-orange-800 dark:text-orange-200">
                                         <span><i class="pi pi-exclamation-triangle mr-1"></i>Este servicio se guardó con <b>{{ service.isVatExempt ? 'IVA incluido sin discriminar' : 'IVA aparte' }}</b>, pero hoy el cliente figura como <b>{{ currentClientIvaLabel }}</b>. Se muestra como se guardó.</span>
@@ -608,6 +612,7 @@ import { EXPENSE_TYPE_LABELS, GROUP_STATUS_LABELS, IVA_CONDITION_LABELS, SERVICE
                                         <div class="flex items-center flex-wrap gap-2">
                                             <button
                                                 type="button"
+                                                [disabled]="billedLocked"
                                                 (click)="service.taxRatePercentage = 21"
                                                 class="px-4 py-2 rounded-full text-sm font-semibold border transition-colors"
                                                 [ngClass]="service.taxRatePercentage == 21
@@ -617,6 +622,7 @@ import { EXPENSE_TYPE_LABELS, GROUP_STATUS_LABELS, IVA_CONDITION_LABELS, SERVICE
                                             </button>
                                             <button
                                                 type="button"
+                                                [disabled]="billedLocked"
                                                 (click)="service.taxRatePercentage = 10.5"
                                                 class="px-4 py-2 rounded-full text-sm font-semibold border transition-colors"
                                                 [ngClass]="service.taxRatePercentage == 10.5
@@ -626,7 +632,7 @@ import { EXPENSE_TYPE_LABELS, GROUP_STATUS_LABELS, IVA_CONDITION_LABELS, SERVICE
                                             </button>
                                             <div class="flex items-center gap-2 w-full sm:w-auto pt-2 sm:pt-0 sm:pl-2 sm:ml-1 border-t sm:border-t-0 sm:border-l border-gray-200 dark:border-gray-700">
                                                 <span class="text-xs text-gray-500 dark:text-gray-400 whitespace-nowrap">u otro:</span>
-                                                <p-inputNumber [(ngModel)]="service.taxRatePercentage" inputId="taxRatePercentage" suffix="%" [minFractionDigits]="0" [maxFractionDigits]="2" styleClass="w-20 sm:w-24" placeholder="21"></p-inputNumber>
+                                                <p-inputNumber [(ngModel)]="service.taxRatePercentage" inputId="taxRatePercentage" [disabled]="billedLocked" suffix="%" [minFractionDigits]="0" [maxFractionDigits]="2" styleClass="w-20 sm:w-24" placeholder="21"></p-inputNumber>
                                             </div>
                                         </div>
                                     </div>
@@ -2391,6 +2397,12 @@ export class ServiceList implements OnInit {
         return client?.iva_condition === 'EXENTO' ? 'exento' : 'consumidor final';
     }
 
+    /** En una factura vigente: los importes, el cliente y el tipo de facturación no se cambian (el backend tampoco lo deja). */
+    get billedLocked(): boolean {
+        const s: any = this.service;
+        return !!s?.id && !!(s.invoiceId || s.invoice);
+    }
+
     /**
      * Exentos de antes de octubre 2026 (como Lepa): se guardaron con facturación con IVA pero IVA en cero, y así quedan.
      * Igual que el backend: se mira lo guardado, no la marca de exento (en los viejos no siempre está).
@@ -2440,6 +2452,7 @@ export class ServiceList implements OnInit {
     // Group Notes Editing State
     groupNotesDialogVisible: boolean = false;
     editingGroupNotes: string = '';
+    private editingGroupOriginalNotes = '';
     editingGroupPurchaseOrder: string = '';
     editingGroupId: number | null = null;
     savingGroupNotes: boolean = false;
@@ -2448,6 +2461,7 @@ export class ServiceList implements OnInit {
         if (!group) return;
         this.editingGroupId = group.id;
         this.editingGroupNotes = group.notes || '';
+        this.editingGroupOriginalNotes = this.editingGroupNotes;
         this.editingGroupPurchaseOrder = group.purchaseOrder || '';
         this.groupNotesDialogVisible = true;
     }
@@ -2456,7 +2470,9 @@ export class ServiceList implements OnInit {
         if (!this.editingGroupId) return;
         this.savingGroupNotes = true;
         try {
-            await this.serviceService.updateGroupNotes(this.editingGroupId, this.editingGroupNotes, this.editingGroupPurchaseOrder);
+            // Las notas sólo se mandan si cambiaron: cambiar sólo la OC no regenera el PDF del reporte.
+            const notes = this.editingGroupNotes !== this.editingGroupOriginalNotes ? this.editingGroupNotes : undefined;
+            await this.serviceService.updateGroupNotes(this.editingGroupId, notes, this.editingGroupPurchaseOrder);
             this.messageService.add({severity: 'success', summary: 'Éxito', detail: 'Reporte actualizado.'});
             this.groupNotesDialogVisible = false;
             this.loadAllData();

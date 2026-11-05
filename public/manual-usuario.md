@@ -149,6 +149,7 @@ Si falta algún dato obligatorio (cliente, fechas, origen, destino, chofer, auto
 - **"Agregar Reembolso":** gastos que se le recobran al cliente, con foto o PDF en "Evidencias (Opcional)".
 - **"Agregar Pendiente":** tareas para recordar (por ejemplo, confirmar el horario con el pasajero). Con "Avisar día antes / mismo día" el sistema envía un recordatorio por correo.
 - **"Generar Encuesta":** crea el enlace de la encuesta de satisfacción del servicio (sección 16).
+- **Servicio facturado:** no se pueden cambiar sus importes (km, horas, precios del cliente, descuento, IVA), el cliente ni el tipo de facturación; el formulario los muestra trabados. Lo del chofer, los horarios y las notas sí. Si hay que corregirlo, se anula la factura con una nota de crédito.
 - **IVA:** el servicio se ve como se guardó. Si después cambió la condición frente al IVA del cliente, aparece un aviso naranja con el botón "Aplicar la condición actual del cliente"; el total no cambia, sólo si el IVA va aparte o incluido. Los servicios de antes de octubre de 2026 quedan como se cobraron.
 
 ## 5. Trabajar con la lista de servicios
@@ -243,7 +244,7 @@ En el menú, "Facturas" muestra todas las facturas y notas: las emitidas desde e
 
 - Filtros: buscar por número, CAE, orden de compra o código de reporte; cliente; período; estado (emitida sin cobrar, pagada, anulada); facturas o notas; de LECMA o históricas. Por cliente o por reporte aparecen también las anuladas y sus notas. "Limpiar filtros" vuelve a mostrar todo.
 - Arriba se ve cuántos comprobantes hay y el total facturado del filtro.
-- La flecha de cada fila despliega sus reportes con sus servicios. El código del reporte abre su PDF. Una factura figura "Pagada" cuando todos sus servicios están cobrados.
+- La flecha de cada fila despliega sus reportes con sus servicios. El código del reporte abre su PDF. Al lado de cada reporte, el lápiz cambia su orden de compra; en los clientes con "Pide orden de compra", el "+" la agrega si no tiene: sirve para buscar y cruzar pagos, y no modifica el PDF del reporte ni la factura de ARCA. Una factura figura "Pagada" cuando todos sus servicios están cobrados.
 - Las facturas anuladas muestran con qué nota se anularon y qué servicios tenían.
 - Botones de cada fila: descargar el PDF (las emitidas desde el sistema y las registradas a mano con el PDF adjunto), "Marcar pagada" (sección 8) y hacer una nota de crédito o débito (sólo las emitidas desde el sistema).
 - "Nueva factura" abre el mismo cuadro que "Facturar" en Servicios › A Facturar.
@@ -350,7 +351,7 @@ Todos sus servicios pasan a Pagado, salvo los cancelados.
 
 ### Cobro de una factura entera
 
-En Facturas, tocá el botón verde "Marcar pagada" de la factura cobrada y confirmá. Todos sus servicios en Pendiente Pago pasan a Pagado y sus reportes se actualizan. Si algún servicio está en otro estado, no cambia nada y avisa cuál: revisalo primero.
+En Facturas, tocá el botón verde "Marcar pagada" de la factura cobrada. Si se cobró otro día, poné esa fecha (si la dejás vacía, queda la de hoy) y confirmá. Todos sus servicios en Pendiente Pago pasan a Pagado y sus reportes se actualizan. Si algún servicio está en otro estado, no cambia nada y avisa cuál: revisalo primero.
 
 ### Cobro de un servicio suelto
 
@@ -623,7 +624,7 @@ La pantalla Estadísticas (ADMIN y DIRECTOR) muestra cuánto se facturó, cuánt
 
 ### Más detalle
 
-- **Un cliente:** en Clientes, el ícono "Ver estadísticas".
+- **Un cliente:** en Clientes, tocá su nombre y abrí la pestaña "Resumen" de la ficha.
 - **Un auto:** en Autos, el ícono "Ver rentabilidad". Para autos propios con precio de compra, muestra cuándo se recupera la inversión.
 
 ### Cómo leer los números
