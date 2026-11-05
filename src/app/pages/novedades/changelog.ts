@@ -25,6 +25,17 @@ export interface Release {
 
 export const RELEASES: Release[] = [
     {
+        version: '2.9.1',
+        date: '2026-11-05',
+        title: 'Aviso de migraciones pendientes',
+        changes: [
+            { kind: 'nuevo', text: 'Estado del sistema avisa en rojo si después de una subida falta correr una migración en la base, o si las pantallas y el servidor quedaron en versiones distintas, y dice qué hacer.' },
+            { kind: 'nuevo', text: 'Nueva dirección /api/health para el monitoreo externo (UptimeRobot): avisa si la base no responde o falta una migración, no sólo si el servidor está apagado.' },
+            { kind: 'correccion', text: 'Si una parte de Estado del sistema no se puede leer, el resto de la pantalla se sigue mostrando.' },
+            { kind: 'nuevo', text: 'La web pública tiene descripción para Google y para cuando se comparte el enlace (WhatsApp, LinkedIn), y le indica a Google que no muestre las pantallas internas del sistema.' }
+        ]
+    },
+    {
         version: '2.9.0',
         date: '2026-11-05',
         title: 'Estado del sistema más completo',

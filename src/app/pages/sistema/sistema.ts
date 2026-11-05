@@ -13,6 +13,7 @@ import { SelectModule } from 'primeng/select';
 import { SelectButtonModule } from 'primeng/selectbutton';
 import { CheckboxModule } from 'primeng/checkbox';
 import { environment } from '../../../environments/environment';
+import { CURRENT_RELEASE } from '../novedades/changelog';
 
 // Colores del gráfico de pedidos, validados para daltonismo y contraste en
 // modo claro y oscuro (guía de visualización): azul = bien, rojo = con error.
@@ -45,6 +46,8 @@ type Level = 'good' | 'warning' | 'critical' | 'off';
                     </div>
                 </div>
                 <div class="flex flex-wrap items-center gap-2">
+                    <p-tag *ngIf="status?.migrations" [value]="migrationsTagText()" [severity]="status.migrations.ok ? 'success' : 'danger'" [icon]="status.migrations.ok ? 'pi pi-check' : 'pi pi-times'" />
+                    <p-tag *ngIf="status && status.version !== frontendVersion" [value]="'Pantallas ' + frontendVersion + ' · servidor ' + status.version" severity="danger" icon="pi pi-times" pTooltip="Una de las dos partes no se subió: el frontend y el backend tienen que tener la misma versión" />
                     <p-tag *ngIf="status" [value]="status.database.ok ? 'Base de datos OK' : 'Base de datos sin respuesta'" [severity]="status.database.ok ? 'success' : 'danger'" [icon]="status.database.ok ? 'pi pi-check' : 'pi pi-times'" />
                     <p-tag *ngIf="status" [value]="status.sentryEnabled ? 'Sentry activo' : 'Sentry sin configurar'" [severity]="status.sentryEnabled ? 'success' : 'warn'" [icon]="status.sentryEnabled ? 'pi pi-check' : 'pi pi-exclamation-triangle'" />
                     <p-tag *ngIf="status" [value]="status.assistantConfigured ? 'Asistente configurado' : 'Asistente sin clave'" [severity]="status.assistantConfigured ? 'success' : 'warn'" [icon]="status.assistantConfigured ? 'pi pi-check' : 'pi pi-exclamation-triangle'" />
@@ -55,6 +58,26 @@ type Level = 'good' | 'warning' | 'critical' | 'off';
             </div>
 
             <div *ngIf="error" class="card text-red-600">{{ error }}</div>
+
+            <!-- Lo que hay que resolver ya: migraciones sin correr o versiones distintas. -->
+            <div *ngIf="status && (!status.migrations?.ok || status.version !== frontendVersion || status.migrations?.unknown?.length)" class="card border border-red-300 dark:border-red-800 bg-red-50 dark:bg-red-950/40">
+                <div class="font-semibold text-red-700 dark:text-red-300 mb-2"><i class="pi pi-exclamation-triangle mr-2"></i>Hay que revisar la última subida</div>
+                <div *ngIf="status.migrations?.pending?.length" class="text-sm mb-2">
+                    {{ status.migrations.pending.length === 1 ? 'Falta correr 1 migración' : 'Faltan correr ' + status.migrations.pending.length + ' migraciones' }} en la base de producción. Hasta que se corran, partes del sistema pueden dar error. Desde <span class="font-mono">logistica-backend</span>, con la base de producción:
+                    <div class="font-mono text-xs bg-surface-0 dark:bg-surface-900 rounded p-2 mt-1 break-all">npx prisma migrate deploy</div>
+                    <div class="text-xs text-muted-color mt-1">Faltan: <span class="font-mono">{{ status.migrations.pending.join(', ') }}</span></div>
+                </div>
+                <div *ngIf="status.migrations?.failed?.length" class="text-sm mb-2">
+                    Una migración quedó a medias y frena las siguientes: <span class="font-mono">{{ status.migrations.failed.join(', ') }}</span>. No la vuelvas a correr sin revisar qué pasó.
+                </div>
+                <div *ngIf="status.migrations?.error" class="text-sm mb-2">No se pudieron revisar las migraciones: {{ status.migrations.error }}</div>
+                <div *ngIf="status.migrations?.unknown?.length" class="text-sm mb-2">
+                    La base tiene migraciones que este backend no conoce (<span class="font-mono">{{ status.migrations.unknown.join(', ') }}</span>): el backend subido es más viejo que la base. Revisá en Coolify que se haya deployado la última versión.
+                </div>
+                <div *ngIf="status.version !== frontendVersion" class="text-sm">
+                    Las pantallas están en la versión {{ frontendVersion }} y el servidor en la {{ status.version }}: falta deployar {{ frontendNewer() ? 'el backend' : 'el frontend' }} en Coolify. Si recién deployaste las pantallas, recargá la página.
+                </div>
+            </div>
 
             <ng-container *ngIf="status">
                 <!-- Indicadores principales -->
@@ -557,6 +580,7 @@ export class Sistema implements OnInit, OnDestroy {
     onlyFailed = false;
     eventSearch = '';
 
+    frontendVersion = CURRENT_RELEASE.version;
     backupRequesting = false;
     backupError = '';
 
@@ -738,6 +762,21 @@ export class Sistema implements OnInit, OnDestroy {
             },
             scales: { x, y: { min: 0, max: 100, ticks: { color: text, stepSize: 25, callback: (v: number) => `${v}%` }, grid: { color: grid } } }
         };
+    }
+
+    migrationsTagText(): string {
+        const m = this.status.migrations;
+        if (m.ok) return `Migraciones al día (${m.total})`;
+        if (m.pending?.length) return m.pending.length === 1 ? 'Falta 1 migración' : `Faltan ${m.pending.length} migraciones`;
+        return 'Migraciones con problemas';
+    }
+
+    /** Si las pantallas son de una versión más nueva que el servidor. */
+    frontendNewer(): boolean {
+        const a = this.frontendVersion.split('.').map(Number);
+        const b = String(this.status.version).split('.').map(Number);
+        for (let i = 0; i < 3; i++) if ((a[i] ?? 0) !== (b[i] ?? 0)) return (a[i] ?? 0) > (b[i] ?? 0);
+        return false;
     }
 
     arca(): any {

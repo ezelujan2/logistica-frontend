@@ -766,7 +766,8 @@ La pantalla Estado del sistema muestra de un vistazo si todo funciona y se actua
 
 | Bloque | Qué muestra |
 | --- | --- |
-| Etiquetas de arriba | Si la base de datos responde, si el aviso de errores (Sentry) está activo, si el asistente tiene su clave, el estado del respaldo y el de ARCA |
+| Etiquetas de arriba | Si las migraciones de la base están al día, si las pantallas y el servidor tienen la misma versión, si la base de datos responde, si el aviso de errores (Sentry) está activo, si el asistente tiene su clave, el estado del respaldo y el de ARCA |
+| Aviso "Hay que revisar la última subida" | Aparece en rojo sólo si falta correr una migración, si una quedó a medias o si las pantallas y el servidor quedaron en versiones distintas. Dice qué falta y qué hacer |
 | Pedidos, errores y tiempo de respuesta | Cuánto se usó el sistema en las últimas 24 horas, qué parte terminó en error y cuánto tardan las respuestas |
 | Asistente de IA | Consultas y costo del mes |
 | Etiqueta de respaldo | "Respaldo al día" si el último respaldo bueno tiene menos de 26 horas; "Respaldo atrasado" si no |

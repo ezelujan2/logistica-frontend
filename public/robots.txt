@@ -1,0 +1,9 @@
+# El sistema interno (/app), el ingreso y las encuestas no tienen que aparecer en Google.
+User-agent: *
+Allow: /
+Disallow: /app
+Disallow: /login
+Disallow: /encuesta/
+Disallow: /api/
+
+Sitemap: https://lecmaservicios.com/sitemap.xml
