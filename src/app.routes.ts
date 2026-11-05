@@ -10,6 +10,8 @@ import { AuthGuard } from './app/service/auth.guard';
 export const appRoutes: Routes = [
     { path: '', component: LecmaLanding },
     { path: 'login', component: Login },
+    // Maqueta de reserva de asiento (no guarda nada): para ver cómo se vería.
+    { path: 'reservar', loadComponent: () => import('./app/pages/landing/seat-booking').then((m) => m.SeatBooking) },
     { path: 'encuesta/:token', loadComponent: () => import('./app/pages/survey/service-survey').then(m => m.ServiceSurvey) },
     {
         path: 'app',
