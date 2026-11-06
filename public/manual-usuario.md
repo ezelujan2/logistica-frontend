@@ -75,7 +75,7 @@ La pantalla de inicio muestra de un vistazo qué hay que hacer hoy; el menú de 
 | Por Cobrar Vencido | Lo facturado que ya pasó el plazo de pago del cliente |
 | Próximos Servicios (7 días) | Agenda de la semana |
 | Mis Pendientes | Tareas de los servicios que tenés que hacer |
-| Servicios Estancados | Detalle de cada servicio demorado y cuántos días lleva |
+| Servicios Estancados | Cada servicio demorado con su número, fecha, cliente, trayecto, reporte y cuántos días lleva. La flecha de la izquierda despliega el resto: chofer, auto, orden de compra, factura, total, detalles y notas. La lupa abre el servicio |
 | Registro de Auditoría | Sólo ADMIN: quién cambió qué y los datos antes y después |
 
 ### Menú
@@ -160,6 +160,8 @@ Cada opción de Servicios muestra los servicios de un estado. Lo habitual es tra
 
 - **"Buscar..."** busca en todas las columnas a la vez.
 - Cada columna (fecha, trayecto, cliente, chofer…) tiene su propio filtro en el ícono del embudo.
+- **Filtrar por fecha:** en el embudo de Inicio se abre un calendario. Tocá un día para ver sólo ese día, o dos días para ver el rango entre ambos (los dos incluidos), y después "Aplicar". Si el rango empieza antes del período cargado, el período se amplía solo.
+- **Ordenar:** tocá el título de una columna (Inicio, Trayecto, Clientes…); otro toque invierte el orden. En la vista Agrupado se ordenan los reportes según sus servicios: por Inicio, queda primero el reporte con el servicio más nuevo (o el más viejo).
 - **"Limpiar Filtros"** se pone de color cuando hay filtros activos; tocalo para sacarlos todos.
 - En General, Pagados y Cancelados, el selector de período elige qué servicios traer: últimos 3 meses (lo que se ve al entrar), 6 meses, último año o todo. Si buscás un servicio viejo y no aparece, elegí "Todo".
 - **Agrupado / Desagrupado** muestra los servicios juntos bajo su reporte o como lista simple.
@@ -581,6 +583,9 @@ Arriba de la Agenda, "Próximos services" muestra cada auto con cuántos km le f
 
 - En el calendario, lo de la agenda aparece arriba de los servicios de cada día, con borde punteado. Pasá el mouse para ver las fechas y la nota.
 - En el formulario del servicio, debajo de "Autos", aparece un aviso amarillo si el auto o el chofer no están disponibles en ese horario, o si tienen el seguro, la VTV o el carnet vencidos para esa fecha.
+- Si el chofer o el auto ya están en **otro servicio que se pisa con ese horario**, aparece un aviso naranja "Choca con otro servicio" con el número de ese servicio, el cliente, el recorrido y el horario. Uno que termina justo cuando empieza el otro no avisa. Se puede guardar igual.
+- En la lista de servicios, los de hoy en adelante que chocan con otro llevan un ícono naranja al lado de la fecha (en el celular, "Choca con #…"). Pasá el mouse para ver con cuál.
+- No avisan el auto genérico "Auto" ni los choferes "Terceros", que pueden estar en varios viajes a la vez. Un servicio cargado con más de 24 horas de duración se toma como de una hora, porque casi siempre es una fecha de fin mal cargada.
 
 ### Editar o borrar
 

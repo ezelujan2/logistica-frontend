@@ -12,6 +12,16 @@ export interface StuckService {
     daysStuck: number;
     thresholdDays: number;
     phase: 'facturacion' | 'cobro';
+    startDate: string;
+    serviceType: string;
+    driverNames: string;
+    vehiclePlates: string;
+    groupCode: string | null;
+    purchaseOrder: string | null;
+    invoiceNumber: string | null;
+    totalAmount: number;
+    details: string | null;
+    notes: string | null;
 }
 
 @Injectable({ providedIn: 'root' })

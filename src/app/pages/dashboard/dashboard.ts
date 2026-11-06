@@ -1,6 +1,7 @@
 import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { TableModule } from 'primeng/table';
+import { TooltipModule } from 'primeng/tooltip';
 import { ButtonModule } from 'primeng/button';
 import { StyleClassModule } from 'primeng/styleclass';
 import { PanelMenuModule } from 'primeng/panelmenu';
@@ -26,7 +27,7 @@ import { CheckboxModule } from 'primeng/checkbox';
 @Component({
     selector: 'app-dashboard',
     standalone: true,
-    imports: [CommonModule, TableModule, ButtonModule, StyleClassModule, PanelMenuModule, TagModule, CardModule, DividerModule, SkeletonModule, DialogModule, InputTextModule, SelectModule, FormsModule, CheckboxModule],
+    imports: [CommonModule, TableModule, ButtonModule, StyleClassModule, PanelMenuModule, TagModule, CardModule, DividerModule, SkeletonModule, DialogModule, InputTextModule, SelectModule, FormsModule, CheckboxModule, TooltipModule],
     template: `
         <div class="grid grid-cols-12 gap-6">
 
@@ -220,26 +221,58 @@ import { CheckboxModule } from 'primeng/checkbox';
                         <h5 class="text-lg font-bold m-0">Servicios Estancados</h5>
                         <span class="text-xs text-gray-500 bg-amber-100 dark:bg-amber-900/30 px-2 py-1 rounded-full">{{ stuckServices.length }} fuera de su ciclo normal</span>
                     </div>
-                    <p-table [value]="stuckServices" [rows]="10" [paginator]="stuckServices.length > 10" styleClass="p-datatable-sm" responsiveLayout="scroll">
+                    <!-- Cada fila se despliega con la flecha para ver de qué servicio se trata
+                         (fecha, reporte, chofer, auto, detalles) sin tener que abrirlo. -->
+                    <p-table [value]="stuckServices" dataKey="id" [rows]="10" [paginator]="stuckServices.length > 10" styleClass="p-datatable-sm" responsiveLayout="scroll">
                         <ng-template pTemplate="header">
                             <tr>
+                                <th style="width: 3rem"></th>
+                                <th>Servicio</th>
                                 <th>Cliente</th>
                                 <th>Trayecto</th>
+                                <th>Reporte</th>
                                 <th>Estado</th>
-                                <th>Fase</th>
                                 <th class="text-right">Días estancado</th>
                                 <th></th>
                             </tr>
                         </ng-template>
-                        <ng-template pTemplate="body" let-s>
+                        <ng-template pTemplate="body" let-s let-expanded="expanded">
                             <tr>
+                                <td>
+                                    <p-button type="button" [pRowToggler]="s" [icon]="expanded ? 'pi pi-chevron-down' : 'pi pi-chevron-right'" [rounded]="true" [text]="true" severity="secondary" size="small" [pTooltip]="expanded ? 'Ocultar detalles' : 'Ver detalles'" tooltipPosition="top"></p-button>
+                                </td>
+                                <td class="text-sm whitespace-nowrap">
+                                    <span class="font-semibold">#{{ s.id }}</span>
+                                    <span class="text-gray-500"> · {{ s.startDate | date:'dd/MM/yy' }}</span>
+                                </td>
                                 <td class="text-sm">{{ s.clientName || 'Sin cliente' }}</td>
                                 <td class="text-sm">{{ s.origin }} → {{ s.destination }}</td>
-                                <td><p-tag [value]="getMmStatusLabel(s.status)" [severity]="getSeverity(s.status)"></p-tag></td>
-                                <td class="text-sm">{{ s.phase === 'facturacion' ? 'Sin facturar' : 'Sin cobrar' }}</td>
-                                <td class="text-right font-semibold text-amber-600">{{ s.daysStuck }}d <span class="text-xs text-gray-400 font-normal">(normal: {{ s.thresholdDays }}d)</span></td>
+                                <td class="text-sm whitespace-nowrap">{{ s.groupCode || '—' }}</td>
                                 <td>
-                                    <p-button icon="pi pi-search" [rounded]="true" [text]="true" (click)="goToServiceDetail(s)"></p-button>
+                                    <p-tag [value]="getMmStatusLabel(s.status)" [severity]="getSeverity(s.status)"></p-tag>
+                                    <div class="text-xs text-gray-500 mt-1">{{ s.phase === 'facturacion' ? 'Sin facturar' : 'Sin cobrar' }}</div>
+                                </td>
+                                <td class="text-right font-semibold text-amber-600 whitespace-nowrap">{{ s.daysStuck }}d <span class="text-xs text-gray-400 font-normal">(normal: {{ s.thresholdDays }}d)</span></td>
+                                <td>
+                                    <p-button icon="pi pi-search" [rounded]="true" [text]="true" (click)="goToServiceDetail(s)" pTooltip="Abrir el servicio" tooltipPosition="top"></p-button>
+                                </td>
+                            </tr>
+                        </ng-template>
+                        <ng-template pTemplate="expandedrow" let-s>
+                            <tr>
+                                <td colspan="8" class="bg-gray-50 dark:bg-gray-800/50">
+                                    <div class="grid grid-cols-2 md:grid-cols-4 gap-x-6 gap-y-3 text-sm px-2 py-1">
+                                        <div><div class="text-xs text-gray-500">Fecha</div>{{ longDate(s.startDate) }}</div>
+                                        <div><div class="text-xs text-gray-500">Tipo</div>{{ serviceTypeLabel(s.serviceType) }}</div>
+                                        <div><div class="text-xs text-gray-500">Chofer</div>{{ s.driverNames || '—' }}</div>
+                                        <div><div class="text-xs text-gray-500">Auto</div>{{ s.vehiclePlates || '—' }}</div>
+                                        <div><div class="text-xs text-gray-500">Reporte</div>{{ s.groupCode || 'Sin reporte' }}</div>
+                                        <div><div class="text-xs text-gray-500">Orden de compra</div>{{ s.purchaseOrder || '—' }}</div>
+                                        <div><div class="text-xs text-gray-500">Factura</div>{{ s.invoiceNumber || 'Sin factura' }}</div>
+                                        <div><div class="text-xs text-gray-500">Total</div>{{ money(s.totalAmount) }}</div>
+                                        <div *ngIf="s.details" class="col-span-2 md:col-span-4"><div class="text-xs text-gray-500">Detalles</div><span class="whitespace-pre-line">{{ s.details }}</span></div>
+                                        <div *ngIf="s.notes" class="col-span-2 md:col-span-4"><div class="text-xs text-gray-500">Notas</div><span class="whitespace-pre-line">{{ s.notes }}</span></div>
+                                    </div>
                                 </td>
                             </tr>
                         </ng-template>
@@ -595,6 +628,19 @@ export class Dashboard implements OnInit {
     scrollToStuckServices() {
         if (this.stuckServices.length === 0) return;
         document.getElementById('stuck-services-section')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+
+    // Sin locale es-AR registrado en Angular: se formatea con el del navegador.
+    longDate(value: string): string {
+        return new Date(value).toLocaleString('es-AR', { weekday: 'short', day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' });
+    }
+
+    money(value: number): string {
+        return '$' + Number(value || 0).toLocaleString('es-AR', { maximumFractionDigits: 0 });
+    }
+
+    serviceTypeLabel(type: string): string {
+        return labelOf(SERVICE_TYPE_LABELS, type);
     }
 
     goToServiceDetail(service: Service | StuckService) {

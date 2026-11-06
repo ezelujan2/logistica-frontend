@@ -34,13 +34,21 @@ export interface AffectedService {
 }
 
 export interface AvailabilityWarning {
-    type: 'agenda' | 'document';
+    type: 'agenda' | 'document' | 'service';
     id: number;
     text: string;
     startDate: string;
     endDate: string;
     allDay: boolean;
     createdBy: string | null;
+}
+
+export interface ScheduleConflictItem {
+    id: number;
+    startDate: string;
+    endDate: string;
+    /** Chofer o patente que comparten. */
+    who: string;
 }
 
 export interface UpcomingService {
@@ -91,12 +99,19 @@ export class AgendaService {
         await firstValueFrom(this.http.delete(`${this.apiUrl}/${id}`));
     }
 
-    async availability(start: Date, end: Date | null, driverIds: number[], vehicleIds: number[]): Promise<AvailabilityWarning[]> {
+    async availability(start: Date, end: Date | null, driverIds: number[], vehicleIds: number[], excludeServiceId?: number | null): Promise<AvailabilityWarning[]> {
         let params = new HttpParams().set('start', start.toISOString());
+        // Al editar un servicio, que no choque consigo mismo.
+        if (excludeServiceId) params = params.set('excludeServiceId', String(excludeServiceId));
         if (end) params = params.set('end', end.toISOString());
         if (driverIds.length) params = params.set('driverIds', driverIds.join(','));
         if (vehicleIds.length) params = params.set('vehicleIds', vehicleIds.join(','));
         return await firstValueFrom(this.http.get<AvailabilityWarning[]>(`${this.apiUrl}/availability`, { params }));
+    }
+
+    /** Servicios de hoy en adelante que chocan con otro (mismo chofer o auto en horarios que se pisan). */
+    async conflicts(): Promise<Record<number, ScheduleConflictItem[]>> {
+        return await firstValueFrom(this.http.get<Record<number, ScheduleConflictItem[]>>(`${this.apiUrl}/conflicts`));
     }
 
     async upcomingServices(): Promise<UpcomingService[]> {

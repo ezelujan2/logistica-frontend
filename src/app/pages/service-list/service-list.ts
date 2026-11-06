@@ -28,7 +28,7 @@ import { Client, ClientService } from '../../service/client.service';
 import { Driver, DriverService } from '../../service/driver.service';
 import { Vehicle, VehicleService } from '../../service/vehicle.service';
 import { ToastModule } from 'primeng/toast';
-import { MessageService, ConfirmationService } from 'primeng/api';
+import { MessageService, ConfirmationService, FilterService } from 'primeng/api';
 import { ConfirmDialogModule } from 'primeng/confirmdialog';
 import { PrimeNG } from 'primeng/config';
 import { TooltipModule } from 'primeng/tooltip';
@@ -39,8 +39,21 @@ import { ActivatedRoute, RouterModule } from '@angular/router';
 import { environment } from '../../../environments/environment';
 import { ServiceCalendar } from '../service-calendar/service-calendar';
 import { AuthService } from '../../service/auth.service';
-import { AgendaService, AgendaEntry, AvailabilityWarning } from '../../service/agenda.service';
+import { AgendaService, AgendaEntry, AvailabilityWarning, ScheduleConflictItem } from '../../service/agenda.service';
 import { EXPENSE_TYPE_LABELS, GROUP_STATUS_LABELS, IVA_CONDITION_LABELS, SERVICE_STATUS_LABELS, SERVICE_TYPE_LABELS, labelOf, optionsOf } from '../../service/labels';
+
+/**
+ * Filtro de la columna Inicio: [desde, hasta] del calendario en modo rango.
+ * Compara por día (sin la hora) e incluye los dos extremos; con un solo día
+ * elegido (todavía sin "hasta"), filtra ese día.
+ */
+export function inDateRange(value: any, range: any): boolean {
+    if (!Array.isArray(range) || !range[0]) return true;
+    if (!value) return false;
+    const day = (d: any) => { const x = new Date(d); return new Date(x.getFullYear(), x.getMonth(), x.getDate()).getTime(); };
+    const v = day(value), from = day(range[0]), to = day(range[1] ?? range[0]);
+    return v >= Math.min(from, to) && v <= Math.max(from, to);
+}
 
 @Component({
     selector: 'app-service-list',
@@ -136,7 +149,10 @@ import { EXPENSE_TYPE_LABELS, GROUP_STATUS_LABELS, IVA_CONDITION_LABELS, SERVICE
                                  [ngClass]="isMobileSelected(s) ? 'bg-blue-600 border-blue-600' : 'border-gray-300 dark:border-gray-600'">
                                 <i *ngIf="isMobileSelected(s)" class="pi pi-check text-white" style="font-size: 10px;"></i>
                             </div>
-                            <span class="text-xs text-gray-500 font-medium flex-1">{{ s.startDate | date:'dd/MM/yyyy · HH:mm' }}</span>
+                            <span class="text-xs text-gray-500 font-medium flex-1">
+                                {{ s.startDate | date:'dd/MM/yyyy · HH:mm' }}
+                                <span *ngIf="clashesOf(s.id).length" class="text-orange-600 dark:text-orange-400 font-semibold ml-1"><i class="pi pi-clone" style="font-size: 10px"></i> Choca con #{{ clashesOf(s.id)[0]!.id }}</span>
+                            </span>
                             <p-tag [value]="getMmStatusLabel(s.status)" [severity]="getSeverity(s.status)" styleClass="text-xs" />
                         </div>
 
@@ -214,7 +230,8 @@ import { EXPENSE_TYPE_LABELS, GROUP_STATUS_LABELS, IVA_CONDITION_LABELS, SERVICE
             <p-table *ngIf="!isCalendarView && !isMobile" #dt1 [value]="services" [(selection)]="selectedServices" dataKey="id" [rows]="50" [rowsPerPageOptions]="[10, 25, 50]" [loading]="loading" [paginator]="true"
                 [globalFilterFields]="['route', 'status', 'clientNames', 'serviceGroup.code', 'invoiceNumber']" styleClass="p-datatable-sm" responsiveLayout="stack" breakpoint="960px"
                 [rowGroupMode]="isGroupedView ? 'subheader' : undefined"
-                [groupRowsBy]="isGroupedView ? 'serviceGroup.code' : ''">
+                [groupRowsBy]="isGroupedView ? 'serviceGroup.code' : ''"
+                [customSort]="true" (sortFunction)="sortServices($event)" (onFilter)="onTableFilter()">
                 <ng-template pTemplate="groupheader" let-service>
                     <tr pRowGroupHeader>
                         <td colspan="9" class="bg-gray-100 dark:bg-gray-800 font-bold">
@@ -280,7 +297,13 @@ import { EXPENSE_TYPE_LABELS, GROUP_STATUS_LABELS, IVA_CONDITION_LABELS, SERVICE
                         <th pSortableColumn="startDate" style="min-width: 10rem">
                             <div class="flex items-center gap-2">
                                 Inicio <p-sortIcon field="startDate" />
-                                <p-columnFilter type="date" field="startDate" display="menu" [showAddButton]="false"></p-columnFilter>
+                                <!-- Rango de días: un clic elige un solo día, dos clics un rango (ambos días incluidos). -->
+                                <p-columnFilter field="startDate" matchMode="rangoFechas" display="menu" [showMatchModes]="false" [showOperator]="false" [showAddButton]="false">
+                                    <ng-template pTemplate="filter" let-value let-filter="filterCallback">
+                                        <p-datepicker [ngModel]="value" (ngModelChange)="filter($event)" selectionMode="range" [inline]="true" [readonlyInput]="true" dateFormat="dd/mm/yy"></p-datepicker>
+                                        <div class="text-xs text-muted-color mt-2">Un día, o tocá dos días para un rango.</div>
+                                    </ng-template>
+                                </p-columnFilter>
                             </div>
                         </th>
                         <th pSortableColumn="serviceType" style="min-width: 8rem">Tipo <p-sortIcon field="serviceType" /></th>
@@ -357,7 +380,10 @@ import { EXPENSE_TYPE_LABELS, GROUP_STATUS_LABELS, IVA_CONDITION_LABELS, SERVICE
                 <ng-template pTemplate="body" let-service>
                     <tr>
                         <td><p-tableCheckbox [value]="service"></p-tableCheckbox></td>
-                        <td>{{ service.startDate | date:'dd/MM/yyyy HH:mm' }}</td>
+                        <td class="whitespace-nowrap">
+                            {{ service.startDate | date:'dd/MM/yyyy HH:mm' }}
+                            <i *ngIf="clashesOf(service.id).length" class="pi pi-clone text-orange-500 ml-1 cursor-help" [pTooltip]="clashText(service.id)" tooltipPosition="top" [attr.aria-label]="clashText(service.id)"></i>
+                        </td>
                         <td><p-tag [value]="getServiceTypeLabel(service.serviceType)" severity="info"></p-tag></td>
                         <td>{{ service.route }}</td>
                         <td>{{ service.details }}</td>
@@ -544,13 +570,23 @@ import { EXPENSE_TYPE_LABELS, GROUP_STATUS_LABELS, IVA_CONDITION_LABELS, SERVICE
                                             </ng-template>
                                         </p-multiSelect>
                                     </div>
+                                    <!-- Choque con otro servicio: mismo chofer o auto en un horario que se pisa. No impide guardar. -->
+                                    <div *ngIf="serviceClashes().length" class="rounded-lg border border-orange-300 bg-orange-50 dark:bg-orange-950/40 dark:border-orange-700 px-3 py-2 text-sm">
+                                        <div class="font-semibold text-orange-800 dark:text-orange-300 flex items-center gap-2">
+                                            <i class="pi pi-clone"></i>Choca con otro servicio
+                                        </div>
+                                        <ul class="m-0 mt-1 pl-5 list-disc text-orange-900 dark:text-orange-200">
+                                            <li *ngFor="let w of serviceClashes()">{{ w.text }} · {{ warningWhen(w) }}</li>
+                                        </ul>
+                                        <div class="text-xs mt-1 text-orange-800 dark:text-orange-300">Revisá los horarios. Si es correcto (por ejemplo, uno termina justo antes), se puede guardar igual.</div>
+                                    </div>
                                     <!-- Aviso de agenda: auto o chofer no disponible. No impide guardar. -->
-                                    <div *ngIf="availabilityWarnings.length" class="rounded-lg border border-amber-300 bg-amber-50 dark:bg-amber-950/40 dark:border-amber-700 px-3 py-2 text-sm">
+                                    <div *ngIf="agendaWarnings().length" class="rounded-lg border border-amber-300 bg-amber-50 dark:bg-amber-950/40 dark:border-amber-700 px-3 py-2 text-sm">
                                         <div class="font-semibold text-amber-800 dark:text-amber-300 flex items-center gap-2">
                                             <i class="pi pi-exclamation-triangle"></i>No disponible en ese horario
                                         </div>
                                         <ul class="m-0 mt-1 pl-5 list-disc text-amber-900 dark:text-amber-200">
-                                            <li *ngFor="let w of availabilityWarnings">{{ w.text }} · {{ warningWhen(w) }}<span *ngIf="w.createdBy"> (lo cargó {{ w.createdBy }})</span></li>
+                                            <li *ngFor="let w of agendaWarnings()">{{ w.text }} · {{ warningWhen(w) }}<span *ngIf="w.createdBy"> (lo cargó {{ w.createdBy }})</span></li>
                                         </ul>
                                         <div class="text-xs mt-1 text-amber-800 dark:text-amber-300">Es sólo un aviso: se puede guardar igual.</div>
                                     </div>
@@ -1314,13 +1350,40 @@ export class ServiceList implements OnInit {
         private primeng: PrimeNG,
         public authService: AuthService,
         private fileService: FileService,
-        private agendaService: AgendaService
+        private agendaService: AgendaService,
+        private filterService: FilterService
     ) {}
 
     // Agenda (talleres, choferes no disponibles, eventos): se muestra en el
     // calendario y avisa en el formulario, sin impedir guardar.
     agendaEntries: AgendaEntry[] = [];
     availabilityWarnings: AvailabilityWarning[] = [];
+    /** Servicios de hoy en adelante que chocan con otro: id → con cuáles. */
+    clashes: Record<number, ScheduleConflictItem[]> = {};
+
+    serviceClashes(): AvailabilityWarning[] {
+        return this.availabilityWarnings.filter((w) => w.type === 'service');
+    }
+
+    agendaWarnings(): AvailabilityWarning[] {
+        return this.availabilityWarnings.filter((w) => w.type !== 'service');
+    }
+
+    loadClashes() {
+        this.agendaService
+            .conflicts()
+            .then((c) => (this.clashes = c))
+            .catch(() => {});
+    }
+
+    clashesOf(id: number | undefined | null): ScheduleConflictItem[] {
+        return id ? (this.clashes[id] ?? []) : [];
+    }
+
+    clashText(id: number | undefined | null): string {
+        const time = (d: string) => new Date(d).toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit' });
+        return this.clashesOf(id).map((c) => `Choca con el #${c.id} (${c.who}, ${time(c.startDate)} a ${time(c.endDate)})`).join(' · ');
+    }
     private availabilityTimer: any = null;
     private availabilityRequest = 0;
 
@@ -1341,7 +1404,7 @@ export class ServiceList implements OnInit {
             }
             try {
                 const end = this.service.endDate ? new Date(this.service.endDate) : null;
-                const warnings = await this.agendaService.availability(start, end, driverIds, vehicleIds);
+                const warnings = await this.agendaService.availability(start, end, driverIds, vehicleIds, this.service?.id ?? null);
                 if (request === this.availabilityRequest) this.availabilityWarnings = warnings;
             } catch {
                 // Es sólo un aviso: si falla, el formulario sigue igual.
@@ -1493,6 +1556,8 @@ export class ServiceList implements OnInit {
             weekHeader: 'Sem'
         });
 
+        this.filterService.register('rangoFechas', inDateRange);
+
         this.route.paramMap.subscribe(params => {
             const statusParam = params.get('status');
             this.handleStatusChange(statusParam);
@@ -1638,6 +1703,7 @@ export class ServiceList implements OnInit {
             }));
 
             console.log(`[ServiceList] Services loaded: ${this.services.length} services.`);
+            this.loadClashes();
 
         } catch (error) {
             console.error('[ServiceList] Error loading data:', error);
@@ -1689,6 +1755,69 @@ export class ServiceList implements OnInit {
         if (found) {
             this.editService(found);
         }
+    }
+
+    /**
+     * Orden de la tabla. Desagrupada, ordena normal. Agrupada, los servicios de
+     * cada reporte tienen que quedar juntos (si no, se parte el grupo): se ordena
+     * por la columna y los grupos quedan en el orden de su primer servicio. Así,
+     * ordenar por Inicio pone arriba el reporte con el servicio más nuevo (o más viejo).
+     * Sin columna elegida, agrupada sigue ordenando por código de reporte.
+     */
+    sortServices(event: { data?: any[]; field?: string; order?: number; multiSortMeta?: { field: string; order: number }[] }) {
+        const data = event.data;
+        if (!data) return;
+        const meta = event.multiSortMeta?.length ? event.multiSortMeta[event.multiSortMeta.length - 1] : { field: event.field, order: event.order };
+        const field = meta.field;
+        const order = meta.order || 1;
+        if (!field) return;
+
+        const groupOf = (s: any) => s.serviceGroup?.code || '';
+        const valueOf = (s: any) => field.split('.').reduce((v: any, k: string) => v?.[k], s);
+        const compare = (a: any, b: any) => {
+            const va = valueOf(a), vb = valueOf(b);
+            if (va == null || va === '') return vb == null || vb === '' ? 0 : 1; // vacíos al final
+            if (vb == null || vb === '') return -1;
+            const r = typeof va === 'string' && typeof vb === 'string' ? va.localeCompare(vb, 'es', { numeric: true }) : va < vb ? -1 : va > vb ? 1 : 0;
+            return order * r;
+        };
+
+        if (!this.isGroupedView) {
+            data.sort(compare);
+            return;
+        }
+        if (field === 'serviceGroup.code') {
+            // Orden por defecto de la vista agrupada; los sin reporte, al final.
+            data.sort((a, b) => {
+                const ga = groupOf(a), gb = groupOf(b);
+                if (ga === gb) return b.startDate - a.startDate;
+                if (!ga) return 1;
+                if (!gb) return -1;
+                return order * ga.localeCompare(gb, 'es', { numeric: true });
+            });
+            return;
+        }
+        data.sort(compare);
+        const rank = new Map<string, number>();
+        data.forEach(s => { if (!rank.has(groupOf(s))) rank.set(groupOf(s), rank.size); });
+        const position = new Map(data.map((s, i) => [s, i]));
+        data.sort((a, b) => rank.get(groupOf(a))! - rank.get(groupOf(b))! || position.get(a)! - position.get(b)!);
+    }
+
+    /**
+     * Si el filtro de fecha pide días más viejos que el período cargado
+     * (por defecto, los últimos 3 meses), amplía el período para que aparezcan.
+     */
+    onTableFilter() {
+        const raw: any = this.dt1?.filters?.['startDate'];
+        const from: Date | null = (Array.isArray(raw) ? raw[0]?.value : raw?.value)?.[0] ?? null;
+        const since = this.periodStart();
+        if (!from || !since || from >= since) return;
+        const covers = (months: number) => { const d = new Date(); d.setMonth(d.getMonth() - months); d.setHours(0, 0, 0, 0); return d <= from; };
+        const option = this.periodOptions.find(o => o.value && covers(o.value)) ?? this.periodOptions.find(o => !o.value)!;
+        this.selectedPeriod = option.value;
+        this.messageService.add({ severity: 'info', summary: 'Período ampliado', detail: `Se cargan: ${option.label.toLowerCase()}, para incluir esas fechas.` });
+        this.loadAllData();
     }
 
     clear(table: any) {
@@ -2756,6 +2885,9 @@ export class ServiceList implements OnInit {
              // Restore Default Sort: StartDate Desc
              this.services.sort((a: any, b: any) => new Date(b.startDate).getTime() - new Date(a.startDate).getTime());
         }
+        // Si había una columna elegida para ordenar, se respeta en la nueva vista.
+        const dt = this.dt1;
+        if (dt?.sortField) this.sortServices({ data: this.services, field: dt.sortField, order: dt.sortOrder });
     }
 
     async openReport(service: any) {

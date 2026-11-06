@@ -25,6 +25,18 @@ export interface Release {
 
 export const RELEASES: Release[] = [
     {
+        version: '2.10.0',
+        date: '2026-11-06',
+        title: 'Choques de horario y filtro por fechas',
+        changes: [
+            { kind: 'nuevo', text: 'Al cargar o editar un servicio, avisa si el chofer o el auto ya están en otro servicio que se pisa con ese horario, con el número, el cliente y el recorrido del otro. Es sólo un aviso: se puede guardar igual.' },
+            { kind: 'nuevo', text: 'En la lista de servicios, los de hoy en adelante que chocan con otro se marcan con un ícono naranja al lado de la fecha.' },
+            { kind: 'mejora', text: 'El filtro de la columna Inicio ahora es un calendario: un día, o dos días para un rango (los dos incluidos). Si el rango arranca antes del período cargado, el período se amplía solo.' },
+            { kind: 'mejora', text: 'En Servicios Estancados del inicio se ve el número, la fecha y el reporte de cada servicio, y con la flecha se despliegan el chofer, el auto, la orden de compra, la factura, el total y los detalles, para saber de qué servicio se trata sin abrirlo.' },
+            { kind: 'correccion', text: 'Ordenar por una columna en la vista Agrupado no hacía nada visible. Ahora los reportes se ordenan según sus servicios: por ejemplo, por Inicio queda arriba el reporte con el servicio más nuevo.' }
+        ]
+    },
+    {
         version: '2.9.1',
         date: '2026-11-05',
         title: 'Aviso de migraciones pendientes',
