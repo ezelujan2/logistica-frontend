@@ -687,13 +687,13 @@ Cuando un cliente manda la planilla de sus viajes (foto, captura o PDF), el asis
 
 1. Tocá el clip y adjuntá la foto.
 2. Escribí algo como "Cargá estos viajes de Mariela Spoto" y enviá. Si un viaje lo hace otro chofer, decilo en el mismo mensaje ("el jueves lo hace Javier").
-3. Aparece una tabla con un viaje por fila: fecha, recorrido, pasajeros y hora, chofer y km.
-4. Revisala. Podés cambiar el chofer de cualquier viaje y destildar los que no van.
+3. Aparece una tabla con un viaje por fila: fecha, recorrido, pasajeros y hora, chofer, tarifa y km.
+4. Revisala. Podés cambiar el chofer o la tarifa de cualquier viaje y destildar los que no van. **Si un viaje cae en feriado, cambiale la tarifa a la de feriados**: eso el sistema no lo sabe solo.
 5. Tocá "Crear N servicios".
 
-Lo que la planilla no dice se completa con cómo se vienen cargando los viajes de ese cliente: el chofer es el que hizo la mayoría de los últimos 10 viajes, y el auto y los km son los habituales de cada recorrido. Cada viaje dura 1 hora, salvo que la planilla diga a qué hora termina. Los nombres que aparecen en la planilla y no son pasajeros (por ejemplo, a quién se la mandan) no se toman como chofer.
+Lo que la planilla no dice se completa con cómo se vienen cargando los viajes de ese cliente: el chofer es el que hizo la mayoría de los últimos 10 viajes, y el auto y los km son los habituales de cada recorrido. La **tarifa** es la del último viaje parecido de ese cliente, mirando el tipo de día: un domingo toma la que se usó el último domingo (por ejemplo, la de domingos de KCC) y el resto de los días, la común. Se aplica con los precios de hoy de esa tarifa, así que si la actualizaste en Configuración, toma los valores nuevos. Si no encuentra ninguna, la fila avisa "Sin tarifa" en naranja: elegila antes de confirmar, porque si no el servicio queda con precios en cero. Cada viaje dura 1 hora, salvo que la planilla diga a qué hora termina. Los nombres que aparecen en la planilla y no son pasajeros (por ejemplo, a quién se la mandan) no se toman como chofer.
 
-Los viajes que ya están cargados aparecen destildados con el aviso "Ya está cargado" y el número de servicio, así no se duplican. Si una fila tiene todos los datos queda en Pendiente, como al cargarla a mano; si le falta chofer, auto o km, queda en Creado.
+Los viajes que ya están cargados aparecen destildados con el aviso "Ya está cargado" y el número de servicio, así no se duplican. Si una fila tiene todos los datos queda en Pendiente, como al cargarla a mano; si le falta chofer, auto, km o tarifa, queda en Creado.
 
 ### Pedir cambios
 

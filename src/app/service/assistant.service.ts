@@ -23,6 +23,9 @@ export interface BatchRow {
     chofer: string | null;
     vehiculo: string | null;
     km: number | null;
+    /** Tarifa de Configuración que se le aplica (sus precios); null = sin tarifa, queda en cero. */
+    tarifaId: number | null;
+    tarifa: string | null;
     incluir: boolean;
     duplicadoDe: number | null;
     aviso: string | null;
@@ -133,7 +136,7 @@ export class AssistantService {
         throw new Error('La conexión se cortó antes de terminar. Probá de nuevo.');
     }
 
-    async confirmAction(id: number, edits?: { filas: { incluir: boolean; choferId: number | null }[] }): Promise<AssistantAction> {
+    async confirmAction(id: number, edits?: { filas: { incluir: boolean; choferId: number | null; tarifaId?: number | null }[] }): Promise<AssistantAction> {
         return await firstValueFrom(this.http.post<AssistantAction>(`${this.apiUrl}assistant/actions/${id}/confirm`, edits ?? {}));
     }
 

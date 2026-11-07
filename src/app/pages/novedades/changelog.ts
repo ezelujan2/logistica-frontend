@@ -25,6 +25,15 @@ export interface Release {
 
 export const RELEASES: Release[] = [
     {
+        version: '2.10.1',
+        date: '2026-11-06',
+        title: 'Tarifa en los servicios que carga el asistente',
+        changes: [
+            { kind: 'correccion', text: 'El asistente creaba los servicios sin tarifa, con los precios en cero (pasó con los de KCC). Ahora elige la tarifa del último viaje parecido de ese cliente, según el tipo de día: los domingos la de domingo, el resto de los días la común. La aplica con los precios de hoy de esa tarifa.' },
+            { kind: 'mejora', text: 'La tabla para cargar la semana de un cliente tiene una columna Tarifa para cambiarla antes de confirmar (por ejemplo, en un feriado). Si no encuentra ninguna, avisa "Sin tarifa" y el servicio queda en Creado.' }
+        ]
+    },
+    {
         version: '2.10.0',
         date: '2026-11-06',
         title: 'Choques de horario y filtro por fechas',

@@ -19,6 +19,8 @@ import { MessageService, ConfirmationService } from 'primeng/api';
 import { CheckboxModule } from 'primeng/checkbox';
 import { AssistantAction, AssistantService, BatchRow, ConversationSummary, ToolCall } from '../../service/assistant.service';
 import { DriverService } from '../../service/driver.service';
+import { ConfigurationService } from '../../service/configuration.service';
+import { firstValueFrom } from 'rxjs';
 import { AuthService } from '../../service/auth.service';
 
 const CAPABILITIES = [
@@ -185,7 +187,7 @@ function actionIdsFrom(toolCalls?: ToolCall[]): number[] {
                             <!-- Carga por lotes: tabla con chofer editable y filas para incluir o saltear -->
                             <ng-container *ngIf="isBatch(action)">
                                 <div class="text-sm font-medium mb-1">Crear servicios para {{ action.payload.cliente }}</div>
-                                <div class="text-xs text-muted-color mb-2">Chofer, auto y km según sus viajes recientes. Podés cambiar el chofer o destildar un viaje antes de confirmar.</div>
+                                <div class="text-xs text-muted-color mb-2">Chofer, auto, km y tarifa según sus viajes recientes (los domingos, la de domingo). Podés cambiar el chofer o la tarifa, o destildar un viaje, antes de confirmar. Los feriados no los detecta: cambiales la tarifa a mano.</div>
                                 <div class="overflow-x-auto">
                                     <table class="w-full text-sm">
                                         <thead>
@@ -194,6 +196,7 @@ function actionIdsFrom(toolCalls?: ToolCall[]): number[] {
                                                 <th class="py-1 pr-2">Fecha</th>
                                                 <th class="py-1 pr-2">Viaje</th>
                                                 <th class="py-1 pr-2">Chofer</th>
+                                                <th class="py-1 pr-2">Tarifa</th>
                                                 <th class="py-1 pr-2 text-right">Km</th>
                                             </tr>
                                         </thead>
@@ -222,6 +225,24 @@ function actionIdsFrom(toolCalls?: ToolCall[]): number[] {
                                                         styleClass="w-full"
                                                     />
                                                     <ng-template #driverName>{{ row.chofer || 'Sin chofer' }}</ng-template>
+                                                </td>
+                                                <td class="py-1 pr-2 min-w-52">
+                                                    <p-select
+                                                        *ngIf="action.status === 'PENDING'; else tariffName"
+                                                        [options]="tariffs"
+                                                        [(ngModel)]="row.tarifaId"
+                                                        optionLabel="name"
+                                                        optionValue="id"
+                                                        placeholder="Sin tarifa"
+                                                        [showClear]="true"
+                                                        [filter]="true"
+                                                        appendTo="body"
+                                                        size="small"
+                                                        styleClass="w-full"
+                                                        [class.ng-invalid]="row.incluir && !row.tarifaId"
+                                                        [class.ng-dirty]="row.incluir && !row.tarifaId"
+                                                    />
+                                                    <ng-template #tariffName>{{ row.tarifa || 'Sin tarifa' }}</ng-template>
                                                 </td>
                                                 <td class="py-1 pr-2 text-right">{{ row.km ?? '—' }}</td>
                                             </tr>
@@ -317,7 +338,8 @@ export class AssistantChat implements OnInit, AfterViewChecked {
         private messageService: MessageService,
         private confirmationService: ConfirmationService,
         private sanitizer: DomSanitizer,
-        private driverService: DriverService
+        private driverService: DriverService,
+        private configService: ConfigurationService
     ) {}
 
     ngOnInit() {
@@ -465,9 +487,15 @@ export class AssistantChat implements OnInit, AfterViewChecked {
         return action.type === 'CREATE_SERVICES' && Array.isArray(action.payload?.filas);
     }
 
+    // Tarifas de Configuración, para el selector de la misma tabla.
+    tariffs: { id: number; name: string }[] = [];
+
     batchRows(action: AssistantAction): BatchRow[] {
         if (!this.driversRequested && action.status === 'PENDING') {
             this.driversRequested = true;
+            firstValueFrom(this.configService.getConfigs())
+                .then((list) => (this.tariffs = list.filter((c) => c.id).map((c) => ({ id: c.id!, name: (c.name ?? '').trim() })).sort((a, b) => a.name.localeCompare(b.name))))
+                .catch(() => (this.tariffs = []));
             this.driverService
                 .getDrivers()
                 .then((list) => (this.drivers = list.filter((d) => d.id).map((d) => ({ id: d.id!, name: d.name })).sort((a, b) => a.name.localeCompare(b.name))))
@@ -492,7 +520,7 @@ export class AssistantChat implements OnInit, AfterViewChecked {
     async resolveAction(action: AssistantAction & { busy?: boolean }, confirm: boolean) {
         action.busy = true;
         try {
-            const edits = this.isBatch(action) ? { filas: (action.payload.filas as BatchRow[]).map((r) => ({ incluir: r.incluir, choferId: r.choferId ?? null })) } : undefined;
+            const edits = this.isBatch(action) ? { filas: (action.payload.filas as BatchRow[]).map((r) => ({ incluir: r.incluir, choferId: r.choferId ?? null, ...('tarifaId' in r ? { tarifaId: r.tarifaId ?? null } : {}) })) } : undefined;
             const updated = confirm ? await this.assistantService.confirmAction(action.id, edits) : await this.assistantService.cancelAction(action.id);
             Object.assign(action, updated);
             if (updated.status === 'FAILED') this.messageService.add({ severity: 'error', summary: 'No se pudo hacer', detail: updated.result ?? '' });
