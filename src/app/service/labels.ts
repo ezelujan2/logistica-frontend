@@ -95,7 +95,7 @@ export function optionsOf(labels: Record<string, string>): { label: string; valu
 export const VOUCHER_TYPES: { value: number; code: string; label: string }[] = [
     { value: 1, code: 'FA', label: 'Factura A' },
     { value: 6, code: 'FB', label: 'Factura B' },
-    { value: 201, code: 'FCE A', label: 'Factura de Crédito Electrónica A' },
+    { value: 201, code: 'FCE A', label: 'FCE A (Factura de Crédito Electrónica)' },
     { value: 3, code: 'NCA', label: 'Nota de Crédito A' },
     { value: 8, code: 'NCB', label: 'Nota de Crédito B' },
     { value: 203, code: 'NC FCE A', label: 'Nota de Crédito FCE A' },

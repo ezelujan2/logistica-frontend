@@ -103,8 +103,8 @@ export class Login {
                     this.errorMessage = 'Credenciales inválidas. Por favor verifica tu correo electrónico y contraseña.';
                 } else if (error.status === 0) {
                     this.errorMessage = 'No se puede conectar al servidor. Por favor verifica tu conexión a internet.';
-                } else if (error.error && error.error.message) {
-                    this.errorMessage = error.error.message;
+                } else if (error.error?.error || error.error?.message) {
+                    this.errorMessage = error.error.error || error.error.message;
                 } else {
                     this.errorMessage = 'Ocurrió un error durante el inicio de sesión. Por favor intenta de nuevo más tarde.';
                 }

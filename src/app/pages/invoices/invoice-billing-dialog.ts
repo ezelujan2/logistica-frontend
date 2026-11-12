@@ -16,6 +16,40 @@ import { ArcaStatus, InvoiceForm, InvoiceService, emptyInvoiceForm, isInvoiceFor
 import { InvoiceFields } from '../service-list/invoice-fields';
 import { ARCA_ACTIVITY_LABELS, DEFAULT_ARCA_ACTIVITY, IVA_CONDITION_LABELS, labelOf, optionsOf } from '../../service/labels';
 
+interface VoucherTotals {
+    net: number;
+    vat: number;
+    total: number;
+    byRate: { rate: number; base: number; amount: number }[];
+}
+
+const round2 = (n: number) => Math.round((n + Number.EPSILON) * 100) / 100;
+
+/**
+ * Neto de un servicio en la factura de ARCA, igual que invoiceNet del backend:
+ * uno viejo guardado con IVA en cero se presupuestó por el total, y el IVA va
+ * adentro de ese precio.
+ */
+function invoiceNet(s: any): number {
+    const rate = Number(s.taxRatePercentage ?? 0);
+    const withoutVat = ['OFFICIAL_A', 'MONOTRIBUTO'].includes(String(s.billing_type)) && Number(s.tax_amount || 0) === 0 && Number(s.net_amount || 0) > 0;
+    if (!withoutVat || rate === 0) return Number(s.net_amount || 0);
+    return round2(Number(s.total_amount || 0) / (1 + rate / 100));
+}
+
+/** Igual que voucherTotals del backend: el IVA se calcula por alícuota sobre la suma de netos. */
+function voucherTotals(services: any[]): VoucherTotals {
+    const bases = new Map<number, number>();
+    for (const s of services) {
+        const rate = Number(s.taxRatePercentage ?? 0);
+        bases.set(rate, round2((bases.get(rate) ?? 0) + invoiceNet(s)));
+    }
+    const byRate = [...bases.entries()].sort((a, b) => a[0] - b[0]).map(([rate, base]) => ({ rate, base, amount: round2(base * (rate / 100)) }));
+    const net = round2(byRate.reduce((sum, r) => sum + r.base, 0));
+    const vat = round2(byRate.reduce((sum, r) => sum + r.amount, 0));
+    return { net, vat, total: round2(net + vat), byRate };
+}
+
 /**
  * Facturar: cliente, reportes listos para facturar y los datos de la factura.
  * Se emite en ARCA o se registra una hecha a mano. Lo usan la pantalla de
@@ -46,7 +80,7 @@ import { ARCA_ACTIVITY_LABELS, DEFAULT_ARCA_ACTIVITY, IVA_CONDITION_LABELS, labe
                 </div>
 
                 <div *ngIf="arca?.enabled" class="flex flex-wrap items-center gap-3">
-                    <p-selectButton [options]="modes" [(ngModel)]="mode" optionLabel="label" optionValue="value" [allowEmpty]="false" />
+                    <p-selectButton [options]="modes" [(ngModel)]="mode" (onChange)="pickVoucherType()" optionLabel="label" optionValue="value" [allowEmpty]="false" />
                     <p-tag *ngIf="mode === 'arca' && arca?.env !== 'produccion'" severity="warn" value="ARCA de prueba: sin validez fiscal" />
                 </div>
 
@@ -54,13 +88,14 @@ import { ARCA_ACTIVITY_LABELS, DEFAULT_ARCA_ACTIVITY, IVA_CONDITION_LABELS, labe
 
                 <div *ngIf="client">
                     <h3 class="font-bold text-lg mb-2">Reportes listos para facturar</h3>
-                    <p-table [value]="groups" [(selection)]="selected" dataKey="id" [scrollable]="true" scrollHeight="300px" [loading]="loading">
+                    <p-table [value]="groups" [(selection)]="selected" (selectionChange)="pickVoucherType()" dataKey="id" [scrollable]="true" scrollHeight="300px" [loading]="loading">
                         <ng-template pTemplate="header">
                             <tr>
                                 <th style="width: 3rem"><p-tableHeaderCheckbox /></th>
                                 <th>Reporte</th>
                                 <th>OC del cliente<span *ngIf="client?.requires_purchase_order" class="text-orange-600"> *</span></th>
                                 <th>Viajes</th>
+                                <th class="text-right">Neto</th>
                                 <th class="text-right">Total</th>
                             </tr>
                         </ng-template>
@@ -70,15 +105,20 @@ import { ARCA_ACTIVITY_LABELS, DEFAULT_ARCA_ACTIVITY, IVA_CONDITION_LABELS, labe
                                 <td>{{ group.code }}</td>
                                 <td><input pInputText [(ngModel)]="purchaseOrders[group.id]" [placeholder]="client?.requires_purchase_order ? 'Obligatoria' : 'Opcional'" [class.ng-invalid]="client?.requires_purchase_order && !purchaseOrders[group.id]?.trim()" [class.ng-dirty]="client?.requires_purchase_order && !purchaseOrders[group.id]?.trim()" class="w-32 p-inputtext-sm" /></td>
                                 <td>{{ group.serviceCount }}</td>
+                                <td class="text-right">{{ group.netAmount | currency: 'ARS' : 'symbol-narrow' : '1.2-2' }}</td>
                                 <td class="text-right">{{ group.totalAmount | currency: 'ARS' : 'symbol-narrow' : '1.2-2' }}</td>
                             </tr>
                         </ng-template>
                         <ng-template pTemplate="emptymessage">
-                            <tr><td colspan="5" class="text-center p-4">Este cliente no tiene reportes listos para facturar.</td></tr>
+                            <tr><td colspan="6" class="text-center p-4">Este cliente no tiene reportes listos para facturar.</td></tr>
                         </ng-template>
                     </p-table>
                     <div *ngIf="missingPurchaseOrders" class="text-sm text-orange-600 mt-2"><i class="pi pi-exclamation-triangle mr-1"></i>Este cliente pide orden de compra: completá la OC de cada reporte elegido.</div>
-                    <div *ngIf="selected.length" class="text-right mt-2">Total: <b>{{ selectedTotal | currency: 'ARS' : 'symbol-narrow' : '1.2-2' }}</b></div>
+                    <div *ngIf="selected.length" class="flex flex-col items-end gap-1 mt-2 text-sm">
+                        <div>Neto: <b>{{ totals.net | currency: 'ARS' : 'symbol-narrow' : '1.2-2' }}</b></div>
+                        <div *ngFor="let r of totals.byRate">IVA {{ r.rate }}%: {{ r.amount | currency: 'ARS' : 'symbol-narrow' : '1.2-2' }}</div>
+                        <div class="text-base">Total: <b>{{ totals.total | currency: 'ARS' : 'symbol-narrow' : '1.2-2' }}</b></div>
+                    </div>
                 </div>
 
                 <div *ngIf="client && mode === 'arca'" class="grid grid-cols-12 gap-3">
@@ -109,7 +149,10 @@ import { ARCA_ACTIVITY_LABELS, DEFAULT_ARCA_ACTIVITY, IVA_CONDITION_LABELS, labe
                     </div>
                     <div *ngIf="vatIncluded" class="text-xs text-muted-color mt-2">Factura B: los importes van con el IVA incluido, sin discriminar.</div>
                     <div *ngIf="fceRequired" class="text-xs text-orange-600 mt-2">
-                        <i class="pi pi-exclamation-triangle mr-1"></i>Empresa del registro de FCE y el total supera {{ arca?.fceMin | currency: 'ARS' : 'symbol-narrow' : '1.0-0' }}: corresponde FCE A.
+                        <i class="pi pi-exclamation-triangle mr-1"></i>Empresa del registro de FCE y el total llega a {{ arca?.fceMin | currency: 'ARS' : 'symbol-narrow' : '1.0-0' }}: corresponde FCE A<span *ngIf="form.voucherType === 201"> y ya quedó elegida</span>.
+                    </div>
+                    <div *ngIf="client?.receives_fce && !fceRequired && arca?.fceMin && !vatIncluded" class="text-xs text-muted-color mt-2">
+                        Empresa del registro de FCE, pero el total no llega a {{ arca?.fceMin | currency: 'ARS' : 'symbol-narrow' : '1.0-0' }}: va Factura A.
                     </div>
                 </div>
             </div>
@@ -206,11 +249,27 @@ export class InvoiceBillingDialog {
 
     /** Empresa del registro de FCE y el total llega al mínimo: va FCE A. */
     get fceRequired(): boolean {
-        return !!this.client?.receives_fce && !!this.arca?.fceMin && this.selectedTotal >= this.arca.fceMin;
+        return !!this.client?.receives_fce && !this.vatIncluded && !!this.arca?.fceMin && this.selectedTotal >= this.arca.fceMin;
+    }
+
+    /** Neto, IVA por alícuota y total, calculados igual que lo que se manda a ARCA. */
+    get totals(): VoucherTotals {
+        return voucherTotals(this.selected.flatMap((g) => g.billable));
     }
 
     get selectedTotal(): number {
-        return this.selected.reduce((sum, g) => sum + g.totalAmount, 0);
+        return this.totals.total;
+    }
+
+    /**
+     * En ARCA el tipo sale del cliente y del total: Factura B a exentos y
+     * consumidores finales; FCE A a las empresas del registro de FCE desde el
+     * monto mínimo; si no, Factura A. Se puede cambiar a mano, pero al emitir
+     * se controla igual.
+     */
+    pickVoucherType() {
+        if (this.mode !== 'arca' || !this.client) return;
+        this.form.voucherType = this.vatIncluded ? 6 : this.fceRequired ? 201 : 1;
     }
 
     async onShow() {
@@ -322,7 +381,8 @@ export class InvoiceBillingDialog {
             this.groups = groups
                 .map((g: any) => {
                     const billable = (g.services ?? []).filter((s: any) => s.status !== 'CANCELLED' && !s.invoiceId);
-                    return { ...g, billable, serviceCount: billable.length, totalAmount: billable.reduce((sum: number, s: any) => sum + Number(s.total_amount || 0), 0) };
+                    const t = voucherTotals(billable);
+                    return { ...g, billable, serviceCount: billable.length, netAmount: t.net, totalAmount: t.total };
                 })
                 .filter((g: any) => g.serviceCount > 0);
             this.purchaseOrders = Object.fromEntries(this.groups.map((g) => [g.id, g.purchaseOrder ?? '']));

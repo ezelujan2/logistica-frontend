@@ -48,16 +48,17 @@ Pasadas 24 horas, la próxima acción te pide la contraseña de nuevo en una ven
 
 ### Si te equivocás de contraseña
 
-- Al quinto intento fallido la cuenta se **bloquea** y te llega un correo con un enlace para desbloquearla. Abrí ese enlace y volvé a ingresar.
-- Si no te llegó el correo, revisá la carpeta de correo no deseado o pedí al administrador que te desbloquee.
-- Desde una misma conexión se aceptan hasta 30 intentos cada 15 minutos; pasado ese límite hay que esperar.
+- Después de 5 intentos fallidos hay que **esperar 15 minutos** para volver a probar. La cuenta no se bloquea y no se corta ninguna sesión abierta: la espera es sólo para esa conexión, así que nadie te puede dejar afuera probando contraseñas con tu correo desde otro lado.
+- Si no te acordás la contraseña, pedile al administrador que te ponga una nueva.
+- Desde una misma conexión se aceptan hasta 30 intentos cada 15 minutos, sumando todas las cuentas; pasado ese límite hay que esperar.
 
 ### Mensajes que podés ver
 
 | Mensaje | Qué hacer |
 | --- | --- |
 | Credenciales inválidas | Revisá correo y contraseña (mayúsculas incluidas) |
-| Tu cuenta ha sido bloqueada temporalmente | Usá el enlace que llegó por correo |
+| Demasiados intentos fallidos | Esperá 15 minutos y volvé a intentar |
+| Tu cuenta está bloqueada | Un administrador te bloqueó: pedile que te habilite |
 | No se puede conectar al servidor | Revisá tu conexión a internet; si sigue, avisá al administrador |
 
 ## 3. El menú y la pantalla de inicio
@@ -150,6 +151,7 @@ Si falta algún dato obligatorio (cliente, fechas, origen, destino, chofer, auto
 - **"Agregar Pendiente":** tareas para recordar (por ejemplo, confirmar el horario con el pasajero). Con "Avisar día antes / mismo día" el sistema envía un recordatorio por correo.
 - **"Generar Encuesta":** crea el enlace de la encuesta de satisfacción del servicio (sección 16).
 - **Servicio facturado:** no se pueden cambiar sus importes (km, horas, precios del cliente, descuento, IVA), el cliente ni el tipo de facturación; el formulario los muestra trabados. Lo del chofer, los horarios y las notas sí. Si hay que corregirlo, se anula la factura con una nota de crédito.
+- **Servicio ya pagado al chofer** (su liquidación está pagada): se puede editar, por ejemplo la tarifa del cliente, pero lo que se le pagó al chofer queda como estaba, y sus gastos no se pueden cambiar ni quitar.
 - **IVA:** el servicio se ve como se guardó. Si después cambió la condición frente al IVA del cliente, aparece un aviso naranja con el botón "Aplicar la condición actual del cliente"; el total no cambia, sólo si el IVA va aparte o incluido. Los servicios de antes de octubre de 2026 quedan como se cobraron.
 
 ## 5. Trabajar con la lista de servicios
@@ -191,7 +193,7 @@ Muestra los servicios de cada día. Se puede ver por mes o por semana: se cambia
 | Reloj | Sólo ADMIN. Muestra la historia completa del servicio: el alta, cada dato que cambió (con su valor anterior y el nuevo), cambios de chofer, gastos y estados, con fecha y usuario |
 | PDF azul | Abre el reporte al que pertenece el servicio |
 | Recibo | Abre Facturas con todas las facturas y notas de ese reporte, también las anuladas |
-| Tacho rojo | Borra el servicio (pide confirmación) |
+| Tacho rojo | Borra el servicio (pide confirmación). No se puede borrar uno facturado ni uno que esté en una liquidación |
 
 La flecha no aparece en Env. Detalles ni en A Facturar: esos pasos se hacen armando el reporte y facturando (secciones 6 y 7).
 
@@ -275,9 +277,9 @@ El sistema no deja emitir una letra que no corresponda y explica por qué. Los s
 ### Emitir una factura en ARCA
 
 1. Tocá "Nueva factura" en Facturas, o "Facturar" en Servicios › A Facturar.
-2. En "Cliente" elegí el cliente. Aparecen sus reportes listos para facturar, con código, cantidad de viajes y total. Si en A Facturar seleccionaste servicios de un solo cliente, ya viene elegido. Si le falta el domicilio, aparece un recuadro para completarlo ahí (o traerlo de ARCA con el CUIT); al guardarlo queda en su ficha.
+2. En "Cliente" elegí el cliente. Aparecen sus reportes listos para facturar, con código, cantidad de viajes, neto (sin IVA) y total. Debajo de la tabla se ven el neto, el IVA de cada alícuota y el total de lo marcado, tal como van a salir en la factura. Si en A Facturar seleccionaste servicios de un solo cliente, ya viene elegido. Si le falta el domicilio, aparece un recuadro para completarlo ahí (o traerlo de ARCA con el CUIT); al guardarlo queda en su ficha.
 3. Dejá elegido "Emitir en ARCA" y completá:
-   - "Comprobante": Factura A, Factura B o FCE. Se propone el que corresponde al cliente.
+   - "Comprobante": Factura A, Factura B o "FCE A (Factura de Crédito Electrónica)". Al marcar los reportes se elige solo según el cliente y el total: Factura B para exentos y consumidores finales, FCE A para las empresas del registro de FCE cuando el total llega al mínimo, y Factura A en el resto. Se puede cambiar a mano, pero si no corresponde el sistema no deja emitir.
    - "Fecha de emisión": hoy, salvo que haga falta otra.
    - "Actividad": la de LECMA que se informa a ARCA. Casi siempre queda la que viene (523090, gestión y logística).
    - "Vencimiento del pago": viene a 30 días (o el plazo del cliente). Se puede cambiar.
@@ -294,7 +296,8 @@ Avisos que pueden aparecer en el cuadro:
 
 - **"En ARCA figura como …"**: la condición frente al IVA de la ficha no coincide con la de ARCA. Revisala en Clientes antes de emitir.
 - **"Hay fletes con IVA al 10,5%"**: el transporte de carga suele ir al 21%. Revisá el IVA de esos servicios.
-- **"Corresponde FCE A"**: el cliente es del registro de FCE y el total llega al mínimo.
+- **"Corresponde FCE A"**: el cliente es del registro de FCE y el total llega al mínimo. La FCE A ya queda elegida en "Comprobante".
+- **"… pero el total no llega …: va Factura A"**: el cliente es del registro de FCE, pero esta factura no llega al mínimo, así que va Factura A común.
 
 Si aparece "ARCA de prueba: sin validez fiscal", el sistema está conectado al entorno de prueba de ARCA: las facturas no valen.
 
@@ -431,7 +434,8 @@ Si necesitás un tipo de gasto que no está en la lista, pedile al encargado de 
 
 ### Límites
 
-Un gasto que pertenece a una liquidación ya pagada no puede cambiar de monto.
+- Un gasto que pertenece a una liquidación ya pagada no se puede borrar ni cambiar de monto, tipo o chofer (sí la descripción, la fecha o el auto). Vale tanto en la pantalla Gastos como dentro del servicio.
+- Guardar un servicio ya pagado al chofer, por ejemplo para cambiar la tarifa del cliente, no toca sus gastos ni lo que se le pagó al chofer.
 
 ## 10. Liquidar a un chofer y registrar adelantos
 
@@ -456,13 +460,12 @@ La liquidación calcula cuánto se le paga a un chofer: sus viajes, menos los ad
 
 - **"Imprimir PDF"** genera el comprobante para el chofer.
 - **"Editar"** permite corregirla mientras no esté pagada; al terminar, "Guardar Cambios".
-- **"Registrar Pago"** la marca como pagada. Desde ese momento no se puede editar, ni tampoco sus adelantos ni el monto de sus gastos.
+- **"Registrar Pago"** la marca como pagada. Desde ese momento no se puede editar, ni tampoco sus adelantos ni sus gastos. Tampoco cambia lo que se le pagó al chofer por un servicio, aunque después se edite el servicio.
 
 Si el total da negativo (el chofer recibió más adelantos que lo que le corresponde), al registrar el pago la diferencia queda como un adelanto nuevo, que se descuenta en la siguiente liquidación.
 
 ### Antes de liquidar, revisá
 
-- Que los viajes elegidos no estén en otra liquidación: el sistema todavía no lo controla.
 - Que no se liquiden servicios futuros: sólo los realizados hasta el día de la liquidación.
 - Que el total coincida con lo que vas a pagar.
 

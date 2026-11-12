@@ -412,7 +412,7 @@ export class SettlementList implements OnInit {
             },
             error: (err) => {
                 this.loading = false;
-                this.messageService.add({severity:'error', summary:'Error', detail: err.error?.message || 'Error al registrar pago'});
+                this.messageService.add({severity:'error', summary:'Error', detail: err.error?.error || err.error?.message || 'Error al registrar pago'});
             }
         });
     }
@@ -563,7 +563,7 @@ export class SettlementList implements OnInit {
                     this.viewMode = 'LIST';
                     this.loadSettlements();
                 },
-                error: (err) => this.messageService.add({severity:'error', summary:'Error', detail: err.error?.message || 'Falló la actualización'})
+                error: (err) => this.messageService.add({severity:'error', summary:'Error', detail: err.error?.error || err.error?.message || 'Falló la actualización'})
              });
         } else {
             this.settlementService.createSettlement(payload).subscribe({
@@ -572,7 +572,7 @@ export class SettlementList implements OnInit {
                     this.viewMode = 'LIST';
                     this.loadSettlements();
                 },
-                error: (err) => this.messageService.add({severity:'error', summary:'Error', detail: err.error?.message || 'Falló la creación'})
+                error: (err) => this.messageService.add({severity:'error', summary:'Error', detail: err.error?.error || err.error?.message || 'Falló la creación'})
             });
         }
     }

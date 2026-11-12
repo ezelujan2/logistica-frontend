@@ -25,6 +25,29 @@ export interface Release {
 
 export const RELEASES: Release[] = [
     {
+        version: '2.10.3',
+        date: '2026-11-12',
+        title: 'Facturar: neto y tipo de factura',
+        changes: [
+            { kind: 'mejora', text: 'Facturar: se ve el neto (sin IVA) de cada reporte y, debajo, el neto, el IVA y el total tal como salen en la factura.' },
+            { kind: 'mejora', text: 'Facturar en ARCA: el comprobante se elige solo según el cliente y el total. Si es empresa del registro de FCE y llega al mínimo, queda elegida la FCE A.' },
+            { kind: 'mejora', text: 'La opción de la FCE ahora dice "FCE A (Factura de Crédito Electrónica)" para encontrarla más fácil.' }
+        ]
+    },
+    {
+        version: '2.10.2',
+        date: '2026-11-10',
+        title: 'Revisión de seguridad',
+        changes: [
+            { kind: 'seguridad', text: 'Se cerraron varios caminos por los que se podían saltear permisos o reglas del sistema. Ninguno se usó; los encontró una revisión de seguridad completa.' },
+            { kind: 'importante', text: 'Contraseña equivocada: ya no se bloquea la cuenta ni llega el correo de desbloqueo. Después de 5 intentos fallidos hay que esperar 15 minutos, y eso frena sólo a esa conexión: quien pruebe contraseñas con tu correo desde otro lado no te deja afuera ni te corta la sesión.' },
+            { kind: 'mejora', text: 'Guardar un servicio que ya se le pagó al chofer (por ejemplo, para cambiar la tarifa del cliente) no toca sus gastos ni lo que se le pagó. Lo que no se puede es cambiar o quitar un gasto que ya se pagó en la liquidación: el sistema lo avisa.' },
+            { kind: 'mejora', text: 'Un servicio facturado o que está en una liquidación no se puede borrar. Si hay que sacarlo: la factura se anula con nota de crédito, o el servicio se quita primero de la liquidación.' },
+            { kind: 'mejora', text: 'Liquidaciones: un viaje, adelanto o gasto que ya está en otra liquidación no se puede sumar a una nueva, y "Registrar Pago" dos veces seguidas ya no duplica el saldo negativo. Al editar una liquidación, los gastos sueltos que se le habían agregado ya no se pierden.' },
+            { kind: 'correccion', text: 'Los mensajes de error de las liquidaciones y del inicio de sesión ahora dicen qué pasó, en vez de un error genérico.' }
+        ]
+    },
+    {
         version: '2.10.1',
         date: '2026-11-06',
         title: 'Tarifa en los servicios que carga el asistente',
