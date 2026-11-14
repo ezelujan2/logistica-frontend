@@ -25,6 +25,16 @@ export interface Release {
 
 export const RELEASES: Release[] = [
     {
+        version: '2.10.5',
+        date: '2026-11-14',
+        title: 'Auditoría más clara',
+        changes: [
+            { kind: 'mejora', text: 'Auditoría: los cambios sobre varias filas a la vez dicen qué fueron y de qué servicio. Por ejemplo, al borrar tareas de un servicio: "Se borraron 2 del servicio #1520: Pedir OC, Mandar voucher".' },
+            { kind: 'mejora', text: 'Auditoría: los módulos aparecen en castellano (Tarea, Pedido de respaldo, Vencimiento, etc.).' },
+            { kind: 'mejora', text: 'Auditoría: ya no se repite el historial de estados; el cambio de estado se sigue viendo en la modificación del servicio o del reporte.' }
+        ]
+    },
+    {
         version: '2.10.4',
         date: '2026-11-12',
         title: 'Auditoría con filtros y ingreso más cómodo',

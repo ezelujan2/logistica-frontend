@@ -758,6 +758,13 @@ export class Dashboard implements OnInit {
         Settlement: 'Liquidación', Driver: 'Chofer', Client: 'Cliente',
         Vehicle: 'Vehículo', Advance: 'Adelanto', Expense: 'Gasto',
         User: 'Usuario', ServiceDetail: 'Detalle',
+        ServiceTask: 'Tarea', ClientContact: 'Contacto de cliente', ClientReimbursable: 'Reintegro',
+        AgendaEntry: 'Agenda', DocumentReminder: 'Vencimiento', DocumentReminderHistory: 'Historial de vencimiento',
+        ArcaTicket: 'Ticket de ARCA', SystemConfiguration: 'Configuración', ServiceSurvey: 'Encuesta',
+        StatusHistory: 'Historial de estados', AssistantPendingAction: 'Acción del asistente',
+        AssistantUnansweredQuery: 'Pregunta sin resolver', AssistantUsageLog: 'Uso del asistente',
+        AssistantConversation: 'Conversación del asistente', AssistantConversationMessage: 'Mensaje del asistente',
+        BackupRequest: 'Pedido de respaldo',
     };
 
     private readonly FIELD_LABELS: Record<string, string> = {
@@ -771,6 +778,7 @@ export class Dashboard implements OnInit {
         km_traveled: 'KM Recorridos', waiting_hours: 'Horas Espera',
         name: 'Nombre', email: 'Email', code: 'Código',
         paymentDate: 'Fecha de Pago',
+        items: 'Registros', count: 'Cantidad', set: 'Se cambió',
     };
 
     private readonly SKIP_FIELDS = new Set([
@@ -875,7 +883,25 @@ export class Dashboard implements OnInit {
         return null;
     }
 
+    /** Cómo se nombra una fila en la auditoría: la tarea por su texto, un cliente por su nombre, etc. */
+    private itemLabel(item: any): string {
+        return item?.description ?? item?.name ?? item?.code ?? item?.invoiceNumber ?? item?.email ?? `#${item?.id ?? '?'}`;
+    }
+
+    /** Cambios masivos (varias filas a la vez): qué filas fueron y de qué servicio, si se sabe. */
+    private bulkSummary(audit: AuditLog): string {
+        const items: any[] = audit.oldData?.items ?? audit.newData?.items ?? [];
+        const count = audit.newData?.count ?? items.length;
+        const verb = audit.action === 'DELETEMANY' ? 'Se borraron' : audit.action === 'CREATEMANY' ? 'Se crearon' : 'Se modificaron';
+        const service = items.length && items.every((i) => i?.serviceId && i.serviceId === items[0].serviceId) ? ` del servicio #${items[0].serviceId}` : '';
+        const names = items.slice(0, 3).map((i) => this.itemLabel(i));
+        const more = items.length > 3 ? ` y ${items.length - 3} más` : '';
+        // El módulo ya dice qué son ("Tarea"): acá va cuántas, de qué servicio y cuáles.
+        return `${count === 1 ? verb.replace(/ron$/, 'ó') : verb} ${count}${service}${names.length ? ': ' + names.join(', ') + more : ''}`;
+    }
+
     getAuditSummary(audit: AuditLog): string {
+        if (['CREATEMANY', 'UPDATEMANY', 'DELETEMANY'].includes(audit.action)) return this.bulkSummary(audit);
         if (audit.action === 'CREATE') return `Alta de ${this.getEntityLabel(audit.entity).toLowerCase()}`;
         if (audit.action === 'DELETE') return `Eliminación de ${this.getEntityLabel(audit.entity).toLowerCase()}`;
         if (audit.action === 'UPDATE' && audit.oldData && audit.newData) {
@@ -900,10 +926,10 @@ export class Dashboard implements OnInit {
     }
 
     getRelationDiff(oldArr: any[], newArr: any[]): { added: string[]; removed: string[] } {
-        const label = (item: any) =>
-            item.name ?? item.code ?? item.invoiceNumber ?? item.email ?? `#${item.id}`;
-        const oldMap = new Map((oldArr ?? []).map((x: any) => [x.id, label(x)]));
-        const newMap = new Map((newArr ?? []).map((x: any) => [x.id, label(x)]));
+        const label = (item: any) => this.itemLabel(item);
+        // Las filas recién creadas en un alta masiva todavía no tienen id: se distinguen por posición.
+        const oldMap = new Map((oldArr ?? []).map((x: any, i: number) => [x.id ?? `old-${i}`, label(x)]));
+        const newMap = new Map((newArr ?? []).map((x: any, i: number) => [x.id ?? `new-${i}`, label(x)]));
         const removed = [...oldMap.entries()].filter(([id]) => !newMap.has(id)).map(([, n]) => n);
         const added   = [...newMap.entries()].filter(([id]) => !oldMap.has(id)).map(([, n]) => n);
         return { added, removed };
@@ -929,6 +955,17 @@ export class Dashboard implements OnInit {
 
     computeAuditDiff(oldData: any, newData: any, action: string): { key: string, oldValue: any, newValue: any }[] {
         const diffs: { key: string, oldValue: any, newValue: any }[] = [];
+
+        // Cambios masivos: las filas que había (o que se crearon) como lista.
+        if (['CREATEMANY', 'UPDATEMANY', 'DELETEMANY'].includes(action)) {
+            const before = oldData?.items ?? [];
+            const after = action === 'DELETEMANY' ? [] : action === 'CREATEMANY' ? (newData?.items ?? []) : before;
+            if (before.length || after.length) diffs.push({ key: 'items', oldValue: before, newValue: after === before ? [] : after });
+            if (action === 'UPDATEMANY' && newData?.set) {
+                Object.keys(newData.set).filter((k) => this.shouldShowField(k)).forEach((key) => diffs.push({ key, oldValue: undefined, newValue: newData.set[key] }));
+            }
+            return diffs;
+        }
 
         if (action === 'CREATE' && newData) {
             Object.keys(newData).filter(k => this.shouldShowField(k) && newData[k] !== null).forEach(key => {
