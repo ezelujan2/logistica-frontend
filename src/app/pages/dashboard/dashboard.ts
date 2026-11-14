@@ -6,7 +6,7 @@ import { ButtonModule } from 'primeng/button';
 import { StyleClassModule } from 'primeng/styleclass';
 import { PanelMenuModule } from 'primeng/panelmenu';
 import { Service, ServiceService } from '../../service/service.service';
-import { AuditService, AuditLog } from '../../service/audit.service';
+import { AuditService, AuditLog, AuditFilters } from '../../service/audit.service';
 import { AuthService } from '../../service/auth.service';
 import { StuckServicesService, StuckService } from '../../service/stuck-services.service';
 import { StatisticsService } from '../../service/statistics.service';
@@ -23,11 +23,13 @@ import { SelectModule } from 'primeng/select';
 import { FormsModule } from '@angular/forms';
 import { BILLING_TYPE_LABELS, EXPENSE_TYPE_LABELS, SERVICE_TYPE_LABELS, labelOf } from '../../service/labels';
 import { CheckboxModule } from 'primeng/checkbox';
+import { DatePickerModule } from 'primeng/datepicker';
+import { InputNumberModule } from 'primeng/inputnumber';
 
 @Component({
     selector: 'app-dashboard',
     standalone: true,
-    imports: [CommonModule, TableModule, ButtonModule, StyleClassModule, PanelMenuModule, TagModule, CardModule, DividerModule, SkeletonModule, DialogModule, InputTextModule, SelectModule, FormsModule, CheckboxModule, TooltipModule],
+    imports: [CommonModule, TableModule, ButtonModule, StyleClassModule, PanelMenuModule, TagModule, CardModule, DividerModule, SkeletonModule, DialogModule, InputTextModule, SelectModule, FormsModule, CheckboxModule, TooltipModule, DatePickerModule, InputNumberModule],
     template: `
         <div class="grid grid-cols-12 gap-6">
 
@@ -286,10 +288,36 @@ import { CheckboxModule } from 'primeng/checkbox';
                     <div class="flex justify-between items-center mb-4 px-4 pt-4">
                         <h5 class="text-lg font-bold m-0">Registro de Auditoría</h5>
                     </div>
+                    <div class="grid grid-cols-12 gap-3 px-4 mb-3">
+                        <div class="col-span-12 md:col-span-4 flex flex-col gap-1">
+                            <label for="auditDates" class="text-sm font-medium">Fechas</label>
+                            <p-datepicker inputId="auditDates" [(ngModel)]="auditRange" selectionMode="range" [readonlyInput]="true" dateFormat="dd/mm/yy" [showIcon]="true" [showButtonBar]="true" [maxDate]="today" (onClose)="onAuditRangeClose()" (onClearClick)="loadAudits()" appendTo="body" styleClass="w-full" placeholder="Última semana" />
+                        </div>
+                        <div class="col-span-12 sm:col-span-6 md:col-span-2 flex flex-col gap-1">
+                            <label for="auditUser" class="text-sm font-medium">Usuario</label>
+                            <p-select inputId="auditUser" [(ngModel)]="auditFilters.userId" [options]="auditUsers" optionLabel="label" optionValue="value" placeholder="Todos" [showClear]="true" [filter]="true" filterBy="label" (onChange)="loadAudits()" appendTo="body" styleClass="w-full" />
+                        </div>
+                        <div class="col-span-12 sm:col-span-6 md:col-span-2 flex flex-col gap-1">
+                            <label for="auditEntity" class="text-sm font-medium">Módulo</label>
+                            <p-select inputId="auditEntity" [(ngModel)]="auditFilters.entity" [options]="auditModules" optionLabel="label" optionValue="value" placeholder="Todos" [showClear]="true" [filter]="true" filterBy="label" (onChange)="loadAudits()" appendTo="body" styleClass="w-full" />
+                        </div>
+                        <div class="col-span-12 sm:col-span-6 md:col-span-2 flex flex-col gap-1">
+                            <label for="auditAction" class="text-sm font-medium">Acción</label>
+                            <p-select inputId="auditAction" [(ngModel)]="auditFilters.action" [options]="auditActions" optionLabel="label" optionValue="value" placeholder="Todas" [showClear]="true" (onChange)="loadAudits()" appendTo="body" styleClass="w-full" />
+                        </div>
+                        <div class="col-span-12 sm:col-span-6 md:col-span-2 flex flex-col gap-1">
+                            <label for="auditEntityId" class="text-sm font-medium">N° de registro</label>
+                            <p-inputNumber inputId="auditEntityId" [(ngModel)]="auditFilters.entityId" [useGrouping]="false" [min]="1" placeholder="Ej: 1520" (onBlur)="loadAudits()" (keyup.enter)="loadAudits()" styleClass="w-full" inputStyleClass="w-full" />
+                        </div>
+                        <div class="col-span-12 flex flex-wrap items-center justify-between gap-2 text-sm text-muted-color">
+                            <span>{{ auditSummary }}</span>
+                            <p-button *ngIf="hasAuditFilters" label="Limpiar filtros" icon="pi pi-filter-slash" [text]="true" size="small" (click)="clearAuditFilters()" />
+                        </div>
+                    </div>
                     <p-table
                         #dtAudits
                         [value]="audits"
-                        [loading]="loading"
+                        [loading]="loading || auditLoading"
                         [paginator]="true"
                         [rows]="10"
                         [rowsPerPageOptions]="[10, 25, 50]"
@@ -302,30 +330,16 @@ import { CheckboxModule } from 'primeng/checkbox';
                             <div class="flex justify-end p-2">
                                 <span class="p-input-icon-left w-full sm:w-auto">
                                     <i class="pi pi-search"></i>
-                                    <input pInputText type="text" (input)="onGlobalFilter(dtAudits, $event)" placeholder="Buscar en auditoría..." class="w-full sm:w-auto" />
+                                    <input pInputText type="text" (input)="onGlobalFilter(dtAudits, $event)" placeholder="Buscar en lo cargado..." class="w-full sm:w-auto" />
                                 </span>
                             </div>
                         </ng-template>
                         <ng-template pTemplate="header">
                             <tr>
                                 <th pSortableColumn="createdAt">Fecha <p-sortIcon field="createdAt"></p-sortIcon></th>
-                                <th pSortableColumn="user.name">Usuario <p-sortIcon field="user.name"></p-sortIcon>
-                                    <p-columnFilter type="text" field="user.name" display="menu"></p-columnFilter>
-                                </th>
-                                <th pSortableColumn="action">Acción <p-sortIcon field="action"></p-sortIcon>
-                                    <p-columnFilter type="text" field="action" display="menu"></p-columnFilter>
-                                </th>
-                                <th pSortableColumn="entity">Módulo <p-sortIcon field="entity"></p-sortIcon>
-                                    <p-columnFilter field="entity" matchMode="equals" display="menu">
-                                        <ng-template pTemplate="filter" let-value let-filter="filterCallback">
-                                            <p-select [ngModel]="value" [options]="auditModules" (onChange)="filter($event.value)" placeholder="Todos" [showClear]="true">
-                                                <ng-template let-option pTemplate="item">
-                                                    <span class="ml-2">{{option.label}}</span>
-                                                </ng-template>
-                                            </p-select>
-                                        </ng-template>
-                                    </p-columnFilter>
-                                </th>
+                                <th pSortableColumn="user.name">Usuario <p-sortIcon field="user.name"></p-sortIcon></th>
+                                <th pSortableColumn="action">Acción <p-sortIcon field="action"></p-sortIcon></th>
+                                <th pSortableColumn="entity">Módulo <p-sortIcon field="entity"></p-sortIcon></th>
                                 <th>Registro ID</th>
                                 <th>Qué cambió</th>
                                 <th>Detalles</th>
@@ -361,7 +375,7 @@ import { CheckboxModule } from 'primeng/checkbox';
                         </ng-template>
                         <ng-template pTemplate="emptymessage">
                             <tr>
-                                <td colspan="7" class="text-center p-4">No hay registros de auditoría.</td>
+                                <td colspan="7" class="text-center p-4">No hay registros de auditoría con esos filtros.</td>
                             </tr>
                         </ng-template>
                     </p-table>
@@ -498,7 +512,15 @@ export class Dashboard implements OnInit {
 
     displayAuditDialog: boolean = false;
     selectedAudit: AuditLog | null = null;
-    auditModules: any[] = [];
+    auditModules: { label: string; value: string }[] = [];
+    auditUsers: { label: string; value: number | 'system' }[] = [];
+    auditActions: { label: string; value: string }[] = [];
+    auditFilters: AuditFilters = {};
+    auditRange: Date[] | null = null;
+    auditTotal = 0;
+    auditLimit = 0;
+    auditLoading = false;
+    readonly today = new Date();
     auditDiffs: { key: string, oldValue: any, newValue: any }[] = [];
     showRawJson: boolean = false;
 
@@ -601,17 +623,8 @@ export class Dashboard implements OnInit {
 
             // 4. Audit Logs (solo si el rol tiene permiso de verlas)
             if (this.authService.hasPermission('viewAudits')) {
-                try {
-                    const fetchedAudits = await this.auditService.getAudits();
-                    this.audits = fetchedAudits || [];
-
-                    // Extract unique modules for the dropdown filter
-                    const uniqueModules = Array.from(new Set(this.audits.map(a => a.entity)));
-                    this.auditModules = uniqueModules.map(m => ({ label: m, value: m }));
-                } catch (auditError) {
-                    console.error("Error loading audits", auditError);
-                    this.audits = [];
-                }
+                this.loadAuditOptions();
+                await this.loadAudits();
             }
 
         } catch (error) {
@@ -773,7 +786,76 @@ export class Dashboard implements OnInit {
     }
 
     getAuditActionLabel(action: string): string {
-        return { CREATE: 'Alta', UPDATE: 'Modificación', DELETE: 'Eliminación' }[action] || action;
+        return this.ACTION_LABELS[action] || action;
+    }
+
+    private readonly ACTION_LABELS: Record<string, string> = {
+        CREATE: 'Alta',
+        UPDATE: 'Modificación',
+        DELETE: 'Eliminación',
+        UPSERT: 'Alta o modificación',
+        CREATEMANY: 'Alta masiva',
+        UPDATEMANY: 'Modificación masiva',
+        DELETEMANY: 'Eliminación masiva'
+    };
+
+    /** AAAA-MM-DD en hora local, como lo espera el backend. */
+    private dayParam(d: Date | null | undefined): string | null {
+        if (!d) return null;
+        return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+    }
+
+    async loadAuditOptions() {
+        try {
+            const o = await this.auditService.getOptions();
+            this.auditModules = o.entities.map((e) => ({ label: this.getEntityLabel(e), value: e })).sort((a, b) => a.label.localeCompare(b.label));
+            this.auditUsers = [{ label: 'Sistema (automático)', value: 'system' as const }, ...o.users.map((u) => ({ label: u.name, value: u.id }))];
+            this.auditActions = o.actions.map((a) => ({ label: this.getAuditActionLabel(a), value: a }));
+        } catch (e) {
+            console.error('Error loading audit options', e);
+        }
+    }
+
+    async loadAudits() {
+        this.auditLoading = true;
+        try {
+            const [from, to] = this.auditRange ?? [];
+            const page = await this.auditService.getAudits({ ...this.auditFilters, from: this.dayParam(from), to: this.dayParam(to ?? from) });
+            this.audits = page.items;
+            this.auditTotal = page.total;
+            this.auditLimit = page.limit;
+        } catch (e) {
+            console.error('Error loading audits', e);
+            this.audits = [];
+            this.auditTotal = 0;
+        } finally {
+            this.auditLoading = false;
+        }
+    }
+
+    /** El calendario de rango se cierra también con sólo la primera fecha: se toma ese día. */
+    onAuditRangeClose() {
+        if (this.auditRange?.[0]) this.loadAudits();
+    }
+
+    get hasAuditFilters(): boolean {
+        return !!this.auditRange?.[0] || Object.values(this.auditFilters).some((v) => v !== null && v !== undefined && v !== '');
+    }
+
+    clearAuditFilters() {
+        this.auditFilters = {};
+        this.auditRange = null;
+        this.loadAudits();
+    }
+
+    get auditSummary(): string {
+        const [from, to] = this.auditRange ?? [];
+        const fmt = (d: Date) => d.toLocaleDateString('es-AR');
+        const range = from ? (to && to.getTime() !== from.getTime() ? `del ${fmt(from)} al ${fmt(to)}` : `del ${fmt(from)}`) : 'de la última semana';
+        if (this.auditTotal > this.auditLimit) {
+            return `Se muestran los últimos ${this.auditLimit.toLocaleString('es-AR')} de ${this.auditTotal.toLocaleString('es-AR')} registros ${range}. Acotá las fechas o los filtros para ver el resto.`;
+        }
+        return `${this.auditTotal.toLocaleString('es-AR')} registros ${range}.`;
     }
 
     translateStatus(status: string): string {

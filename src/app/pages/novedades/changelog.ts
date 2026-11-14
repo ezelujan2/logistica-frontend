@@ -25,6 +25,18 @@ export interface Release {
 
 export const RELEASES: Release[] = [
     {
+        version: '2.10.4',
+        date: '2026-11-12',
+        title: 'Auditoría con filtros y ingreso más cómodo',
+        changes: [
+            { kind: 'mejora', text: 'Registro de Auditoría: filtros por fechas, usuario (o "Sistema"), módulo, acción y número de registro. Busca en todo el historial, no sólo en lo último.' },
+            { kind: 'correccion', text: 'La auditoría ya no se llena con un registro por minuto de "Sistema" sobre los respaldos: no se anotan los cambios que no tocaron nada.' },
+            { kind: 'mejora', text: 'Ingreso: el navegador y el celular ofrecen guardar la contraseña y la completan solos, y el campo del correo trae el teclado con "@".' },
+            { kind: 'mejora', text: 'Ingreso: se sacaron "Recordarme" y "¿Olvidaste tu contraseña?", que no hacían nada. Si te olvidás la contraseña, la cambia un administrador.' },
+            { kind: 'mejora', text: 'Se quitaron las páginas de ejemplo que venían con la plantilla del sistema.' }
+        ]
+    },
+    {
         version: '2.10.3',
         date: '2026-11-12',
         title: 'Facturar: neto y tipo de factura',

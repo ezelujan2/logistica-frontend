@@ -42,6 +42,8 @@ Se entra con el correo y la contraseña que te dio el administrador. La sesión 
 2. Escribí tu correo en "Dirección de correo electrónico" y tu contraseña en "Contraseña". El ícono del ojo muestra lo que escribiste.
 3. Tocá "Iniciar sesión" o apretá Enter.
 
+El navegador o el celular ofrecen guardar la contraseña la primera vez; las siguientes la completan solos.
+
 ### Si la sesión vence
 
 Pasadas 24 horas, la próxima acción te pide la contraseña de nuevo en una ventana. Al ingresarla, el sistema completa lo que estabas haciendo: no perdés lo cargado.
@@ -77,7 +79,7 @@ La pantalla de inicio muestra de un vistazo qué hay que hacer hoy; el menú de 
 | Próximos Servicios (7 días) | Agenda de la semana |
 | Mis Pendientes | Tareas de los servicios que tenés que hacer |
 | Servicios Estancados | Cada servicio demorado con su número, fecha, cliente, trayecto, reporte y cuántos días lleva. La flecha de la izquierda despliega el resto: chofer, auto, orden de compra, factura, total, detalles y notas. La lupa abre el servicio |
-| Registro de Auditoría | Sólo ADMIN: quién cambió qué y los datos antes y después |
+| Registro de Auditoría | Sólo ADMIN: quién cambió qué y los datos antes y después. Muestra la última semana; arriba se filtra por fechas, usuario ("Sistema" = lo automático), módulo, acción y número de registro (por ejemplo, el número de un servicio). Si hay más de 1.000 registros, avisa para acotar los filtros |
 
 ### Menú
 

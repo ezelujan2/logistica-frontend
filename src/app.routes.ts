@@ -1,7 +1,6 @@
 import { Routes } from '@angular/router';
 import { AppLayout } from './app/layout/component/app.layout';
 import { Dashboard } from './app/pages/dashboard/dashboard';
-import { Documentation } from './app/pages/documentation/documentation';
 import { LecmaLanding } from './app/pages/landing/lecma-landing';
 import { Notfound } from './app/pages/notfound/notfound';
 import { Login } from './app/pages/auth/login';
@@ -28,9 +27,6 @@ export const appRoutes: Routes = [
             { path: 'drivers/:id', loadComponent: () => import('./app/pages/driver-detail/driver-detail').then((m) => m.DriverDetail) },
             { path: 'vehicles', loadComponent: () => import('./app/pages/vehicle-list/vehicle-list').then((m) => m.VehicleList) },
             { path: 'vehicles/:id/stats', loadComponent: () => import('./app/pages/vehicle-stats/vehicle-stats').then((m) => m.VehicleStats), canActivate: [AuthGuard], data: { permission: 'viewStatistics' } },
-            { path: 'uikit', loadChildren: () => import('./app/pages/uikit/uikit.routes') },
-            { path: 'documentation', component: Documentation },
-            { path: 'pages', loadChildren: () => import('./app/pages/pages.routes') },
             { path: 'statistics', loadComponent: () => import('./app/pages/statistics/statistics').then(m => m.StatisticsComponent), canActivate: [AuthGuard], data: { permission: 'viewStatistics' } },
             { path: 'surveys', loadComponent: () => import('./app/pages/survey-results/survey-results').then(m => m.SurveyResults), canActivate: [AuthGuard], data: { permission: 'viewStatistics' } },
             { path: 'expenses', loadComponent: () => import('./app/pages/expense-list/expense-list').then(m => m.ExpenseList) },
