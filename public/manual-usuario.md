@@ -27,6 +27,7 @@ Lo que aparece en el menú depende de tu rol. Si no ves una opción que figura e
 | Asistente de IA | Sí | Sí | Sí, sin análisis financiero |
 | Cambiar tarifas | Sí | Sí | No |
 | Estadísticas y encuestas | Sí | Sí | No |
+| Noticias y costos | Sí | Sí | No |
 | Administrar usuarios | Sí | Sí | No |
 | Corregir el estado de un servicio o reporte salteando pasos | Sí | No | No |
 | Ver el historial de servicios y reportes | Sí | No | No |
@@ -100,6 +101,7 @@ La pantalla de inicio muestra de un vistazo qué hay que hacer hoy; el menú de 
 | Usuarios | Alta y bloqueo de usuarios (ADMIN y DIRECTOR) |
 | Inteligencia Artificial › Asistente | Chat con el asistente |
 | Inteligencia Artificial › Preguntas sin resolver | Lo que el asistente no supo responder (ADMIN y DIRECTOR) |
+| Noticias y costos | Combustible en Rosario, inflación, tu tarifa por km y noticias de transporte (ADMIN y DIRECTOR) |
 | Novedades y ayuda | Qué trae cada versión del sistema y este manual (ADMIN y DIRECTOR) |
 | Estado del sistema | Salud del sistema, servidor, errores y uso (sólo ADMIN) |
 
@@ -283,7 +285,7 @@ El sistema no deja emitir una letra que no corresponda y explica por qué. Los s
 3. Dejá elegido "Emitir en ARCA" y completá:
    - "Comprobante": Factura A, Factura B o "FCE A (Factura de Crédito Electrónica)". Al marcar los reportes se elige solo según el cliente y el total: Factura B para exentos y consumidores finales, FCE A para las empresas del registro de FCE cuando el total llega al mínimo, y Factura A en el resto. Se puede cambiar a mano, pero si no corresponde el sistema no deja emitir.
    - "Fecha de emisión": hoy, salvo que haga falta otra.
-   - "Actividad": la de LECMA que se informa a ARCA. Casi siempre queda la que viene (523090, gestión y logística).
+   - "Actividad": la de LECMA que se informa a ARCA. Viene elegida la 492190 (transporte automotor de pasajeros); cambiala si la factura es de otra actividad, por ejemplo un flete.
    - "Vencimiento del pago": viene a 30 días (o el plazo del cliente). Se puede cambiar.
    - "Texto adicional" (opcional): se agrega a cada fila, por ejemplo "Traslados de personal octubre".
 4. Marcá los reportes que incluye esa factura y, en la columna "OC del cliente", la orden de compra de cada uno si la tiene (con asterisco: obligatoria).
@@ -650,6 +652,26 @@ La pantalla Estadísticas (ADMIN y DIRECTOR) muestra cuánto se facturó, cuánt
 
 Para preguntas que estas pantallas no responden, usá el asistente de IA (sección 15).
 
+### Noticias y costos (ADMIN y DIRECTOR)
+
+En el menú, "Noticias y costos". Sirve para seguir lo que cuesta trabajar y saber cuándo actualizar precios. Se actualiza solo todos los días a las 7.
+
+- **Combustible:** precio de nafta súper, premium, gasoil, gasoil premium y GNC en Rosario. Es la mediana de las estaciones que informaron su precio a la Secretaría de Energía en los últimos meses, en horario diurno. Si en Rosario hay pocas estaciones, se usa toda la provincia y lo dice. Cada uno muestra la suba del mes, del año y de los últimos 12 meses.
+- **IPC (inflación):** el dato del INDEC para todo el país. El INDEC lo publica a mediados del mes siguiente, así que siempre va un mes atrasado.
+- **Tu tarifa por km:** el precio por km de la tarifa favorita (la base), con su nombre. Los meses anteriores salen de los cambios de tarifa anotados en la auditoría; si una tarifa se cambió antes de que existiera la auditoría, esos meses no aparecen.
+- **"¿Tus precios acompañan los costos?":** compara la suba de 12 meses de la nafta, la inflación y tu tarifa por km.
+- **Calculadora de ajuste de precios:** para saber cuánto cobrar hoy un precio que pusiste antes.
+  1. Elegí qué querés actualizar: el precio por km, un servicio u otro. Con "Precio por km" aparece un botón para traer el precio por km de la tarifa base de ese mes.
+  2. Cargá el precio y el mes en que lo pusiste, y a qué mes lo querés llevar (viene el último con datos).
+  3. Poné cuánto pesa cada costo: inflación (IPC), un combustible a elección y un aumento fijo con su porcentaje (por ejemplo, el de un decreto o un acuerdo). Lo que no asignes queda "sin ajustar", igual que antes. Los botones de arriba cargan combinaciones comunes, como 50% IPC + 50% combustible.
+  4. Abajo sale el precio nuevo, cuánto subió y una tabla con lo que aporta cada costo.
+
+  Los pesos no pueden sumar más de 100%. Si el IPC del mes elegido todavía no salió, usa el último publicado y lo aclara. Los pesos quedan guardados en tu navegador para la próxima vez.
+- **Evolución:** las tres líneas arrancan en 100 hace un año; 130 quiere decir que subió 30%. "Ver tabla" muestra los números de cada mes.
+- **Noticias de transporte:** todos los días se buscan noticias de decretos y normas, combustible, transporte, rutas y peajes de Rosario, Santa Fe y el país. La IA elige las que le sirven a LECMA y escribe un resumen corto. El resumen sale sólo del titular: antes de decidir algo, abrí la nota original con el título. Arriba se filtra por tema.
+
+ADMIN tiene el botón "Actualizar ahora" para no esperar a la mañana. Las noticias usan la IA y tienen un tope de gasto por día; el gasto del mes se ve al pie y en Estado del sistema, junto con el del asistente.
+
 ## 15. Usar el asistente de IA
 
 El asistente es un chat al que le podés preguntar en lenguaje común por los datos del sistema, pasarle órdenes de compra para identificarlas y pedirle cambios. Los cambios nunca se hacen solos: te muestra la propuesta y vos tocás "Confirmar".
@@ -699,6 +721,22 @@ Cuando un cliente manda la planilla de sus viajes (foto, captura o PDF), el asis
 Lo que la planilla no dice se completa con cómo se vienen cargando los viajes de ese cliente: el chofer es el que hizo la mayoría de los últimos 10 viajes, y el auto y los km son los habituales de cada recorrido. La **tarifa** es la del último viaje parecido de ese cliente, mirando el tipo de día: un domingo toma la que se usó el último domingo (por ejemplo, la de domingos de KCC) y el resto de los días, la común. Se aplica con los precios de hoy de esa tarifa, así que si la actualizaste en Configuración, toma los valores nuevos. Si no encuentra ninguna, la fila avisa "Sin tarifa" en naranja: elegila antes de confirmar, porque si no el servicio queda con precios en cero. Cada viaje dura 1 hora, salvo que la planilla diga a qué hora termina. Los nombres que aparecen en la planilla y no son pasajeros (por ejemplo, a quién se la mandan) no se toman como chofer.
 
 Los viajes que ya están cargados aparecen destildados con el aviso "Ya está cargado" y el número de servicio, así no se duplican. Si una fila tiene todos los datos queda en Pendiente, como al cargarla a mano; si le falta chofer, auto, km o tarifa, queda en Creado.
+
+### Cargar los remitos de combustible
+
+Cuando la estación de servicio manda el listado de remitos de la cuenta corriente (PDF o foto), el asistente carga todos los gastos juntos y saltea los que ya están.
+
+1. Tocá el clip y adjuntá el listado.
+2. Escribí algo como "Cargá estos combustibles" y enviá.
+3. Aparece una tabla con un remito por fila: fecha y hora, producto con litros, precio y número de remito, auto, chofer e importe, con el total abajo.
+4. Revisala. Podés cambiar el auto o el chofer y destildar los que no van.
+5. Tocá "Cargar N gastos".
+
+El auto sale de la patente y el chofer del nombre, aunque el listado los traiga cortados ("AB 286 T", "MILTON EMA"). Si una patente no alcanza para saber qué auto es, la fila avisa "No encontré el auto": elegilo antes de confirmar.
+
+Los que ya están cargados vienen destildados: "Ya está cargado" si el número de remito ya figura en un gasto, o "Parece cargado" si hay uno del mismo día y por el mismo importe (los que se cargaron a mano sin el número). Si igual querés cargarlo, tildalo. El asistente también controla que litros × precio dé el importe y que la suma dé el total del listado, y avisa si algo no cierra.
+
+Quedan como gastos de la empresa, con el número de remito en la descripción: no se le deben al chofer y no entran en su liquidación. Se ven en Gastos.
 
 ### Pedir cambios
 

@@ -36,6 +36,7 @@ export const appRoutes: Routes = [
             // El Analista quedó integrado en el Asistente.
             { path: 'analyst', redirectTo: 'assistant' },
             { path: 'sistema', loadComponent: () => import('./app/pages/sistema/sistema').then(m => m.Sistema), canActivate: [AuthGuard], data: { permission: 'viewSystem' } },
+            { path: 'noticias', loadComponent: () => import('./app/pages/noticias/noticias').then(m => m.Noticias), canActivate: [AuthGuard], data: { permission: 'viewNews' } },
             { path: 'novedades', loadComponent: () => import('./app/pages/novedades/novedades').then(m => m.Novedades), canActivate: [AuthGuard], data: { permission: 'viewReleaseNotes' } },
             { path: 'reminders', loadComponent: () => import('./app/pages/reminder-list/reminder-list').then(m => m.ReminderList), canActivate: [AuthGuard], data: { permission: 'manageOperations' } },
             { path: 'invoices', loadComponent: () => import('./app/pages/invoices/invoice-list').then(m => m.InvoiceList), canActivate: [AuthGuard], data: { permission: 'manageOperations' } },

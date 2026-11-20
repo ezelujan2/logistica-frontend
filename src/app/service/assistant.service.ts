@@ -31,6 +31,25 @@ export interface BatchRow {
     aviso: string | null;
 }
 
+/** Una fila de una carga de gastos (CREATE_EXPENSES), tal como la armó el backend. */
+export interface ExpenseRow {
+    fecha: string;
+    tipo: string;
+    tipoNombre: string;
+    importe: number;
+    descripcion: string;
+    comprobante: string | null;
+    patente: string | null;
+    vehiculoId: number | null;
+    vehiculo: string | null;
+    chofer: string | null;
+    choferId: number | null;
+    choferNombre: string | null;
+    incluir: boolean;
+    duplicadoDe: number | null;
+    aviso: string | null;
+}
+
 export interface AssistantAction {
     id: number;
     type?: string;
@@ -136,7 +155,7 @@ export class AssistantService {
         throw new Error('La conexión se cortó antes de terminar. Probá de nuevo.');
     }
 
-    async confirmAction(id: number, edits?: { filas: { incluir: boolean; choferId: number | null; tarifaId?: number | null }[] }): Promise<AssistantAction> {
+    async confirmAction(id: number, edits?: { filas: { incluir: boolean; choferId: number | null; tarifaId?: number | null; vehiculoId?: number | null }[] }): Promise<AssistantAction> {
         return await firstValueFrom(this.http.post<AssistantAction>(`${this.apiUrl}assistant/actions/${id}/confirm`, edits ?? {}));
     }
 

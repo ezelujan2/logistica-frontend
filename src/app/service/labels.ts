@@ -64,7 +64,7 @@ export const IVA_CONDITION_LABELS: Record<string, string> = {
     CONSUMIDOR_FINAL: 'Consumidor Final'
 };
 
-/** Actividades de LECMA registradas en ARCA; cada factura informa una. La primera es la de siempre. */
+/** Actividades de LECMA registradas en ARCA; cada factura informa una. La que viene elegida es DEFAULT_ARCA_ACTIVITY. */
 export const ARCA_ACTIVITY_LABELS: Record<string, string> = {
     '523090': '523090 · Gestión y logística para el transporte de mercaderías',
     '492190': '492190 · Transporte automotor de pasajeros n.c.p.',
@@ -73,7 +73,7 @@ export const ARCA_ACTIVITY_LABELS: Record<string, string> = {
     '524190': '524190 · Servicios complementarios para el transporte terrestre'
 };
 
-export const DEFAULT_ARCA_ACTIVITY = '523090';
+export const DEFAULT_ARCA_ACTIVITY = '492190';
 
 export const SETTLEMENT_STATUS_LABELS: Record<string, string> = {
     DRAFT: 'Borrador',

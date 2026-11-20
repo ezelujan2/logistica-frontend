@@ -25,6 +25,27 @@ export interface Release {
 
 export const RELEASES: Release[] = [
     {
+        version: '2.11.0',
+        date: '2026-11-20',
+        title: 'Noticias y costos',
+        changes: [
+            { kind: 'nuevo', text: 'Pantalla "Noticias y costos" (ADMIN y DIRECTOR): precio de nafta, gasoil y GNC en Rosario, inflación del INDEC y el precio por km de tu tarifa base, con la suba del mes, del año y de los últimos 12 meses.' },
+            { kind: 'nuevo', text: 'Comparación de 12 meses entre nafta, inflación y tu tarifa por km, con un gráfico de evolución y la tabla de cada mes, para saber cuándo actualizar precios.' },
+            { kind: 'nuevo', text: 'Noticias de transporte del día (decretos, combustible, rutas y peajes de Rosario, Santa Fe y el país), elegidas y resumidas por la IA, con el link a la nota original.' },
+            { kind: 'nuevo', text: 'Calculadora de ajuste de precios (polinómica): ponés un precio de un mes, cuánto pesa la inflación, el combustible y un aumento fijo (decreto, acuerdo), y te dice cuánto cobrar ahora, con el detalle de cuánto aporta cada costo.' },
+            { kind: 'nuevo', text: 'Asistente: adjuntás el listado de remitos de combustible de la estación y carga todos los gastos juntos, con el auto y el chofer de cada uno. Los que ya estaban cargados (mismo remito, o mismo día e importe) se saltean solos.' },
+            { kind: 'mejora', text: 'Facturar en ARCA: la actividad que viene elegida ahora es la 492190 (transporte automotor de pasajeros). Se puede cambiar como siempre.' }
+        ]
+    },
+    {
+        version: '2.10.6',
+        date: '2026-11-20',
+        title: 'OC al emitir en ARCA',
+        changes: [
+            { kind: 'correccion', text: 'Facturar en ARCA: la OC que se carga al facturar ahora queda guardada en el reporte. Antes salía bien en la factura pero el reporte quedaba sin OC y había que cargarla a mano.' }
+        ]
+    },
+    {
         version: '2.10.5',
         date: '2026-11-14',
         title: 'Auditoría más clara',

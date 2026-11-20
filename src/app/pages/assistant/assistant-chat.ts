@@ -17,7 +17,8 @@ import { ChartModule } from 'primeng/chart';
 import { TagModule } from 'primeng/tag';
 import { MessageService, ConfirmationService } from 'primeng/api';
 import { CheckboxModule } from 'primeng/checkbox';
-import { AssistantAction, AssistantService, BatchRow, ConversationSummary, ToolCall } from '../../service/assistant.service';
+import { AssistantAction, AssistantService, BatchRow, ConversationSummary, ExpenseRow, ToolCall } from '../../service/assistant.service';
+import { VehicleService } from '../../service/vehicle.service';
 import { DriverService } from '../../service/driver.service';
 import { ConfigurationService } from '../../service/configuration.service';
 import { firstValueFrom } from 'rxjs';
@@ -182,7 +183,80 @@ function actionIdsFrom(toolCalls?: ToolCall[]): number[] {
 
                         <!-- Propuestas para confirmar -->
                         <div *ngFor="let action of bubble.actions" class="mt-3 p-3 rounded-lg border border-surface-300 dark:border-surface-600 bg-surface-0 dark:bg-surface-900">
-                            <div *ngIf="!isBatch(action)" class="text-sm mb-2">{{ action.summary }}</div>
+                            <div *ngIf="!isBatch(action) && !isExpenseBatch(action)" class="text-sm mb-2">{{ action.summary }}</div>
+
+                            <!-- Carga de gastos (remitos de combustible, por ejemplo): auto y chofer editables, filas para incluir o saltear -->
+                            <ng-container *ngIf="isExpenseBatch(action)">
+                                <div class="text-sm font-medium mb-1">Cargar gastos<span *ngIf="action.payload.proveedor"> de {{ action.payload.proveedor }}</span></div>
+                                <div class="text-xs text-muted-color mb-2">Quedan como gastos de la empresa: no entran en la liquidación del chofer. Los que ya estaban cargados vienen destildados. Podés cambiar el auto o el chofer, o destildar una fila, antes de confirmar.</div>
+                                <div class="overflow-x-auto" tabindex="0" role="region" [attr.aria-label]="'Gastos para cargar, propuesta ' + action.id">
+                                    <table class="w-full text-sm">
+                                        <thead>
+                                            <tr class="text-left text-muted-color text-xs">
+                                                <th scope="col" class="py-1 pr-2"><span class="sr-only">Incluir</span></th>
+                                                <th scope="col" class="py-1 pr-2">Fecha</th>
+                                                <th scope="col" class="py-1 pr-2">Detalle</th>
+                                                <th scope="col" class="py-1 pr-2">Auto</th>
+                                                <th scope="col" class="py-1 pr-2">Chofer</th>
+                                                <th scope="col" class="py-1 pr-2 text-right">Importe</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            <tr *ngFor="let row of expenseRows(action); let i = index" class="border-t border-surface-200 dark:border-surface-700" [class.opacity-60]="!row.incluir">
+                                                <td class="py-1 pr-2">
+                                                    <p-checkbox [(ngModel)]="row.incluir" [binary]="true" [disabled]="action.status !== 'PENDING'" [ariaLabel]="'Incluir el gasto ' + (i + 1)" />
+                                                </td>
+                                                <td class="py-1 pr-2 whitespace-nowrap">{{ expenseDay(row) }}</td>
+                                                <td class="py-1 pr-2">
+                                                    {{ row.descripcion }}
+                                                    <div *ngIf="row.aviso" class="text-xs text-orange-600 dark:text-orange-400"><i class="pi pi-info-circle" aria-hidden="true"></i> {{ row.aviso }}</div>
+                                                </td>
+                                                <td class="py-1 pr-2 min-w-36">
+                                                    <p-select
+                                                        *ngIf="action.status === 'PENDING'; else plate"
+                                                        [options]="vehicles"
+                                                        [(ngModel)]="row.vehiculoId"
+                                                        optionLabel="plate"
+                                                        optionValue="id"
+                                                        [placeholder]="row.patente || 'Sin auto'"
+                                                        [showClear]="true"
+                                                        [filter]="true"
+                                                        appendTo="body"
+                                                        size="small"
+                                                        styleClass="w-full"
+                                                        [ariaLabel]="'Auto del gasto ' + (i + 1)"
+                                                    />
+                                                    <ng-template #plate>{{ row.vehiculo || row.patente || 'Sin auto' }}</ng-template>
+                                                </td>
+                                                <td class="py-1 pr-2 min-w-44">
+                                                    <p-select
+                                                        *ngIf="action.status === 'PENDING'; else driverText"
+                                                        [options]="drivers"
+                                                        [(ngModel)]="row.choferId"
+                                                        optionLabel="name"
+                                                        optionValue="id"
+                                                        [placeholder]="row.chofer || 'Sin chofer'"
+                                                        [showClear]="true"
+                                                        [filter]="true"
+                                                        appendTo="body"
+                                                        size="small"
+                                                        styleClass="w-full"
+                                                        [ariaLabel]="'Chofer del gasto ' + (i + 1)"
+                                                    />
+                                                    <ng-template #driverText>{{ row.choferNombre || row.chofer || 'Sin chofer' }}</ng-template>
+                                                </td>
+                                                <td class="py-1 pr-2 text-right whitespace-nowrap">{{ pesos(row.importe) }}</td>
+                                            </tr>
+                                        </tbody>
+                                        <tfoot>
+                                            <tr class="border-t border-surface-300 dark:border-surface-600 font-semibold">
+                                                <td colspan="5" class="py-1 pr-2 text-right">Total a cargar ({{ expenseCount(action) }})</td>
+                                                <td class="py-1 pr-2 text-right whitespace-nowrap">{{ pesos(expenseTotal(action)) }}</td>
+                                            </tr>
+                                        </tfoot>
+                                    </table>
+                                </div>
+                            </ng-container>
 
                             <!-- Carga por lotes: tabla con chofer editable y filas para incluir o saltear -->
                             <ng-container *ngIf="isBatch(action)">
@@ -251,9 +325,10 @@ function actionIdsFrom(toolCalls?: ToolCall[]): number[] {
                                 </div>
                             </ng-container>
 
-                            <div *ngIf="action.status === 'PENDING'" class="flex gap-2" [class.mt-3]="isBatch(action)">
+                            <div *ngIf="action.status === 'PENDING'" class="flex gap-2" [class.mt-3]="isBatch(action) || isExpenseBatch(action)">
                                 <p-button *ngIf="isBatch(action)" [label]="batchLabel(action)" icon="pi pi-check" size="small" severity="success" [disabled]="!batchCount(action)" [loading]="!!action.busy" (click)="resolveAction(action, true)" />
-                                <p-button *ngIf="!isBatch(action)" label="Confirmar" icon="pi pi-check" size="small" severity="success" [loading]="!!action.busy" (click)="resolveAction(action, true)" />
+                                <p-button *ngIf="isExpenseBatch(action)" [label]="expenseLabel(action)" icon="pi pi-check" size="small" severity="success" [disabled]="!expenseCount(action)" [loading]="!!action.busy" (click)="resolveAction(action, true)" />
+                                <p-button *ngIf="!isBatch(action) && !isExpenseBatch(action)" label="Confirmar" icon="pi pi-check" size="small" severity="success" [loading]="!!action.busy" (click)="resolveAction(action, true)" />
                                 <p-button label="Cancelar" icon="pi pi-times" size="small" [text]="true" severity="secondary" [disabled]="!!action.busy" (click)="resolveAction(action, false)" />
                             </div>
                             <div *ngIf="action.status !== 'PENDING'" class="flex items-center gap-2 text-sm">
@@ -339,7 +414,8 @@ export class AssistantChat implements OnInit, AfterViewChecked {
         private confirmationService: ConfirmationService,
         private sanitizer: DomSanitizer,
         private driverService: DriverService,
-        private configService: ConfigurationService
+        private configService: ConfigurationService,
+        private vehicleService: VehicleService
     ) {}
 
     ngOnInit() {
@@ -491,7 +567,13 @@ export class AssistantChat implements OnInit, AfterViewChecked {
     tariffs: { id: number; name: string }[] = [];
 
     batchRows(action: AssistantAction): BatchRow[] {
-        if (!this.driversRequested && action.status === 'PENDING') {
+        if (action.status === 'PENDING') this.loadPickers();
+        return action.payload.filas;
+    }
+
+    /** Choferes y tarifas para los selectores de las tablas; se piden una sola vez. */
+    private loadPickers() {
+        if (!this.driversRequested) {
             this.driversRequested = true;
             firstValueFrom(this.configService.getConfigs())
                 .then((list) => (this.tariffs = list.filter((c) => c.id).map((c) => ({ id: c.id!, name: (c.name ?? '').trim() })).sort((a, b) => a.name.localeCompare(b.name))))
@@ -501,7 +583,6 @@ export class AssistantChat implements OnInit, AfterViewChecked {
                 .then((list) => (this.drivers = list.filter((d) => d.id).map((d) => ({ id: d.id!, name: d.name })).sort((a, b) => a.name.localeCompare(b.name))))
                 .catch(() => (this.driversRequested = false));
         }
-        return action.payload.filas;
     }
 
     rowDay(row: BatchRow): string {
@@ -517,10 +598,57 @@ export class AssistantChat implements OnInit, AfterViewChecked {
         return n === 1 ? 'Crear 1 servicio' : `Crear ${n} servicios`;
     }
 
+    // Autos para el selector de las cargas de gastos; se piden una vez, cuando aparece la primera.
+    vehicles: { id: number; plate: string }[] = [];
+    private vehiclesRequested = false;
+
+    isExpenseBatch(action: AssistantAction): boolean {
+        return action.type === 'CREATE_EXPENSES' && Array.isArray(action.payload?.filas);
+    }
+
+    expenseRows(action: AssistantAction): ExpenseRow[] {
+        if (action.status === 'PENDING') {
+            if (!this.vehiclesRequested) {
+                this.vehiclesRequested = true;
+                this.vehicleService
+                    .getVehicles()
+                    .then((list) => (this.vehicles = list.filter((v: any) => v.id).map((v: any) => ({ id: v.id, plate: v.plate })).sort((a, b) => a.plate.localeCompare(b.plate))))
+                    .catch(() => (this.vehiclesRequested = false));
+            }
+            this.loadPickers();
+        }
+        return action.payload.filas;
+    }
+
+    expenseDay(row: ExpenseRow): string {
+        return new Date(row.fecha).toLocaleString('es-AR', { timeZone: 'America/Argentina/Buenos_Aires', day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' });
+    }
+
+    expenseCount(action: AssistantAction): number {
+        return (action.payload?.filas ?? []).filter((r: ExpenseRow) => r.incluir).length;
+    }
+
+    expenseTotal(action: AssistantAction): number {
+        return (action.payload?.filas ?? []).filter((r: ExpenseRow) => r.incluir).reduce((sum: number, r: ExpenseRow) => sum + Number(r.importe || 0), 0);
+    }
+
+    expenseLabel(action: AssistantAction): string {
+        const n = this.expenseCount(action);
+        return n === 1 ? 'Cargar 1 gasto' : `Cargar ${n} gastos`;
+    }
+
+    pesos(v: number): string {
+        return Number(v || 0).toLocaleString('es-AR', { style: 'currency', currency: 'ARS', minimumFractionDigits: 2 });
+    }
+
     async resolveAction(action: AssistantAction & { busy?: boolean }, confirm: boolean) {
         action.busy = true;
         try {
-            const edits = this.isBatch(action) ? { filas: (action.payload.filas as BatchRow[]).map((r) => ({ incluir: r.incluir, choferId: r.choferId ?? null, ...('tarifaId' in r ? { tarifaId: r.tarifaId ?? null } : {}) })) } : undefined;
+            const edits = this.isBatch(action)
+                ? { filas: (action.payload.filas as BatchRow[]).map((r) => ({ incluir: r.incluir, choferId: r.choferId ?? null, ...('tarifaId' in r ? { tarifaId: r.tarifaId ?? null } : {}) })) }
+                : this.isExpenseBatch(action)
+                  ? { filas: (action.payload.filas as ExpenseRow[]).map((r) => ({ incluir: r.incluir, choferId: r.choferId ?? null, vehiculoId: r.vehiculoId ?? null })) }
+                  : undefined;
             const updated = confirm ? await this.assistantService.confirmAction(action.id, edits) : await this.assistantService.cancelAction(action.id);
             Object.assign(action, updated);
             if (updated.status === 'FAILED') this.messageService.add({ severity: 'error', summary: 'No se pudo hacer', detail: updated.result ?? '' });

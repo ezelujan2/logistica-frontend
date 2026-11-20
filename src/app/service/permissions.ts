@@ -14,6 +14,7 @@ export const PERMISSIONS = {
   viewServiceHistory: ['ADMIN'],
   viewReleaseNotes: ['ADMIN', 'DIRECTOR'],
   viewSystem: ['ADMIN'],
+  viewNews: ['ADMIN', 'DIRECTOR'],
 } as const;
 
 export type Permission = keyof typeof PERMISSIONS;

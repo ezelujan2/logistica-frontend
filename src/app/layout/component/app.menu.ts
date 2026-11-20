@@ -78,6 +78,9 @@ export class AppMenu {
         if (this.authService.hasPermission('viewSystem')) {
             homeItems.push({ label: 'Estado del sistema', icon: 'pi pi-fw pi-server', routerLink: ['/app/sistema'] });
         }
+        if (this.authService.hasPermission('viewNews')) {
+            homeItems.push({ label: 'Noticias y costos', icon: 'pi pi-fw pi-chart-line', routerLink: ['/app/noticias'] });
+        }
         if (this.authService.hasPermission('viewReleaseNotes')) {
             homeItems.push({ label: 'Novedades y ayuda', icon: 'pi pi-fw pi-megaphone', routerLink: ['/app/novedades'] });
         }
