@@ -18,6 +18,8 @@ export interface Indicator {
     samples: number | null;
     scope: string | null;
     updatedAt: string | null;
+    /** Sólo en TARIFF_KM: si la tarifa mostrada es la favorita. */
+    tariffIsFavorite?: boolean;
 }
 
 export interface NewsItem {
@@ -33,8 +35,11 @@ export interface NewsItem {
 export interface NewsPage {
     market: Indicator[];
     news: NewsItem[];
-    status: { lastRun: string | null; costMonthUsd: number; model: string; dailyLimitUsd: number };
+    /** `updating`: el servidor está buscando lo del día (primera visita del día). */
+    status: { lastRun: string | null; costMonthUsd: number; model: string; dailyLimitUsd: number; updating?: boolean };
     categories: Record<string, string>;
+    /** Tarifas para elegir cuál comparar; la favorita primero. */
+    tariffs?: { id: number; name: string; isFavorite: boolean; kmPrice: number }[];
 }
 
 @Injectable({ providedIn: 'root' })
@@ -45,6 +50,11 @@ export class NewsService {
 
     getPage(days = 30) {
         return firstValueFrom(this.http.get<NewsPage>(this.apiUrl, { params: { days } }));
+    }
+
+    /** Evolución del precio por km de una tarifa (el mismo formato que TARIFF_KM). */
+    getTariff(id: number) {
+        return firstValueFrom(this.http.get<Indicator>(`${this.apiUrl}/tariff/${id}`));
     }
 
     /** Sólo administradores: busca noticias (usa la IA) y actualiza los indicadores. */

@@ -282,6 +282,40 @@ import { EXPENSE_TYPE_LABELS, SERVICE_TYPE_LABELS, labelOf, optionsOf } from '..
                     <p-chart type="bar" [data]="monthlyData" [options]="barOptions" height="300px"></p-chart>
                 </div>
 
+                <!-- Kilómetros por mes: año elegido contra el anterior -->
+                <div class="p-6 bg-white dark:bg-surface-900 rounded-xl shadow-sm border border-surface-200 dark:border-surface-700">
+                    <div class="flex flex-wrap items-start justify-between gap-2 mb-4">
+                        <div>
+                            <h3 class="font-bold text-lg m-0 text-gray-700 dark:text-gray-200">Kilómetros por mes</h3>
+                            <small class="text-muted-color">{{ selectedYear }} contra {{ selectedYear - 1 }}, con los mismos filtros de arriba (sin cancelados).</small>
+                        </div>
+                        <p-button [label]="kmShowTable ? 'Ver gráfico' : 'Ver tabla'" [icon]="kmShowTable ? 'pi pi-chart-bar' : 'pi pi-table'" [text]="true" size="small" (click)="kmShowTable = !kmShowTable"></p-button>
+                    </div>
+                    <p *ngIf="kmSummary" class="m-0 mb-3 text-sm">{{ kmSummary }}</p>
+                    <p-chart *ngIf="!kmShowTable" type="bar" [data]="kmData" [options]="kmOptions" height="280px"></p-chart>
+                    <div *ngIf="kmShowTable" class="overflow-x-auto" tabindex="0" role="region" aria-labelledby="kmCaption">
+                        <table class="w-full text-sm">
+                            <caption id="kmCaption" class="sr-only">Kilómetros por mes, {{ selectedYear }} contra {{ selectedYear - 1 }}</caption>
+                            <thead>
+                                <tr class="border-b border-surface-200 dark:border-surface-700">
+                                    <th scope="col" class="text-left py-2 pr-4">Mes</th>
+                                    <th scope="col" class="text-right py-2 px-2">{{ selectedYear - 1 }}</th>
+                                    <th scope="col" class="text-right py-2 px-2">{{ selectedYear }}</th>
+                                    <th scope="col" class="text-right py-2 pl-2">Diferencia</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr *ngFor="let r of kmRows" class="border-b border-surface-100 dark:border-surface-800">
+                                    <th scope="row" class="py-1 pr-4 text-left font-normal">{{ r.label }}</th>
+                                    <td class="py-1 px-2 text-right">{{ r.previous | number:'1.0-0' }}</td>
+                                    <td class="py-1 px-2 text-right">{{ r.current === null ? '—' : (r.current | number:'1.0-0') }}</td>
+                                    <td class="py-1 pl-2 text-right">{{ kmChange(r) }}</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
                 <div class="p-6 bg-white dark:bg-surface-900 rounded-xl shadow-sm border border-surface-200 dark:border-surface-700">
                     <div class="flex items-center gap-2 mb-4">
                         <h3 class="font-bold text-lg text-gray-700 dark:text-gray-200">Tipos de Servicio</h3>
@@ -431,6 +465,11 @@ export class StatisticsComponent implements OnInit {
   // Charts
   monthlyData: any;
   barOptions: any;
+  kmData: any;
+  kmOptions: any;
+  kmRows: { label: string; previous: number; current: number | null }[] = [];
+  kmSummary = '';
+  kmShowTable = false;
   serviceTypeData: any;
   pieOptions: any;
   serviceTypeRows: { type: string; count: number; amount: number; percentage: number }[] = [];
@@ -626,7 +665,7 @@ export class StatisticsComponent implements OnInit {
         const year = this.selectedYear;
         const month = this.viewMode === 'monthly' ? this.selectedMonth : undefined;
 
-        const [general, drivers, clients, monthly, vehicles, expenses, receivables, serviceTypes] = await Promise.all([
+        const [general, drivers, clients, monthly, vehicles, expenses, receivables, serviceTypes, previousMonthly] = await Promise.all([
             this.statsService.getGeneralStats(year, month, this.selectedServiceTypes, this.selectedVehicleIds),
             this.statsService.getDriverStats(year, month, this.selectedServiceTypes, this.selectedVehicleIds),
             this.statsService.getClientStats(year, month, this.selectedServiceTypes, this.selectedVehicleIds),
@@ -634,7 +673,8 @@ export class StatisticsComponent implements OnInit {
             this.statsService.getVehicleStats(year, month, this.selectedServiceTypes, this.selectedVehicleIds),
             this.statsService.getExpenseStats(year, month, this.selectedServiceTypes, this.selectedVehicleIds),
             this.statsService.getReceivablesStats(),
-            this.statsService.getServiceTypeStats(year, month, this.selectedServiceTypes, this.selectedVehicleIds)
+            this.statsService.getServiceTypeStats(year, month, this.selectedServiceTypes, this.selectedVehicleIds),
+            this.statsService.getMonthlyStats(year - 1, this.selectedServiceTypes, this.selectedVehicleIds)
         ]);
 
         this.generalStats = general;
@@ -645,6 +685,7 @@ export class StatisticsComponent implements OnInit {
         this.receivablesStats = receivables;
 
         this.setupMonthlyChart(monthly);
+        this.setupKmChart(monthly, previousMonthly);
         this.setupServiceTypeChart(serviceTypes);
     } catch (e) {
         console.error("Error loading stats", e);
@@ -844,6 +885,74 @@ export class StatisticsComponent implements OnInit {
               }
           ]
       };
+  }
+
+  /** Km de cada mes del año elegido al lado del mismo mes del año anterior. */
+  setupKmChart(current: { month: string; km?: number }[], previous: { month: string; km?: number }[]) {
+      const year = this.selectedYear;
+      const kmOf = (rows: { month: string; km?: number }[], y: number, m: number) => Number(rows.find((r) => r.month === `${y}-${String(m).padStart(2, '0')}`)?.km ?? 0);
+      const now = new Date();
+      // Meses que todavía no llegaron quedan vacíos (no en cero).
+      const lastMonth = year < now.getFullYear() ? 12 : year === now.getFullYear() ? now.getMonth() + 1 : 0;
+      const short = ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic'];
+      this.kmRows = short.map((label, i) => ({
+          label,
+          previous: kmOf(previous, year - 1, i + 1),
+          current: i + 1 <= lastMonth ? kmOf(current, year, i + 1) : null
+      }));
+
+      const done = this.kmRows.slice(0, lastMonth);
+      const sumCur = done.reduce((a, r) => a + (r.current ?? 0), 0);
+      const sumPrev = done.reduce((a, r) => a + r.previous, 0);
+      const fmt = (v: number) => v.toLocaleString('es-AR', { maximumFractionDigits: 0 });
+      const range = lastMonth === 12 ? 'En el año' : lastMonth ? `De enero a ${['enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio', 'julio', 'agosto', 'septiembre', 'octubre', 'noviembre', 'diciembre'][lastMonth - 1]}` : '';
+      this.kmSummary = !lastMonth
+          ? ''
+          : sumPrev > 0
+            ? `${range}: ${fmt(sumCur)} km contra ${fmt(sumPrev)} km de ${year - 1} (${this.signedPct((sumCur / sumPrev - 1) * 100)}).`
+            : `${range}: ${fmt(sumCur)} km.`;
+
+      // Año elegido en azul; el anterior en gris, de referencia. Se leen bien en tema claro y oscuro.
+      this.kmData = {
+          labels: short,
+          datasets: [
+              { label: String(year - 1), data: this.kmRows.map((r) => r.previous), backgroundColor: '#7c8799', borderRadius: 4, borderSkipped: 'bottom', maxBarThickness: 22 },
+              { label: String(year), data: this.kmRows.map((r) => r.current), backgroundColor: '#2a78d6', borderRadius: 4, borderSkipped: 'bottom', maxBarThickness: 22 }
+          ]
+      };
+      const style = getComputedStyle(document.documentElement);
+      const text = style.getPropertyValue('--text-color');
+      const muted = style.getPropertyValue('--text-color-secondary');
+      const grid = style.getPropertyValue('--surface-border');
+      this.kmOptions = {
+          maintainAspectRatio: false,
+          interaction: { mode: 'index', intersect: false },
+          plugins: {
+              legend: { labels: { color: text, usePointStyle: true, pointStyle: 'rectRounded' } },
+              tooltip: {
+                  callbacks: {
+                      label: (ctx: any) => (ctx.parsed.y === null ? `${ctx.dataset.label}: —` : `${ctx.dataset.label}: ${fmt(ctx.parsed.y)} km`),
+                      footer: (items: any[]) => {
+                          const r = this.kmRows[items[0]?.dataIndex];
+                          return r && r.current !== null && r.previous > 0 ? `Contra ${year - 1}: ${this.signedPct((r.current / r.previous - 1) * 100)}` : '';
+                      }
+                  }
+              }
+          },
+          scales: {
+              x: { ticks: { color: muted }, grid: { display: false } },
+              y: { beginAtZero: true, ticks: { color: muted, callback: (v: number) => `${fmt(v)} km` }, grid: { color: grid } }
+          }
+      };
+  }
+
+  kmChange(r: { previous: number; current: number | null }): string {
+      if (r.current === null || r.previous <= 0) return '—';
+      return this.signedPct((r.current / r.previous - 1) * 100);
+  }
+
+  private signedPct(v: number): string {
+      return `${v > 0 ? '+' : ''}${v.toLocaleString('es-AR', { minimumFractionDigits: 1, maximumFractionDigits: 1 })}%`;
   }
 
   setupServiceTypeChart(data: { type: string; count: number; amount: number; percentage: number }[]) {

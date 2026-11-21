@@ -25,6 +25,18 @@ export interface Release {
 
 export const RELEASES: Release[] = [
     {
+        version: '2.12.0',
+        date: '2026-11-21',
+        title: 'Kilómetros por mes y calculadora más clara',
+        changes: [
+            { kind: 'nuevo', text: 'Estadísticas: gráfico de kilómetros por mes, el año elegido al lado del anterior, con cuántos km van en el año contra los mismos meses del año pasado. Respeta los filtros de tipo de servicio y auto, y tiene vista de tabla.' },
+            { kind: 'mejora', text: 'Noticias y costos: la calculadora de ajuste de precios tiene otro diseño, en dos pasos, con barritas para los pesos, una barra que muestra el reparto y el resultado al costado. Si subís un peso y se pasa de 100%, los otros bajan solos en proporción.' },
+            { kind: 'nuevo', text: 'Noticias y costos: se puede elegir qué tarifa comparar (viene la favorita). La tarjeta, la comparación, el gráfico de evolución y la calculadora pasan a usar esa tarifa, y la pantalla recuerda la elegida.' },
+            { kind: 'correccion', text: 'Noticias y costos: en Evolución todas las líneas valen 100 en el mismo mes. Antes, tu tarifa arrancaba en 100 recién en mayo (cuando empieza su historia) y no se podía comparar. Ahora se elige desde qué mes comparar, y "¿Tus precios acompañan los costos?" usa ese mismo mes.' },
+            { kind: 'mejora', text: 'Noticias y costos ya no se actualiza todos los días a las 7: se actualiza la primera vez que alguien abre la pantalla en el día. Mientras busca, arriba aparece un aviso y la pantalla se refresca sola. Los días que nadie la abre no se gasta nada de IA.' }
+        ]
+    },
+    {
         version: '2.11.0',
         date: '2026-11-20',
         title: 'Noticias y costos',

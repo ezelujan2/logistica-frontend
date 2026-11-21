@@ -638,6 +638,7 @@ La pantalla Estadísticas (ADMIN y DIRECTOR) muestra cuánto se facturó, cuánt
 | Ranking Vehículos | Rentabilidad de cada auto |
 | Tipos de Servicio | Distribución por tipo |
 | Resumen de Gastos | Gastos por tipo |
+| Kilómetros por mes | Los km de cada mes del año elegido al lado de los del año anterior, con los mismos filtros. Arriba dice cuántos km van en el año contra los mismos meses del año pasado; al pasar el mouse por un mes, la diferencia de ese mes. "Ver tabla" muestra los números |
 
 ### Más detalle
 
@@ -654,23 +655,23 @@ Para preguntas que estas pantallas no responden, usá el asistente de IA (secci�
 
 ### Noticias y costos (ADMIN y DIRECTOR)
 
-En el menú, "Noticias y costos". Sirve para seguir lo que cuesta trabajar y saber cuándo actualizar precios. Se actualiza solo todos los días a las 7.
+En el menú, "Noticias y costos". Sirve para seguir lo que cuesta trabajar y saber cuándo actualizar precios. No tiene horario fijo: se actualiza sola la primera vez que alguien la abre en el día (arriba aparece "Buscando los precios y las noticias de hoy…" y en uno o dos minutos se refresca). Los días que nadie la abre no se gasta nada.
 
 - **Combustible:** precio de nafta súper, premium, gasoil, gasoil premium y GNC en Rosario. Es la mediana de las estaciones que informaron su precio a la Secretaría de Energía en los últimos meses, en horario diurno. Si en Rosario hay pocas estaciones, se usa toda la provincia y lo dice. Cada uno muestra la suba del mes, del año y de los últimos 12 meses.
 - **IPC (inflación):** el dato del INDEC para todo el país. El INDEC lo publica a mediados del mes siguiente, así que siempre va un mes atrasado.
-- **Tu tarifa por km:** el precio por km de la tarifa favorita (la base), con su nombre. Los meses anteriores salen de los cambios de tarifa anotados en la auditoría; si una tarifa se cambió antes de que existiera la auditoría, esos meses no aparecen.
-- **"¿Tus precios acompañan los costos?":** compara la suba de 12 meses de la nafta, la inflación y tu tarifa por km.
+- **Tu tarifa por km:** el precio por km de la tarifa favorita (la base), con su nombre. Con "Tarifa" (arriba de la comparación) elegís otra: la tarjeta, la comparación, el gráfico de evolución y la calculadora pasan a usar esa, y la pantalla la recuerda para la próxima vez. Los meses anteriores salen de los cambios de tarifa anotados en la auditoría; si una tarifa se cambió antes de que existiera la auditoría, esos meses no aparecen.
+- **"¿Tus precios acompañan los costos?":** cuánto subieron la nafta, la inflación y tu tarifa por km desde el mismo mes (el que está elegido en "Comparar desde", en el gráfico de Evolución).
 - **Calculadora de ajuste de precios:** para saber cuánto cobrar hoy un precio que pusiste antes.
-  1. Elegí qué querés actualizar: el precio por km, un servicio u otro. Con "Precio por km" aparece un botón para traer el precio por km de la tarifa base de ese mes.
+  1. Elegí qué querés actualizar: el precio por km, un servicio u otro. Con "Precio por km" aparece un botón para traer el precio por km de ese mes de la tarifa elegida.
   2. Cargá el precio y el mes en que lo pusiste, y a qué mes lo querés llevar (viene el último con datos).
-  3. Poné cuánto pesa cada costo: inflación (IPC), un combustible a elección y un aumento fijo con su porcentaje (por ejemplo, el de un decreto o un acuerdo). Lo que no asignes queda "sin ajustar", igual que antes. Los botones de arriba cargan combinaciones comunes, como 50% IPC + 50% combustible.
-  4. Abajo sale el precio nuevo, cuánto subió y una tabla con lo que aporta cada costo.
+  3. Poné cuánto pesa cada costo: inflación (IPC), un combustible a elección y un aumento fijo con su porcentaje (por ejemplo, el de un decreto o un acuerdo). Se cargan con la barrita o escribiendo el número. Si al subir uno se pasa de 100%, los otros bajan solos en proporción. Lo que no asignes "queda igual". Los botones de arriba cargan combinaciones comunes, como 50% IPC + 50% combustible.
+  4. A la derecha (abajo en el celular) sale el precio nuevo, cuánto subió y una tabla con lo que aporta cada costo. La barra de colores muestra cómo se reparte el precio entre los costos.
 
   Los pesos no pueden sumar más de 100%. Si el IPC del mes elegido todavía no salió, usa el último publicado y lo aclara. Los pesos quedan guardados en tu navegador para la próxima vez.
-- **Evolución:** las tres líneas arrancan en 100 hace un año; 130 quiere decir que subió 30%. "Ver tabla" muestra los números de cada mes.
-- **Noticias de transporte:** todos los días se buscan noticias de decretos y normas, combustible, transporte, rutas y peajes de Rosario, Santa Fe y el país. La IA elige las que le sirven a LECMA y escribe un resumen corto. El resumen sale sólo del titular: antes de decidir algo, abrí la nota original con el título. Arriba se filtra por tema.
+- **Evolución:** las tres líneas valen 100 en el mismo mes, así se comparan parejo; 130 quiere decir que subió 30% desde ese mes. Viene elegido el primer mes en que las tres tienen dato y se cambia con "Comparar desde". Si la historia de tu tarifa arranca más tarde (por ejemplo, en mayo), lo avisa. "Ver tabla" muestra los números de cada mes.
+- **Noticias de transporte:** se buscan noticias de decretos y normas, combustible, transporte, rutas y peajes de Rosario, Santa Fe y el país. La IA elige las que le sirven a LECMA y escribe un resumen corto. El resumen sale sólo del titular: antes de decidir algo, abrí la nota original con el título. Arriba se filtra por tema.
 
-ADMIN tiene el botón "Actualizar ahora" para no esperar a la mañana. Las noticias usan la IA y tienen un tope de gasto por día; el gasto del mes se ve al pie y en Estado del sistema, junto con el del asistente.
+ADMIN tiene el botón "Actualizar ahora" para volver a buscar en el mismo día (por ejemplo, si la búsqueda automática falló). Las noticias usan la IA y tienen un tope de gasto por día; el gasto del mes se ve al pie y en Estado del sistema, junto con el del asistente.
 
 ## 15. Usar el asistente de IA
 

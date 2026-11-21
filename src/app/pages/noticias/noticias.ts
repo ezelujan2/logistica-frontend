@@ -1,8 +1,9 @@
-import { Component, OnInit, computed, inject, signal } from '@angular/core';
+import { Component, OnDestroy, OnInit, computed, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ButtonModule } from 'primeng/button';
 import { ChartModule } from 'primeng/chart';
+import { SelectModule } from 'primeng/select';
 import { SelectButtonModule } from 'primeng/selectbutton';
 import { TagModule } from 'primeng/tag';
 import { TooltipModule } from 'primeng/tooltip';
@@ -26,6 +27,9 @@ const MONTHS = ['ene', 'feb', 'mar', 'abr', 'may', 'jun', 'jul', 'ago', 'sep', '
 const MONTHS_LONG = ['enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio', 'julio', 'agosto', 'septiembre', 'octubre', 'noviembre', 'diciembre'];
 
 /** Cómo se nombran en la frase de comparación. */
+const TARIFF_STORAGE_KEY = 'lecma.newsTariff';
+
+/** Cómo se nombran en los avisos. */
 const COMPARISON_LABELS: Record<string, string> = { FUEL_NAFTA_SUPER: 'nafta súper', CPI_NATIONAL: 'inflación (IPC)', TARIFF_KM: 'tu tarifa por km' };
 
 /** Meses que muestra el gráfico (el primero es la base 100). */
@@ -34,7 +38,7 @@ const CHART_MONTHS = 13;
 @Component({
     selector: 'app-noticias',
     standalone: true,
-    imports: [CommonModule, FormsModule, ButtonModule, ChartModule, SelectButtonModule, TagModule, TooltipModule, ToastModule, PriceCalculator],
+    imports: [CommonModule, FormsModule, ButtonModule, ChartModule, SelectModule, SelectButtonModule, TagModule, TooltipModule, ToastModule, PriceCalculator],
     providers: [MessageService],
     template: `
         <p-toast />
@@ -42,10 +46,12 @@ const CHART_MONTHS = 13;
             <div class="card flex flex-wrap items-center justify-between gap-3">
                 <div>
                     <h1 class="text-2xl font-bold m-0">Noticias y costos</h1>
-                    <p class="text-muted-color m-0 mt-1">Combustible en Rosario, inflación y noticias de transporte. Se actualiza solo todos los días a las 7.</p>
+                    <p class="text-muted-color m-0 mt-1">Combustible en Rosario, inflación y noticias de transporte. Se actualiza sola la primera vez que alguien la abre en el día.</p>
                 </div>
                 <p-button *ngIf="canRefresh" label="Actualizar ahora" icon="pi pi-refresh" [outlined]="true" [loading]="refreshing" (click)="refresh()" pTooltip="Busca noticias nuevas con la IA y actualiza los precios" tooltipPosition="left" />
             </div>
+
+            <div *ngIf="page?.status?.updating" class="card flex items-center gap-2 text-muted-color" role="status"><i class="pi pi-spin pi-spinner" aria-hidden="true"></i> Buscando los precios y las noticias de hoy… la pantalla se actualiza sola cuando termine.</div>
 
             <div *ngIf="loading" class="card text-center text-muted-color">Cargando…</div>
 
@@ -74,10 +80,26 @@ const CHART_MONTHS = 13;
                 </div>
 
                 <!-- Comparación -->
-                <div class="card mb-0" *ngIf="comparison">
-                    <h2 class="text-lg font-bold m-0 mb-1">¿Tus precios acompañan los costos?</h2>
-                    <p class="m-0">{{ comparison }}</p>
-                    <small class="text-muted-color">Tu tarifa por km es la de la tarifa favorita (la base). Los meses anteriores salen de los cambios de tarifa que quedaron anotados en la auditoría.</small>
+                <div class="card mb-0" *ngIf="comparison.length">
+                    <div class="flex flex-wrap items-start justify-between gap-3 mb-3">
+                        <div>
+                            <h2 class="text-lg font-bold m-0 mb-1">¿Tus precios acompañan los costos?</h2>
+                            <p class="m-0 text-muted-color">Cuánto subió cada uno desde {{ periodLabel(chartBase) }} (lo podés cambiar en el gráfico de abajo).</p>
+                        </div>
+                        <div *ngIf="tariffOptions.length > 1" class="flex flex-wrap items-center gap-2">
+                            <label for="newsTariff" class="text-sm">Tarifa</label>
+                            <p-select inputId="newsTariff" [options]="tariffOptions" [(ngModel)]="tariffId" (ngModelChange)="changeTariff()" optionLabel="label" optionValue="value" appendTo="body" size="small" [loading]="loadingTariff" styleClass="min-w-56" />
+                        </div>
+                    </div>
+                    <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                        <div *ngFor="let c of comparison" class="rounded-lg border border-surface-200 dark:border-surface-700 p-3 flex flex-col gap-1">
+                            <span class="flex items-center gap-2 text-sm"><span class="inline-block w-3 h-1 rounded" [style.background]="c.color" aria-hidden="true"></span>{{ c.label }}</span>
+                            <span class="text-2xl font-bold">{{ c.change === null ? '—' : pct(c.change) }}</span>
+                            <small class="text-muted-color">{{ c.note }}</small>
+                        </div>
+                    </div>
+                    <p *ngIf="gapNote" class="m-0 mt-3 text-sm"><i class="pi pi-exclamation-circle mr-1 text-orange-600 dark:text-orange-400" aria-hidden="true"></i>{{ gapNote }}</p>
+                    <small class="text-muted-color block mt-2">Viene elegida la tarifa favorita (la base); con "Tarifa" ves la evolución de otra, también en el gráfico y en la calculadora. Los meses anteriores salen de los cambios de tarifa que quedaron anotados en la auditoría.</small>
                 </div>
 
                 <!-- Calculadora de ajuste -->
@@ -88,7 +110,11 @@ const CHART_MONTHS = 13;
                     <div class="flex flex-wrap items-center justify-between gap-2 mb-3">
                         <div>
                             <h2 class="text-lg font-bold m-0">Evolución de los últimos 12 meses</h2>
-                            <small class="text-muted-color">Cada línea arranca en 100 en {{ periodLabel(chartBase) }}: 130 quiere decir que subió 30%.</small>
+                            <small class="text-muted-color">Todas las líneas valen 100 en {{ periodLabel(chartBase) }}: 130 quiere decir que subió 30% desde ese mes.</small>
+                        </div>
+                        <div class="flex flex-wrap items-center gap-2">
+                            <label for="chartBase" class="text-sm">Comparar desde</label>
+                            <p-select inputId="chartBase" [options]="baseOptions" [(ngModel)]="chartBase" (ngModelChange)="rebase()" optionLabel="label" optionValue="value" appendTo="body" size="small" />
                         </div>
                         <p-button [label]="showTable ? 'Ver gráfico' : 'Ver tabla'" [icon]="showTable ? 'pi pi-chart-line' : 'pi pi-table'" [text]="true" size="small" (click)="showTable = !showTable" />
                     </div>
@@ -121,7 +147,7 @@ const CHART_MONTHS = 13;
                         <p-selectButton [options]="categoryOptions" [(ngModel)]="category" optionLabel="label" optionValue="value" [allowEmpty]="false" size="small" />
                     </div>
                     <div *ngIf="!filteredNews.length" class="text-muted-color py-4 text-center">
-                        {{ page.news.length ? 'No hay noticias de esta categoría en el último mes.' : 'Todavía no hay noticias. Se buscan todos los días a las 7.' }}
+                        {{ page.news.length ? 'No hay noticias de esta categoría en el último mes.' : 'Todavía no hay noticias.' }}
                     </div>
                     <ul class="list-none p-0 m-0 flex flex-col gap-4">
                         <li *ngFor="let n of filteredNews" class="border-b border-surface-100 dark:border-surface-800 pb-4">
@@ -146,7 +172,7 @@ const CHART_MONTHS = 13;
         </div>
     `
 })
-export class Noticias implements OnInit {
+export class Noticias implements OnInit, OnDestroy {
     private newsService = inject(NewsService);
     private authService = inject(AuthService);
     private messageService = inject(MessageService);
@@ -160,7 +186,9 @@ export class Noticias implements OnInit {
     readonly canRefresh = this.authService.hasPermission('viewSystem');
 
     tiles: Indicator[] = [];
-    comparison = '';
+    comparison: { label: string; color: string; change: number | null; note: string }[] = [];
+    gapNote = '';
+    baseOptions: { label: string; value: string }[] = [];
     chartPeriods: string[] = [];
     chartBase = '';
     chartSeries: { key: string; label: string; indexed: (number | null)[] }[] = [];
@@ -176,17 +204,79 @@ export class Noticias implements OnInit {
         return this.buildChartOptions();
     });
 
+    tariffId: number | null = null;
+    tariffOptions: { label: string; value: number }[] = [];
+    loadingTariff = false;
+
+    private savedTariff(): number | null {
+        try {
+            const v = Number(localStorage.getItem(TARIFF_STORAGE_KEY));
+            return Number.isInteger(v) && v > 0 ? v : null;
+        } catch {
+            return null;
+        }
+    }
+
+    /** Cambia la tarifa que se compara: tarjeta, comparación, gráfico y calculadora. */
+    async changeTariff() {
+        if (!this.page || this.tariffId === null) return;
+        this.loadingTariff = true;
+        try {
+            const other = await this.newsService.getTariff(this.tariffId);
+            this.page = { ...this.page, market: this.page.market.map((m) => (m.key === 'TARIFF_KM' ? other : m)) };
+            this.chartBase = ''; // cada tarifa tiene su historia: se vuelve a elegir el mes de partida
+            this.prepare();
+            try {
+                localStorage.setItem(TARIFF_STORAGE_KEY, String(this.tariffId));
+            } catch {
+                // Sin almacenamiento: no se recuerda, nada más.
+            }
+        } catch {
+            this.messageService.add({ severity: 'error', summary: 'Error', detail: 'No se pudo cargar esa tarifa.' });
+        } finally {
+            this.loadingTariff = false;
+        }
+    }
+
+    /** Nombre de cada serie; la de la tarifa lleva el nombre de la tarifa elegida. */
+    private seriesLabel(key: string, fallback: string): string {
+        const name = key === 'TARIFF_KM' ? this.ind('TARIFF_KM')?.scope : null;
+        return name ? `${name} (por km)` : fallback;
+    }
+
+    /** Mientras el servidor busca lo del día, se vuelve a pedir cada 10 segundos. */
+    private pollTimer: ReturnType<typeof setTimeout> | null = null;
+
     async ngOnInit() {
         await this.load();
     }
 
-    async load() {
-        this.loading = true;
+    ngOnDestroy() {
+        if (this.pollTimer) clearTimeout(this.pollTimer);
+    }
+
+    async load(quiet = false) {
+        if (!quiet) this.loading = true;
         try {
-            this.page = await this.newsService.getPage(30);
+            const page = await this.newsService.getPage(30);
+            this.tariffOptions = (page.tariffs ?? []).map((t) => ({ label: t.isFavorite ? `${t.name} (favorita)` : t.name, value: t.id }));
+            const favorite = page.tariffs?.find((t) => t.isFavorite)?.id ?? null;
+            if (this.tariffId === null) this.tariffId = this.savedTariff();
+            if (!this.tariffOptions.some((o) => o.value === this.tariffId)) this.tariffId = favorite;
+            // La página trae la favorita; si hay otra elegida, se reemplaza.
+            if (this.tariffId !== null && this.tariffId !== favorite) {
+                try {
+                    const other = await this.newsService.getTariff(this.tariffId);
+                    page.market = page.market.map((m) => (m.key === 'TARIFF_KM' ? other : m));
+                } catch {
+                    this.tariffId = favorite;
+                }
+            }
+            this.page = page;
             this.prepare();
+            if (this.page.status.updating) this.pollTimer = setTimeout(() => this.load(true), 10_000);
         } catch {
-            this.messageService.add({ severity: 'error', summary: 'Error', detail: 'No se pudieron cargar las noticias.' });
+            if (!quiet) this.messageService.add({ severity: 'error', summary: 'Error', detail: 'No se pudieron cargar las noticias.' });
         } finally {
             this.loading = false;
         }
@@ -225,20 +315,47 @@ export class Noticias implements OnInit {
         const order = ['FUEL_NAFTA_SUPER', 'FUEL_NAFTA_PREMIUM', 'FUEL_GASOIL', 'FUEL_GASOIL_PREMIUM', 'FUEL_GNC', 'CPI_NATIONAL', 'TARIFF_KM'];
         this.tiles = order.map((k) => this.ind(k)).filter((i): i is Indicator => !!i);
 
-        // Comparación de 12 meses: sólo lo que tiene dato.
-        const parts = CHART_SERIES.map((s) => ({ label: COMPARISON_LABELS[s.key] ?? s.label, v: this.ind(s.key)?.changes.twelveMonths ?? null })).filter((p) => p.v !== null);
-        this.comparison = parts.length >= 2 ? `En los últimos 12 meses: ${parts.map((p) => `${p.label} ${this.pct(p.v)}`).join(', ')}.` : '';
-
-        // Gráfico: los últimos 13 meses, cada serie en base 100 en el primer mes que tenga dato.
+        // Gráfico: los últimos 13 meses. Todas las series se miden desde el mismo mes
+        // (si no, una que tiene historia más corta arranca en 100 más tarde y engaña).
         const all = new Set<string>();
         for (const s of CHART_SERIES) this.ind(s.key)?.series.forEach((p) => all.add(p.period));
         this.chartPeriods = [...all].sort().slice(-CHART_MONTHS);
-        this.chartBase = this.chartPeriods[0] ?? '';
+        this.baseOptions = this.chartPeriods.slice(0, -1).map((p) => ({ label: this.periodLabel(p), value: p }));
+        if (!this.baseOptions.some((o) => o.value === this.chartBase)) this.chartBase = this.defaultBase();
+        this.rebase();
+    }
+
+    /** El primer mes en que todas las series tienen dato; si no hay, el primero. */
+    private defaultBase(): string {
+        const withData = CHART_SERIES.map((s) => new Set((this.ind(s.key)?.series ?? []).map((p) => p.period))).filter((set) => this.chartPeriods.some((p) => set.has(p)));
+        return this.chartPeriods.slice(0, -1).find((p) => withData.every((set) => set.has(p))) ?? this.chartPeriods[0] ?? '';
+    }
+
+    /** Recalcula gráfico y comparación desde `chartBase`. */
+    rebase() {
+        const mode = this.layout.isDarkTheme() ? 'dark' : 'light';
+        const missing: string[] = [];
         this.chartSeries = CHART_SERIES.map((s) => {
             const at = new Map((this.ind(s.key)?.series ?? []).map((p) => [p.period, p.value]));
-            const base = this.chartPeriods.map((p) => at.get(p)).find((v) => v !== undefined && v > 0);
-            return { ...s, indexed: this.chartPeriods.map((p) => (base && at.has(p) ? (at.get(p)! / base) * 100 : null)) };
+            const base = at.get(this.chartBase);
+            if (!base) missing.push(s.key === 'TARIFF_KM' ? this.seriesLabel(s.key, 'tu tarifa') : (COMPARISON_LABELS[s.key] ?? s.label));
+            return { ...s, label: this.seriesLabel(s.key, s.label), indexed: this.chartPeriods.map((p) => (base && at.has(p) ? (at.get(p)! / base) * 100 : null)) };
         });
+        this.comparison = CHART_SERIES.map((s, i) => {
+            const series = (this.ind(s.key)?.series ?? []).filter((p) => p.period >= this.chartBase);
+            const base = series.find((p) => p.period === this.chartBase)?.value;
+            const last = series[series.length - 1];
+            const change = base && last && last.period !== this.chartBase ? (last.value / base - 1) * 100 : base ? 0 : null;
+            const note = !base ? `Sin dato de ${this.periodLabel(this.chartBase)}` : `Hasta ${this.periodLabel(last?.period)}`;
+            return { label: this.seriesLabel(s.key, s.label), color: COLORS[mode][i], change, note };
+        });
+        const tariff = this.ind('TARIFF_KM')?.series ?? [];
+        const firstTariff = tariff[0]?.period;
+        this.gapNote = missing.length
+            ? `No hay dato de ${missing.join(' ni de ')} en ${this.periodLabel(this.chartBase)}: elegí un mes más reciente para compararlos.`
+            : firstTariff && firstTariff > (this.chartPeriods[0] ?? '')
+              ? `La historia de ${this.ind('TARIFF_KM')?.scope ?? 'la tarifa'} arranca en ${this.periodLabel(firstTariff)}, cuando los cambios de tarifa empezaron a quedar anotados.`
+              : '';
         this.dataVersion.update((v) => v + 1);
     }
 
@@ -306,7 +423,7 @@ export class Noticias implements OnInit {
             const p = ind.changes.last?.period;
             return p ? `INDEC, nacional. Último dato: ${MONTHS_LONG[Number(p.slice(5)) - 1]} ${p.slice(0, 4)}.` : 'INDEC';
         }
-        if (ind.key === 'TARIFF_KM') return ind.scope ? `Tarifa favorita: ${ind.scope}.` : 'No hay ninguna tarifa marcada como favorita.';
+        if (ind.key === 'TARIFF_KM') return ind.scope ? `Tarifa${ind.tariffIsFavorite ? ' favorita' : ''}: ${ind.scope}.` : 'No hay ninguna tarifa marcada como favorita.';
         const where = ind.scope === 'SANTA FE' ? 'Provincia de Santa Fe' : 'Rosario';
         return `${where}, mediana de ${ind.samples ?? '?'} estaciones (horario diurno).`;
     }

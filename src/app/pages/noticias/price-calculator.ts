@@ -5,6 +5,8 @@ import { ButtonModule } from 'primeng/button';
 import { InputNumberModule } from 'primeng/inputnumber';
 import { SelectModule } from 'primeng/select';
 import { SelectButtonModule } from 'primeng/selectbutton';
+import { SliderModule } from 'primeng/slider';
+import { TooltipModule } from 'primeng/tooltip';
 import { Indicator } from '../../service/news.service';
 import { AdjustError, AdjustResult, adjustPrice, Component as PriceComponent } from './price-adjust';
 
@@ -17,6 +19,8 @@ const FUEL_OPTIONS = [
     { label: 'GNC', value: 'FUEL_GNC' }
 ];
 const STORAGE_KEY = 'lecma.priceCalculator';
+const WEIGHT_FIELDS = ['ipcWeight', 'fuelWeight', 'fixedWeight'] as const;
+type WeightField = (typeof WEIGHT_FIELDS)[number];
 
 interface Saved {
     what: string;
@@ -35,129 +39,128 @@ interface Saved {
 @Component({
     selector: 'app-price-calculator',
     standalone: true,
-    imports: [CommonModule, FormsModule, ButtonModule, InputNumberModule, SelectModule, SelectButtonModule],
+    imports: [CommonModule, FormsModule, ButtonModule, InputNumberModule, SelectModule, SelectButtonModule, SliderModule, TooltipModule],
     template: `
         <div class="card mb-0">
             <h2 class="text-lg font-bold m-0">Calculadora de ajuste de precios</h2>
-            <p class="text-muted-color m-0 mt-1 mb-4">Poné un precio de un mes y cuánto pesa cada costo (fórmula polinómica). Te dice cuánto deberías cobrar ahora.</p>
+            <p class="text-muted-color m-0 mt-1 mb-5">Elegí un precio de un mes y cuánto pesa cada costo (fórmula polinómica). Te dice cuánto deberías cobrar ahora.</p>
 
-            <div class="grid grid-cols-12 gap-4">
-                <!-- Precio de partida -->
-                <div class="col-span-12 lg:col-span-5 flex flex-col gap-4">
-                    <div class="flex flex-col gap-2">
-                        <span id="calcWhatLabel" class="font-medium">¿Qué precio querés actualizar?</span>
-                        <p-selectButton [options]="whatOptions" [(ngModel)]="what" (ngModelChange)="save()" optionLabel="label" optionValue="value" [allowEmpty]="false" ariaLabelledBy="calcWhatLabel" />
-                    </div>
-                    <div class="grid grid-cols-2 gap-3">
-                        <div class="col-span-2 sm:col-span-1 flex flex-col gap-2">
-                            <label for="calcBasePrice" class="font-medium">Precio</label>
-                            <p-inputNumber inputId="calcBasePrice" [(ngModel)]="basePrice" mode="currency" currency="ARS" locale="es-AR" [minFractionDigits]="0" [maxFractionDigits]="2" [min]="0" placeholder="$ 0" styleClass="w-full" inputStyleClass="w-full" />
+            <div class="grid grid-cols-12 gap-6">
+                <div class="col-span-12 xl:col-span-7 flex flex-col gap-6">
+                    <!-- 1. El precio -->
+                    <section class="flex flex-col gap-3" aria-labelledby="calcStep1">
+                        <h3 id="calcStep1" class="!text-base !font-semibold !m-0 flex items-center gap-2"><span class="step" aria-hidden="true">1</span>El precio de partida</h3>
+                        <p-selectButton [options]="whatOptions" [(ngModel)]="what" (ngModelChange)="save()" optionLabel="label" optionValue="value" [allowEmpty]="false" ariaLabelledBy="calcStep1" />
+                        <div class="grid grid-cols-1 sm:grid-cols-[1fr_1fr_auto_1fr] gap-3 items-end">
+                            <div class="flex flex-col gap-1">
+                                <label for="calcBasePrice" class="text-sm text-muted-color">Precio</label>
+                                <p-inputNumber inputId="calcBasePrice" [(ngModel)]="basePrice" mode="currency" currency="ARS" locale="es-AR" [minFractionDigits]="0" [maxFractionDigits]="2" [min]="0" placeholder="$ 0" styleClass="w-full" inputStyleClass="w-full" />
+                            </div>
+                            <div class="flex flex-col gap-1">
+                                <label for="calcBasePeriod" class="text-sm text-muted-color">de</label>
+                                <p-select inputId="calcBasePeriod" [options]="baseOptions" [(ngModel)]="basePeriod" (ngModelChange)="save()" optionLabel="label" optionValue="value" appendTo="body" styleClass="w-full" />
+                            </div>
+                            <span class="hidden sm:block text-muted-color pb-3" aria-hidden="true"><i class="pi pi-arrow-right"></i></span>
+                            <div class="flex flex-col gap-1">
+                                <label for="calcTargetPeriod" class="text-sm text-muted-color">llevado a</label>
+                                <p-select inputId="calcTargetPeriod" [options]="targetOptions" [(ngModel)]="targetPeriod" optionLabel="label" optionValue="value" appendTo="body" styleClass="w-full" />
+                            </div>
                         </div>
-                        <div class="col-span-2 sm:col-span-1 flex flex-col gap-2">
-                            <label for="calcBasePeriod" class="font-medium">Mes de ese precio</label>
-                            <p-select inputId="calcBasePeriod" [options]="baseOptions" [(ngModel)]="basePeriod" (ngModelChange)="save()" optionLabel="label" optionValue="value" appendTo="body" styleClass="w-full" />
+                        <p-button *ngIf="what === 'km' && tariffAtBase" [label]="'Usar ' + tariffName + ' de ' + monthLabel(basePeriod) + ' (' + money(tariffAtBase, 2) + ')'" icon="pi pi-download" [text]="true" size="small" styleClass="self-start" (click)="basePrice = tariffAtBase" />
+                    </section>
+
+                    <!-- 2. Los pesos -->
+                    <fieldset class="flex flex-col gap-4 border-0 p-0 m-0 min-w-0">
+                        <legend class="text-base font-semibold p-0 mb-3 flex items-center gap-2"><span class="step" aria-hidden="true">2</span>Cuánto pesa cada costo</legend>
+                        <div class="flex flex-wrap gap-2 items-center">
+                            <span class="text-sm text-muted-color">Rápido:</span>
+                            <p-button *ngFor="let p of presets" [label]="p.label" size="small" [rounded]="true" [outlined]="!isPreset(p)" severity="secondary" (click)="applyPreset(p)" />
                         </div>
-                    </div>
-                    <p-button *ngIf="what === 'km' && tariffAtBase" [label]="'Usar tu tarifa base de ' + monthLabel(basePeriod) + ' (' + money(tariffAtBase) + ')'" icon="pi pi-download" [text]="true" size="small" styleClass="self-start p-0" (click)="basePrice = tariffAtBase" />
-                    <div class="flex flex-col gap-2">
-                        <label for="calcTargetPeriod" class="font-medium">Llevarlo a</label>
-                        <p-select inputId="calcTargetPeriod" [options]="targetOptions" [(ngModel)]="targetPeriod" optionLabel="label" optionValue="value" appendTo="body" styleClass="w-full" />
-                    </div>
+
+                        <!-- Reparto del precio -->
+                        <div aria-hidden="true">
+                            <div class="flex h-3 rounded-full overflow-hidden gap-[2px] bg-surface-100 dark:bg-surface-800">
+                                <div *ngFor="let part of parts" class="h-full transition-all" [style.width.%]="part.weight" [style.background]="part.color"></div>
+                            </div>
+                        </div>
+
+                        <div *ngFor="let row of rows" class="grid grid-cols-[1fr_6.5rem] sm:grid-cols-[14rem_1fr_6.5rem] gap-x-4 gap-y-2 items-center">
+                            <div class="flex items-center gap-2 min-w-0">
+                                <span class="inline-block w-3 h-3 rounded-sm shrink-0" [style.background]="row.color" aria-hidden="true"></span>
+                                <ng-container [ngSwitch]="row.key">
+                                    <label *ngSwitchCase="'ipc'" for="calcIpcWeight">Inflación (IPC)</label>
+                                    <p-select *ngSwitchCase="'fuel'" [options]="fuelOptions" [(ngModel)]="fuelKey" (ngModelChange)="save()" optionLabel="label" optionValue="value" appendTo="body" size="small" styleClass="w-full" ariaLabel="Qué combustible" />
+                                    <span *ngSwitchCase="'fixed'" class="flex items-center gap-2 min-w-0">
+                                        <label for="calcFixedIncrease" class="whitespace-nowrap">Aumento fijo</label>
+                                        <p-inputNumber inputId="calcFixedIncrease" [(ngModel)]="fixedIncrease" (ngModelChange)="save()" prefix="+" suffix=" %" [minFractionDigits]="0" [maxFractionDigits]="2" size="small" styleClass="w-full" inputStyleClass="w-full" pTooltip="Decreto, acuerdo o lo que quieras sumar" />
+                                    </span>
+                                </ng-container>
+                            </div>
+                            <div class="hidden sm:block"><p-slider [ngModel]="row.get()" (ngModelChange)="row.set($event)" [min]="0" [max]="100" [step]="5" [ariaLabel]="'Peso de ' + row.name" /></div>
+                            <p-inputNumber [inputId]="row.inputId" [ngModel]="row.get()" (ngModelChange)="row.set($event)" suffix=" %" [min]="0" [max]="100" size="small" styleClass="w-full" inputStyleClass="w-full text-right" [ariaLabel]="'Peso de ' + row.name" [invalid]="assigned > 100" />
+                        </div>
+
+                        <div class="grid grid-cols-[1fr_6.5rem] sm:grid-cols-[14rem_1fr_6.5rem] gap-x-4 items-center text-sm" role="status">
+                            <span class="flex items-center gap-2"><span class="inline-block w-3 h-3 rounded-sm shrink-0 border border-surface-300 dark:border-surface-600" aria-hidden="true"></span>Queda igual</span>
+                            <span class="hidden sm:block"></span>
+                            <span class="text-right pr-3" [class.text-red-600]="assigned > 100" [class.dark:text-red-400]="assigned > 100">{{ assigned > 100 ? 'Se pasa' : num(100 - assigned, 0, 2) + ' %' }}</span>
+                        </div>
+                        <div *ngIf="assigned > 100" class="text-sm text-red-600 dark:text-red-400"><i class="pi pi-exclamation-triangle mr-1" aria-hidden="true"></i>Los pesos suman {{ num(assigned, 0, 2) }}%: no pueden pasar de 100%.</div>
+                    </fieldset>
                 </div>
 
-                <!-- Pesos -->
-                <fieldset class="col-span-12 lg:col-span-7 flex flex-col gap-3 border-0 p-0 m-0 min-w-0">
-                    <legend class="sr-only">Cuánto pesa cada costo</legend>
-                    <div class="flex flex-wrap items-center justify-between gap-2">
-                        <span class="font-medium" aria-hidden="true">Cuánto pesa cada costo</span>
-                        <div class="flex flex-wrap gap-1">
-                            <p-button *ngFor="let p of presets" [label]="p.label" size="small" [outlined]="true" severity="secondary" (click)="applyPreset(p)" />
+                <!-- Resultado -->
+                <aside class="col-span-12 xl:col-span-5 rounded-xl bg-surface-50 dark:bg-surface-800 p-5 flex flex-col gap-4 self-start" aria-label="Resultado">
+                    <div *ngIf="error && assigned <= 100" class="text-muted-color flex items-start gap-2"><i class="pi pi-info-circle mt-1" aria-hidden="true"></i><span>{{ error }}</span></div>
+                    <div *ngIf="assigned > 100" class="text-muted-color">Corregí los pesos para ver el resultado.</div>
+                    <ng-container *ngIf="result && !error && assigned <= 100">
+                        <div role="status">
+                            <div class="text-sm text-muted-color">{{ what === 'km' ? 'Precio por km' : what === 'service' ? 'Precio del servicio' : 'Precio' }} en {{ monthLabel(targetPeriod) }}</div>
+                            <div class="text-4xl font-bold mt-1">{{ money(result.newPrice, 2) }}</div>
+                            <div class="mt-1"><span class="font-semibold mr-1">{{ pct(result.totalChange) }}</span><span class="text-muted-color">sobre {{ money(basePrice, 2) }} de {{ monthLabel(basePeriod) }}</span></div>
                         </div>
-                    </div>
-
-                    <div class="grid grid-cols-12 gap-2 items-end">
-                        <span class="hidden sm:block sm:col-span-5"></span>
-                        <span class="hidden sm:block sm:col-span-3 text-sm text-muted-color" aria-hidden="true">Peso</span>
-                        <span class="hidden sm:block sm:col-span-4"></span>
-                        <label for="calcIpcWeight" class="col-span-12 sm:col-span-5 sm:pb-2">Inflación (IPC)</label>
-                        <div class="col-span-6 sm:col-span-3">
-                            <p-inputNumber inputId="calcIpcWeight" [(ngModel)]="ipcWeight" (ngModelChange)="save()" suffix=" %" [min]="0" [max]="100" [showButtons]="true" [step]="5" styleClass="w-full" inputStyleClass="w-full" [invalid]="assigned > 100" />
+                        <div class="overflow-x-auto" tabindex="0" role="region" aria-labelledby="calcBreakdownCaption">
+                            <table class="w-full text-sm">
+                                <caption id="calcBreakdownCaption" class="text-left text-muted-color mb-1">Cómo se arma el aumento</caption>
+                                <thead>
+                                    <tr class="border-b border-surface-200 dark:border-surface-700 text-left">
+                                        <th scope="col" class="py-2 pr-2 font-medium">Costo</th>
+                                        <th scope="col" class="py-2 px-2 text-right font-medium">Peso</th>
+                                        <th scope="col" class="py-2 px-2 text-right font-medium">Subió</th>
+                                        <th scope="col" class="py-2 pl-2 text-right font-medium">Aporta</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr *ngFor="let c of result.components" class="border-b border-surface-200/60 dark:border-surface-700/60">
+                                        <th scope="row" class="py-1.5 pr-2 text-left font-normal">{{ c.label }}<div *ngIf="c.usedPeriod" class="text-xs text-muted-color">dato de {{ monthLabel(c.usedPeriod) }}</div></th>
+                                        <td class="py-1.5 px-2 text-right whitespace-nowrap">{{ num(c.weight, 0, 2) }}%</td>
+                                        <td class="py-1.5 px-2 text-right whitespace-nowrap">{{ pct(c.change) }}</td>
+                                        <td class="py-1.5 pl-2 text-right whitespace-nowrap">{{ points(c.contribution) }}</td>
+                                    </tr>
+                                    <tr *ngIf="result.unadjustedWeight > 0" class="border-b border-surface-200/60 dark:border-surface-700/60">
+                                        <th scope="row" class="py-1.5 pr-2 text-left font-normal">Queda igual</th>
+                                        <td class="py-1.5 px-2 text-right whitespace-nowrap">{{ num(result.unadjustedWeight, 0, 2) }}%</td>
+                                        <td class="py-1.5 px-2 text-right">—</td>
+                                        <td class="py-1.5 pl-2 text-right">—</td>
+                                    </tr>
+                                    <tr class="font-semibold">
+                                        <th scope="row" class="py-1.5 pr-2 text-left">Total</th>
+                                        <td class="py-1.5 px-2 text-right">100%</td>
+                                        <td class="py-1.5 px-2"></td>
+                                        <td class="py-1.5 pl-2 text-right whitespace-nowrap">{{ pct(result.totalChange) }}</td>
+                                    </tr>
+                                </tbody>
+                            </table>
                         </div>
-                        <div class="col-span-12 sm:col-span-4"></div>
-
-                        <div class="col-span-12 sm:col-span-5 flex flex-col gap-1">
-                            <label for="calcFuelKey">Combustible</label>
-                            <p-select inputId="calcFuelKey" [options]="fuelOptions" [(ngModel)]="fuelKey" (ngModelChange)="save()" optionLabel="label" optionValue="value" appendTo="body" styleClass="w-full" />
-                        </div>
-                        <div class="col-span-6 sm:col-span-3">
-                            <p-inputNumber inputId="calcFuelWeight" [(ngModel)]="fuelWeight" (ngModelChange)="save()" suffix=" %" [min]="0" [max]="100" [showButtons]="true" [step]="5" styleClass="w-full" inputStyleClass="w-full" ariaLabel="Peso del combustible" [invalid]="assigned > 100" />
-                        </div>
-                        <div class="col-span-12 sm:col-span-4"></div>
-
-                        <div class="col-span-12 sm:col-span-5 flex flex-col gap-1">
-                            <label for="calcFixedIncrease">Aumento fijo (decreto, acuerdo)</label>
-                            <p-inputNumber inputId="calcFixedIncrease" [(ngModel)]="fixedIncrease" (ngModelChange)="save()" prefix="+" suffix=" %" [minFractionDigits]="0" [maxFractionDigits]="2" styleClass="w-full" inputStyleClass="w-full" />
-                        </div>
-                        <div class="col-span-6 sm:col-span-3">
-                            <p-inputNumber inputId="calcFixedWeight" [(ngModel)]="fixedWeight" (ngModelChange)="save()" suffix=" %" [min]="0" [max]="100" [showButtons]="true" [step]="5" styleClass="w-full" inputStyleClass="w-full" ariaLabel="Peso del aumento fijo" [invalid]="assigned > 100" />
-                        </div>
-                        <div class="col-span-12 sm:col-span-4"></div>
-                    </div>
-
-                    <div id="calcWeightsHelp" class="text-sm" role="status" [class.text-red-600]="assigned > 100" [class.dark:text-red-400]="assigned > 100" [class.text-muted-color]="assigned <= 100">
-                        <ng-container *ngIf="assigned <= 100">Sin ajustar: <b>{{ num(100 - assigned, 0, 2) }}%</b> del precio queda igual.</ng-container>
-                        <ng-container *ngIf="assigned > 100"><i class="pi pi-exclamation-triangle mr-1"></i>Los pesos suman {{ num(assigned, 0, 2) }}%: no pueden pasar de 100%.</ng-container>
-                    </div>
-                </fieldset>
-            </div>
-
-            <!-- Resultado -->
-            <div class="mt-5 pt-4 border-t border-surface-200 dark:border-surface-700">
-                <div *ngIf="error && assigned <= 100" class="text-orange-600 dark:text-orange-400"><i class="pi pi-info-circle mr-1"></i>{{ error }}</div>
-                <ng-container *ngIf="result && !error && assigned <= 100">
-                    <div class="flex flex-wrap items-baseline gap-x-4 gap-y-1" role="status">
-                        <span class="text-muted-color">{{ what === 'km' ? 'Precio por km' : what === 'service' ? 'Precio del servicio' : 'Precio' }} en {{ monthLabel(targetPeriod) }}:</span>
-                        <span class="text-3xl font-bold">{{ money(result.newPrice, 2) }}</span>
-                        <span class="font-semibold">{{ pct(result.totalChange) }} desde {{ monthLabel(basePeriod) }}</span>
-                    </div>
-                    <div class="overflow-x-auto mt-3" tabindex="0" role="region" aria-labelledby="calcBreakdownCaption">
-                        <table class="w-full text-sm">
-                            <caption id="calcBreakdownCaption" class="sr-only">Cómo se compone el aumento</caption>
-                            <thead>
-                                <tr class="border-b border-surface-200 dark:border-surface-700 text-left">
-                                    <th scope="col" class="py-2 pr-3">Costo</th>
-                                    <th scope="col" class="py-2 px-3 text-right">Peso</th>
-                                    <th scope="col" class="py-2 px-3 text-right">Subió</th>
-                                    <th scope="col" class="py-2 pl-3 text-right whitespace-nowrap">Aporta al aumento</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                <tr *ngFor="let c of result.components" class="border-b border-surface-100 dark:border-surface-800">
-                                    <th scope="row" class="py-1 pr-3 text-left font-normal">{{ c.label }}<span *ngIf="c.usedPeriod" class="text-muted-color"> (último dato: {{ monthLabel(c.usedPeriod) }})</span></th>
-                                    <td class="py-1 px-3 text-right whitespace-nowrap">{{ num(c.weight, 0, 2) }}%</td>
-                                    <td class="py-1 px-3 text-right whitespace-nowrap">{{ pct(c.change) }}</td>
-                                    <td class="py-1 pl-3 text-right whitespace-nowrap">{{ points(c.contribution) }}</td>
-                                </tr>
-                                <tr *ngIf="result.unadjustedWeight > 0" class="border-b border-surface-100 dark:border-surface-800">
-                                    <th scope="row" class="py-1 pr-3 text-left font-normal">Sin ajustar</th>
-                                    <td class="py-1 px-3 text-right whitespace-nowrap">{{ num(result.unadjustedWeight, 0, 2) }}%</td>
-                                    <td class="py-1 px-3 text-right whitespace-nowrap">0,0%</td>
-                                    <td class="py-1 pl-3 text-right whitespace-nowrap">0,0 puntos</td>
-                                </tr>
-                                <tr class="font-semibold">
-                                    <th scope="row" class="py-1 pr-3 text-left">Total</th>
-                                    <td class="py-1 px-3 text-right whitespace-nowrap">100%</td>
-                                    <td class="py-1 px-3"></td>
-                                    <td class="py-1 pl-3 text-right whitespace-nowrap">{{ pct(result.totalChange) }}</td>
-                                </tr>
-                            </tbody>
-                        </table>
-                    </div>
-                    <small *ngIf="usesOldData" class="text-muted-color block mt-2">Algún índice todavía no publicó el mes elegido (el IPC sale a mediados del mes siguiente): se usó el último dato disponible.</small>
-                </ng-container>
+                        <small *ngIf="usesOldData" class="text-muted-color">Algún índice todavía no publicó el mes elegido (el IPC sale a mediados del mes siguiente): se usó el último dato disponible.</small>
+                    </ng-container>
+                </aside>
             </div>
         </div>
-    `
+    `,
+    styles: [`
+        .step { display: inline-flex; align-items: center; justify-content: center; width: 1.5rem; height: 1.5rem; border-radius: 999px; font-size: 0.8rem; background: var(--p-primary-color); color: var(--p-primary-contrast-color); }
+    `]
 })
 export class PriceCalculator implements OnChanges {
     @Input() market: Indicator[] = [];
@@ -173,6 +176,56 @@ export class PriceCalculator implements OnChanges {
         { label: '100% IPC', ipc: 100, fuel: 0, fixed: 0 },
         { label: '100% combustible', ipc: 0, fuel: 100, fixed: 0 }
     ];
+
+    /** Mismos colores que el gráfico de evolución (IPC naranja, combustible azul). */
+    private readonly colors = { ipc: '#eb6834', fuel: '#2a78d6', fixed: '#6250d6' };
+
+    readonly rows = [
+        { key: 'ipc', name: 'la inflación', inputId: 'calcIpcWeight', color: this.colors.ipc, get: () => this.ipcWeight, set: (v: number | null) => this.setWeight('ipcWeight', v) },
+        { key: 'fuel', name: 'el combustible', inputId: 'calcFuelWeight', color: this.colors.fuel, get: () => this.fuelWeight, set: (v: number | null) => this.setWeight('fuelWeight', v) },
+        { key: 'fixed', name: 'el aumento fijo', inputId: 'calcFixedWeight', color: this.colors.fixed, get: () => this.fixedWeight, set: (v: number | null) => this.setWeight('fixedWeight', v) }
+    ];
+
+    /** La barra del reparto: cada costo y lo que queda igual. */
+    get parts() {
+        const total = Math.min(100, this.assigned);
+        const scale = this.assigned > 100 ? 100 / this.assigned : 1;
+        return [
+            { weight: (this.ipcWeight || 0) * scale, color: this.colors.ipc },
+            { weight: (this.fuelWeight || 0) * scale, color: this.colors.fuel },
+            { weight: (this.fixedWeight || 0) * scale, color: this.colors.fixed },
+            { weight: 100 - total, color: 'transparent' }
+        ].filter((p) => p.weight > 0);
+    }
+
+    /**
+     * Cambia un peso. Si con eso se pasa de 100%, lo que sobra se descuenta de
+     * los otros dos, en proporción a lo que pesa cada uno.
+     */
+    private setWeight(field: WeightField, v: number | null) {
+        const value = Math.max(0, Math.min(100, Math.round(Number(v) || 0)));
+        this[field] = value;
+        const others = WEIGHT_FIELDS.filter((f) => f !== field);
+        let excess = value + others.reduce((a, f) => a + (this[f] || 0), 0) - 100;
+        if (excess > 0) {
+            const pool = others.reduce((a, f) => a + (this[f] || 0), 0);
+            for (const f of others) {
+                const cut = Math.min(this[f] || 0, Math.round((excess * (this[f] || 0)) / pool));
+                this[f] = (this[f] || 0) - cut;
+            }
+            // Lo que quede por redondeo sale del que más pesa.
+            excess = WEIGHT_FIELDS.reduce((a, f) => a + (this[f] || 0), 0) - 100;
+            if (excess > 0) {
+                const biggest = [...others].sort((a, b) => (this[b] || 0) - (this[a] || 0))[0]!;
+                this[biggest] = Math.max(0, (this[biggest] || 0) - excess);
+            }
+        }
+        this.save();
+    }
+
+    isPreset(p: { ipc: number; fuel: number; fixed: number }): boolean {
+        return this.ipcWeight === p.ipc && this.fuelWeight === p.fuel && this.fixedWeight === p.fixed;
+    }
 
     what = 'km';
     basePrice: number | null = null;
@@ -209,6 +262,12 @@ export class PriceCalculator implements OnChanges {
 
     private series(key: string) {
         return this.market.find((m) => m.key === key)?.series ?? [];
+    }
+
+    /** La tarifa elegida en la pantalla (la favorita, si no se cambió). */
+    get tariffName(): string {
+        const t = this.market.find((m) => m.key === 'TARIFF_KM');
+        return t?.scope ? `la tarifa ${t.scope}` : 'tu tarifa';
     }
 
     get tariffAtBase(): number | null {
