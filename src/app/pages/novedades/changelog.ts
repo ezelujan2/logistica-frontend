@@ -25,6 +25,15 @@ export interface Release {
 
 export const RELEASES: Release[] = [
     {
+        version: '2.12.1',
+        date: '2026-11-25',
+        title: 'PDF del reporte',
+        changes: [
+            { kind: 'correccion', text: 'PDF del reporte: cuando un reporte tenía descuento y discriminaba IVA, la tabla se pasaba del ancho de la hoja y se cortaba la columna TOTAL. Ahora entra siempre.' },
+            { kind: 'mejora', text: 'PDF del reporte: con descuento, el subtotal aparece en todas las filas (en las que no tienen descuento es igual al neto, con "—" en Desc.), y la fecha sale "16/11/26 08:00" en vez de "08:00 a. m.".' }
+        ]
+    },
+    {
         version: '2.12.0',
         date: '2026-11-21',
         title: 'Kilómetros por mes y calculadora más clara',
